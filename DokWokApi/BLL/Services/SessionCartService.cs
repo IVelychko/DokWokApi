@@ -17,14 +17,14 @@ public class SessionCartService : ICartService
         session = httpContextAccessor.HttpContext?.Session;
     }
 
-    public Cart GetCart()
+    public async Task<Cart> GetCart()
     {
         if (session is null)
         {
             throw new CartException(nameof(session), "There is no session available.");
         }
 
-        return session.GetJson<Cart>("Cart") ?? new Cart();
+        return await session.GetJsonAsync<Cart>("Cart") ?? new Cart();
     }
 
     public async Task AddItem(long productId, int quantity)
@@ -45,7 +45,7 @@ public class SessionCartService : ICartService
             throw new EntityNotFoundException(nameof(product), "There is no entity with this ID in the database.");
         }
 
-        var cart = session.GetJson<Cart>("Cart") ?? new Cart();
+        var cart = await session.GetJsonAsync<Cart>("Cart") ?? new Cart();
 
         var cartLine = cart.Lines.Find(cl => cl.Product.Id == productId);
         if (cartLine is null)
@@ -65,7 +65,7 @@ public class SessionCartService : ICartService
 
         cart.CalculateTotalCartPrice();
 
-        session.SetJson("Cart", cart);
+        await session.SetJsonAsync("Cart", cart);
     }
 
     public async Task RemoveItem(long productId, int quantity)
@@ -86,7 +86,7 @@ public class SessionCartService : ICartService
             throw new EntityNotFoundException(nameof(product), "There is no entity with this ID in the database.");
         }
 
-        var cart = session.GetJson<Cart>("Cart");
+        var cart = await session.GetJsonAsync<Cart>("Cart");
         if (cart is null)
         {
             throw new CartNotFoundException(nameof(cart), "There is no existing cart object to remove the line from.");
@@ -103,7 +103,7 @@ public class SessionCartService : ICartService
         cartLine.CalculateTotalLinePrice();
         cart.CalculateTotalCartPrice();
 
-        session.SetJson("Cart", cart);
+        await session.SetJsonAsync("Cart", cart);
     }
 
     public async Task RemoveLine(long productId)
@@ -119,7 +119,7 @@ public class SessionCartService : ICartService
             throw new EntityNotFoundException(nameof(product), "There is no entity with this ID in the database.");
         }
 
-        var cart = session.GetJson<Cart>("Cart");
+        var cart = await session.GetJsonAsync<Cart>("Cart");
         if (cart is null)
         {
             throw new CartNotFoundException(nameof(cart), "There is no existing cart object to remove the line from.");
@@ -129,21 +129,21 @@ public class SessionCartService : ICartService
         cart.CalculateTotalCartPrice();
         if (cart.Lines.Count > 0)
         {
-            session.SetJson("Cart", cart);
+            await session.SetJsonAsync("Cart", cart);
         }
         else
         {
-            session.Remove("Cart");
+            await session.RemoveJsonAsync("Cart");
         }
     }
 
-    public void ClearCart()
+    public async Task ClearCart()
     {
         if (session is null)
         {
             throw new CartException(nameof(session), "There is no session available.");
         }
 
-        session.Remove("Cart");
+        await session.RemoveJsonAsync("Cart");
     }
 }

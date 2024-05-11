@@ -19,11 +19,12 @@ public class CartController : ControllerBase
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public ActionResult<Cart> GetCart()
+    public async Task<ActionResult<Cart>> GetCart()
     {
         try
         {
-            return Ok(cartService.GetCart());
+            var cart = await cartService.GetCart();
+            return Ok(cart);
         }
         catch (CartException ex)
         {
@@ -133,11 +134,11 @@ public class CartController : ControllerBase
     [HttpDelete]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public ActionResult ClearCart()
+    public async Task<ActionResult> ClearCart()
     {
         try
         {
-            cartService.ClearCart();
+            await cartService.ClearCart();
             return Ok("The cart was cleared successfully.");
         }
         catch (CartException ex)

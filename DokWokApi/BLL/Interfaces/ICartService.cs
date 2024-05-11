@@ -6,9 +6,9 @@ public interface ICartService
 {
     Task AddItem(long productId, int quantity);
 
-    void ClearCart();
+    Task ClearCart();
 
-    Cart GetCart();
+    Task<Cart> GetCart();
 
     Task RemoveItem(long productId, int quantity);
 
