@@ -28,8 +28,10 @@ builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(opts =>
 {
     opts.IdleTimeout = TimeSpan.FromMinutes(10);
+    opts.Cookie.Name = "DokWokApi.Session";
     opts.Cookie.IsEssential = true;
     opts.Cookie.HttpOnly = true;
+    opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
 builder.Services.AddDbContext<StoreDbContext>(opts =>
@@ -41,6 +43,8 @@ var mapperConfig = new MapperConfiguration(mc => mc.AddProfile(new AutomapperPro
 IMapper mapper = mapperConfig.CreateMapper();
 builder.Services.AddSingleton(mapper);
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
@@ -49,8 +53,8 @@ builder.Services.AddScoped<ICartService, SessionCartService>();
 
 var app = builder.Build();
 
-app.UseCors();
 app.UseSession();
+app.UseCors(policyName);
 app.MapControllers();
 SeedData.SeedDatabase(app);
 

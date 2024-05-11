@@ -1,14 +1,12 @@
 ﻿using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.ShoppingCart;
 using DokWokApi.Exceptions;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DokWokApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[EnableCors("ReactProjectCorsPolicy")]
 public class CartController : ControllerBase
 {
     private readonly ICartService cartService;

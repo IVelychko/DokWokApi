@@ -3,14 +3,12 @@ using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models;
 using DokWokApi.BLL.Models.Post;
 using DokWokApi.Exceptions;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DokWokApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[EnableCors("ReactProjectCorsPolicy")]
 public class ProductsController : ControllerBase
 {
     private readonly IProductService productService;
