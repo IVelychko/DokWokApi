@@ -3,18 +3,21 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DokWokApi.BLL.Models.Put;
 
-public class ProductPutModel : BaseModel
+public class ProductPutModel
 {
     [Required]
-    public string Name { get; set; } = string.Empty;
+    public long? Id { get; set; }
+
+    [Required]
+    public string? Name { get; set; }
 
     [Required]
     [Column(TypeName = "decimal(8, 2)")]
-    public decimal Price { get; set; }
+    public decimal? Price { get; set; }
 
     [Required]
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
     [Required]
-    public long CategoryId { get; set; }
+    public long? CategoryId { get; set; }
 }

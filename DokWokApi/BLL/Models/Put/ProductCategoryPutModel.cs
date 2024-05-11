@@ -2,8 +2,11 @@
 
 namespace DokWokApi.BLL.Models.Put;
 
-public class ProductCategoryPutModel : BaseModel
+public class ProductCategoryPutModel
 {
     [Required]
-    public string Name { get; set; } = string.Empty;
+    public long? Id { get; set; }
+
+    [Required]
+    public string? Name { get; set; }
 }

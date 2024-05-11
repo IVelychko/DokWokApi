@@ -1,6 +1,5 @@
 ﻿using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
-using DokWokApi.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace DokWokApi.DAL.Repositories;
@@ -14,25 +13,11 @@ public class ProductCategoryRepository : IProductCategoryRepository
         this.context = context;
     }
 
-    private static void CheckForNull(ProductCategory? entity, string errorMessage)
-    {
-        if (entity is null)
-        {
-            throw new ArgumentNullException(nameof(entity), errorMessage);
-        }
-    }
-
-    private static void CheckRetrievedCategory(ProductCategory? entity, string errorMessage)
-    {
-        if (entity is null)
-        {
-            throw new EntityNotFoundException(nameof(entity), errorMessage);
-        }
-    }
-
     public async Task<ProductCategory> AddAsync(ProductCategory entity)
     {
-        CheckForNull(entity, "The passed entity is null.");
+        RepositoryHelper.CheckForNull(entity, "The passed entity is null.");
+        RepositoryHelper.ThrowIfExists(await context.ProductCategories.AnyAsync(c => c.Name == entity.Name),
+            "The entity with the same Name value is already present in the database.");
 
         await context.AddAsync(entity);
         await context.SaveChangesAsync();
@@ -41,9 +26,9 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public async Task DeleteAsync(ProductCategory entity)
     {
-        CheckForNull(entity, "The passed entity is null.");
+        RepositoryHelper.CheckForNull(entity, "The passed entity is null.");
         var entityToDelete = await context.FindAsync<ProductCategory>(entity.Id);
-        CheckRetrievedCategory(entityToDelete, "There is no entity with this ID in the database.");
+        RepositoryHelper.CheckRetrievedEntity(entityToDelete, "There is no entity with this ID in the database.");
 
         context.Remove(entity);
         await context.SaveChangesAsync();
@@ -52,7 +37,7 @@ public class ProductCategoryRepository : IProductCategoryRepository
     public async Task DeleteByIdAsync(long id)
     {
         var entity = await context.FindAsync<ProductCategory>(id);
-        CheckRetrievedCategory(entity, "There is no entity with this ID in the database.");
+        RepositoryHelper.CheckRetrievedEntity(entity, "There is no entity with this ID in the database.");
 
         context.Remove(entity!);
         await context.SaveChangesAsync();
@@ -70,9 +55,14 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public async Task<ProductCategory> UpdateAsync(ProductCategory entity)
     {
-        CheckForNull(entity, "The passed entity is null.");
+        RepositoryHelper.CheckForNull(entity, "The passed entity is null.");
         var entityToUpdate = await context.ProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == entity.Id);
-        CheckRetrievedCategory(entityToUpdate, "There is no entity with this ID in the database.");
+        RepositoryHelper.CheckRetrievedEntity(entityToUpdate, "There is no entity with this ID in the database.");
+        if (entity.Name != entityToUpdate!.Name)
+        {
+            RepositoryHelper.ThrowIfExists(await context.ProductCategories.AnyAsync(c => c.Name == entity.Name),
+                "The entity with the same Name value is already present in the database.");
+        }
 
         context.Update(entity);
         await context.SaveChangesAsync();

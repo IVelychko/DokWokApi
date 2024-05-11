@@ -18,16 +18,12 @@ public class AutomapperProfile : Profile
 
         CreateMap<ProductModel, Product>();
 
-        CreateMap<ProductCategoryModel, ProductCategoryPostModel>()
-            .ReverseMap();
+        CreateMap<ProductCategoryPostModel, ProductCategoryModel>();
 
-        CreateMap<ProductModel, ProductPostModel>()
-            .ReverseMap();
+        CreateMap<ProductPostModel, ProductModel>();
 
-        CreateMap<ProductCategoryModel, ProductCategoryPutModel>()
-            .ReverseMap();
+        CreateMap<ProductCategoryPutModel, ProductCategoryModel>();
 
-        CreateMap<ProductModel, ProductPutModel>()
-            .ReverseMap();
+        CreateMap<ProductPutModel, ProductModel>();
     }
 }
