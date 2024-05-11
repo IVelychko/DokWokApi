@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace DokWokApi.BLL.Models.Post;
+namespace DokWokApi.BLL.Models.Put;
 
-public class ProductPostModel
+public class ProductPutModel : BaseModel
 {
     [Required]
     public string Name { get; set; } = string.Empty;

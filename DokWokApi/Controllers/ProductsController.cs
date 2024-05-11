@@ -2,6 +2,7 @@
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models;
 using DokWokApi.BLL.Models.Post;
+using DokWokApi.BLL.Models.Put;
 using DokWokApi.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,6 +23,8 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<ProductModel>>> GetAllProducts()
     {
         try
@@ -36,6 +39,9 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductModel>> GetProductById(long id)
     {
         try
@@ -55,6 +61,9 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductModel>> AddProduct(ProductPostModel postModel, [FromServices] IMapper mapper)
     {
         try
@@ -74,10 +83,15 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut]
-    public async Task<ActionResult<ProductModel>> UpdateProduct(ProductModel model)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ProductModel>> UpdateProduct(ProductPutModel putModel, [FromServices] IMapper mapper)
     {
         try
         {
+            var model = mapper.Map<ProductModel>(putModel);
             var updatedModel = await productService.UpdateAsync(model);
             return Ok(updatedModel);
         }
@@ -96,6 +110,9 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteProduct(long id)
     {
         try
@@ -114,6 +131,8 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("categories")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<ProductCategoryModel>>> GetAllCategories()
     {
         try
@@ -128,6 +147,9 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("categories/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductCategoryModel>> GetCategoryById(long id)
     {
         try
@@ -147,6 +169,9 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost("categories")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductCategoryModel>> AddCategory(ProductCategoryPostModel postModel, [FromServices] IMapper mapper)
     {
         try
@@ -166,10 +191,15 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("categories")]
-    public async Task<ActionResult<ProductCategoryModel>> UpdateCategory(ProductCategoryModel model)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ProductCategoryModel>> UpdateCategory(ProductCategoryPutModel putModel, [FromServices] IMapper mapper)
     {
         try
         {
+            var model = mapper.Map<ProductCategoryModel>(putModel);
             var updatedModel = await categoryService.UpdateAsync(model);
             return Ok(updatedModel);
         }
@@ -188,6 +218,9 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("categories/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteCategory(long id)
     {
         try

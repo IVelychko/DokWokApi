@@ -6,6 +6,7 @@ using DokWokApi.DAL;
 using DokWokApi.DAL.Interfaces;
 using DokWokApi.DAL.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,11 +52,25 @@ builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService, SessionCartService>();
 
+builder.Services.AddSwaggerGen(c => {
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "DokWokApi",
+        Version = "v1"
+    });
+});
+
 var app = builder.Build();
 
 app.UseSession();
 app.UseCors(policyName);
 app.MapControllers();
+
+app.UseSwagger();
+app.UseSwaggerUI(options => {
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "WebApp");
+});
+
 SeedData.SeedDatabase(app);
 
 app.Run();

@@ -17,6 +17,8 @@ public class CartController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public ActionResult<Cart> GetCart()
     {
         try
@@ -34,6 +36,10 @@ public class CartController : ControllerBase
     }
 
     [HttpPost("item")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> AddProductToCart(long productId, int quantity)
     {
         if (quantity <= 0)
@@ -61,6 +67,10 @@ public class CartController : ControllerBase
     }
 
     [HttpDelete("item")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> RemoveProductFromCart(long productId, int quantity)
     {
         if (quantity <= 0)
@@ -92,6 +102,9 @@ public class CartController : ControllerBase
     }
 
     [HttpDelete("line")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> RemoveLineFromCart(long productId)
     {
         try
@@ -118,6 +131,8 @@ public class CartController : ControllerBase
     }
 
     [HttpDelete]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public ActionResult ClearCart()
     {
         try
