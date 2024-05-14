@@ -49,6 +49,15 @@ public class ProductService : IProductService
         return models;
     }
 
+    public async Task<IEnumerable<ProductModel>> GetAllByCategoryIdAsync(long categoryId)
+    {
+        var entities = repository.GetAllWithDetails();
+        var filteredEntities = entities.Where(p => p.CategoryId == categoryId);
+        var list = await filteredEntities.ToListAsync();
+        var models = mapper.Map<IEnumerable<ProductModel>>(list);
+        return models;
+    }
+
     public async Task<ProductModel?> GetByIdAsync(long id)
     {
         var entity = await repository.GetByIdWithDetailsAsync(id);

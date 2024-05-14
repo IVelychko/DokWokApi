@@ -41,7 +41,7 @@ public class CartController : ControllerBase
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> AddProductToCart(long productId, int quantity)
+    public async Task<ActionResult<Cart>> AddProductToCart(long productId, int quantity)
     {
         if (quantity <= 0)
         {
@@ -50,8 +50,8 @@ public class CartController : ControllerBase
 
         try
         {
-            await cartService.AddItem(productId, quantity);
-            return Ok("The product was added to the cart successfully.");
+            var modifiedCart = await cartService.AddItem(productId, quantity);
+            return Ok(modifiedCart);
         }
         catch (CartException ex)
         {
@@ -72,7 +72,7 @@ public class CartController : ControllerBase
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> RemoveProductFromCart(long productId, int quantity)
+    public async Task<ActionResult<Cart>> RemoveProductFromCart(long productId, int quantity)
     {
         if (quantity <= 0)
         {
@@ -81,8 +81,8 @@ public class CartController : ControllerBase
 
         try
         {
-            await cartService.RemoveItem(productId, quantity);
-            return Ok("The product was removed from the cart successfully.");
+            var modifiedCart = await cartService.RemoveItem(productId, quantity);
+            return Ok(modifiedCart);
         }
         catch (EntityNotFoundException ex)
         {
@@ -106,12 +106,12 @@ public class CartController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> RemoveLineFromCart(long productId)
+    public async Task<ActionResult<Cart>> RemoveLineFromCart(long productId)
     {
         try
         {
-            await cartService.RemoveLine(productId);
-            return Ok("The cart line was removed successfully.");
+            var modifiedCart = await cartService.RemoveLine(productId);
+            return Ok(modifiedCart);
         }
         catch (EntityNotFoundException ex)
         {

@@ -4,13 +4,13 @@ namespace DokWokApi.BLL.Interfaces;
 
 public interface ICartService
 {
-    Task AddItem(long productId, int quantity);
+    Task<Cart> AddItem(long productId, int quantity);
 
     Task ClearCart();
 
     Task<Cart> GetCart();
 
-    Task RemoveItem(long productId, int quantity);
+    Task<Cart> RemoveItem(long productId, int quantity);
 
-    Task RemoveLine(long productId);
+    Task<Cart> RemoveLine(long productId);
 }

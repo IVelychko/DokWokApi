@@ -27,7 +27,7 @@ public class SessionCartService : ICartService
         return await session.GetJsonAsync<Cart>("Cart") ?? new Cart();
     }
 
-    public async Task AddItem(long productId, int quantity)
+    public async Task<Cart> AddItem(long productId, int quantity)
     {
         if (session is null)
         {
@@ -66,9 +66,10 @@ public class SessionCartService : ICartService
         cart.CalculateTotalCartPrice();
 
         await session.SetJsonAsync("Cart", cart);
+        return cart;
     }
 
-    public async Task RemoveItem(long productId, int quantity)
+    public async Task<Cart> RemoveItem(long productId, int quantity)
     {
         if (session is null)
         {
@@ -104,9 +105,10 @@ public class SessionCartService : ICartService
         cart.CalculateTotalCartPrice();
 
         await session.SetJsonAsync("Cart", cart);
+        return cart;
     }
 
-    public async Task RemoveLine(long productId)
+    public async Task<Cart> RemoveLine(long productId)
     {
         if (session is null)
         {
@@ -130,10 +132,12 @@ public class SessionCartService : ICartService
         if (cart.Lines.Count > 0)
         {
             await session.SetJsonAsync("Cart", cart);
+            return cart;
         }
         else
         {
             await session.RemoveJsonAsync("Cart");
+            return new();
         }
     }
 

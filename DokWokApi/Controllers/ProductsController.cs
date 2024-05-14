@@ -25,11 +25,14 @@ public class ProductsController : ControllerBase
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<ProductModel>>> GetAllProducts()
+    public async Task<ActionResult<IEnumerable<ProductModel>>> GetAllProducts(long? categoryId)
     {
         try
         {
-            var products = await productService.GetAllAsync();
+            var products = categoryId.HasValue ? 
+                await productService.GetAllByCategoryIdAsync(categoryId.Value) : 
+                await productService.GetAllAsync();
+
             return Ok(products);
         }
         catch (Exception ex)
