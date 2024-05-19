@@ -1,6 +1,4 @@
-﻿using DokWokApi.BLL.Models;
-
-namespace DokWokApi.BLL.Interfaces;
+﻿namespace DokWokApi.BLL.Interfaces;
 
 public interface ICrud<TModel> where TModel : class
 {

@@ -2,6 +2,7 @@
 using DokWokApi.BLL.Models;
 using DokWokApi.BLL.Models.Post;
 using DokWokApi.BLL.Models.Put;
+using DokWokApi.BLL.Models.User;
 using DokWokApi.DAL.Entities;
 
 namespace DokWokApi.BLL;
@@ -25,5 +26,12 @@ public class AutomapperProfile : Profile
         CreateMap<ProductCategoryPutModel, ProductCategoryModel>();
 
         CreateMap<ProductPutModel, ProductModel>();
+
+        CreateMap<UserModel, ApplicationUser>()
+            .ReverseMap();
+
+        CreateMap<UserRegisterModel, UserModel>();
+
+        CreateMap<UserPutModel, UserModel>();
     }
 }

@@ -3,8 +3,11 @@ using DokWokApi.BLL;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Services;
 using DokWokApi.DAL;
+using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
 using DokWokApi.DAL.Repositories;
+using DokWokApi.Middlewares;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -32,12 +35,26 @@ builder.Services.AddSession(opts =>
     opts.Cookie.Name = "DokWokApi.Session";
     opts.Cookie.IsEssential = true;
     opts.Cookie.HttpOnly = true;
-    opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    //opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
 builder.Services.AddDbContext<StoreDbContext>(opts =>
 {
     opts.UseSqlServer(builder.Configuration["ConnectionStrings:FoodStoreConnection"]);
+});
+
+builder.Services.AddDbContext<IdentityContext>(opts =>
+{
+    opts.UseSqlServer(builder.Configuration["ConnectionStrings:IdentityConnection"]);
+});
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<IdentityContext>();
+builder.Services.Configure<IdentityOptions>(opts => {
+    opts.Password.RequiredLength = 6;
+    opts.Password.RequireNonAlphanumeric = false;
+    opts.Password.RequireLowercase = false;
+    opts.Password.RequireUppercase = true;
+    opts.Password.RequireDigit = true;
+    opts.User.RequireUniqueEmail = true;
 });
 
 var mapperConfig = new MapperConfiguration(mc => mc.AddProfile(new AutomapperProfile()));
@@ -51,6 +68,8 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService, SessionCartService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ISecurityTokenService<ApplicationUser>, JwtService>();
 
 builder.Services.AddSwaggerGen(c => {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -62,6 +81,7 @@ builder.Services.AddSwaggerGen(c => {
 
 var app = builder.Build();
 
+app.UseMiddleware<JwtMiddleware>();
 app.UseSession();
 app.UseCors(policyName);
 app.MapControllers();
@@ -72,5 +92,6 @@ app.UseSwaggerUI(options => {
 });
 
 SeedData.SeedDatabase(app);
+await SeedIdentityData.SeedIdentityDatabase(app);
 
 app.Run();
