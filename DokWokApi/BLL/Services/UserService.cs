@@ -5,6 +5,7 @@ using DokWokApi.DAL.Entities;
 using DokWokApi.Exceptions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace DokWokApi.BLL.Services;
 
@@ -14,21 +15,14 @@ public class UserService : IUserService
 
     private readonly IMapper mapper;
 
-    private readonly IConfiguration config;
+    private readonly ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService;
 
-    private readonly ISecurityTokenService<ApplicationUser> securityTokenService;
-
-    public UserService(
-        UserManager<ApplicationUser> userManager, 
-        IMapper mapper, 
-        IConfiguration configuration, 
-        ISecurityTokenService<ApplicationUser> securityTokenService)
+    public UserService(UserManager<ApplicationUser> userManager, IMapper mapper, 
+        ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService)
     {
         this.userManager = userManager;
         this.mapper = mapper;
-        config = configuration;
         this.securityTokenService = securityTokenService;
-
     }
 
     private static T CheckForNull<T>(T? model, string errorMessage)
@@ -167,7 +161,8 @@ public class UserService : IUserService
         var isValidPassword = await userManager.CheckPasswordAsync(user, model.Password);
         ThrowIfNotValid(isValidPassword, "The credentials are wrong.");
 
-        var token = securityTokenService.CreateToken(user);
+        var userModel = mapper.Map<UserModel>(user);
+        var token = securityTokenService.CreateToken(userModel);
         var response = new AuthenticationResponse
         {
             UserName = user.UserName ?? string.Empty,
@@ -185,15 +180,14 @@ public class UserService : IUserService
 
         var userModel = mapper.Map<UserModel>(model);
         userModel = await AddAsync(userModel, model.Password);
-        var user = mapper.Map<ApplicationUser>(userModel);
 
-        var token = securityTokenService.CreateToken(user);
+        var token = securityTokenService.CreateToken(userModel);
         var response = new AuthenticationResponse
         {
-            UserName = user.UserName ?? string.Empty,
-            Email = user.Email ?? string.Empty,
-            FirstName = user.FirstName ?? string.Empty,
-            PhoneNumber = user.PhoneNumber ?? string.Empty,
+            UserName = userModel.UserName ?? string.Empty,
+            Email = userModel.Email ?? string.Empty,
+            FirstName = userModel.FirstName ?? string.Empty,
+            PhoneNumber = userModel.PhoneNumber ?? string.Empty,
             Token = token,
         };
         return response;

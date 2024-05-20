@@ -1,74 +1,52 @@
 ﻿using DokWokApi.BLL.Interfaces;
-using Microsoft.IdentityModel.Tokens;
+using DokWokApi.BLL.Models.User;
 using System.IdentityModel.Tokens.Jwt;
-using System.Text;
 
-namespace DokWokApi.Middlewares
+namespace DokWokApi.Middlewares;
+
+public class JwtMiddleware
 {
-    public class JwtMiddleware
+    private readonly RequestDelegate next;
+
+    private readonly ILogger logger;
+
+    public JwtMiddleware(RequestDelegate next, ILogger<JwtMiddleware> logger)
     {
-        private readonly RequestDelegate next;
+        this.next = next;
+        this.logger = logger;
+    }
 
-        private readonly IConfiguration config;
-
-        private readonly ILogger logger;
-
-        public JwtMiddleware(RequestDelegate next, IConfiguration configuration, ILogger<JwtMiddleware> logger)
+    public async Task Invoke(HttpContext context, IUserService userService, 
+        ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService)
+    {
+        var token = context.Request.Headers.Authorization.FirstOrDefault()?.Split(" ")[^1];
+        if (token is not null)
         {
-            this.next = next;
-            config = configuration;
-            this.logger = logger;
+            await AttachUserToContext(context, userService, securityTokenService, token);
         }
 
-        public async Task Invoke(HttpContext context, IUserService userService)
-        {
-            var token = context.Request.Headers.Authorization.FirstOrDefault()?.Split(" ")[^1];
-            if (token is not null)
-            {
-                await AttachUserToContext(context, userService, token);
-            }
+        await next(context);
+    }
 
-            await next(context);
+    private async Task AttachUserToContext(HttpContext context, IUserService userService, 
+        ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService, string token)
+    {
+        try
+        {
+            var jwtSecurityToken = securityTokenService.ValidateToken(token);
+            var userId = jwtSecurityToken.Claims.FirstOrDefault(x => x.Type == "id")?.Value;
+            var user = userId is not null ? await userService.GetByIdAsync(userId) : null;
+            if (user is not null)
+            {
+                var roles = await userService.GetUserRolesAsync(user);
+                context.Items["User"] = user;
+                context.Items["UserRoles"] = roles;
+                logger.LogDebug("Jwt validation passed successfully. User '{UserName}' was added to the HTTP context items", user.UserName);
+            }
         }
-
-        private async Task AttachUserToContext(HttpContext context, IUserService userService, string token)
+        catch(Exception ex)
         {
-            try
-            {
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.UTF8.GetBytes(config["Jwt:Key"]!);
-                tokenHandler.ValidateToken(token, new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidAudience = config["Jwt:Audience"],
-                    ValidIssuer = config["Jwt:Issuer"],
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    // set clockskew to zero so tokens expire exactly at token expiration time (instead of 5 minutes later)
-                    ClockSkew = TimeSpan.Zero
-                }, out SecurityToken validatedToken);
-
-                var jwtToken = (JwtSecurityToken)validatedToken;
-                var userId = jwtToken.Claims.FirstOrDefault(x => x.Type == "id")?.Value;
-                if (userId is not null)
-                {
-                    // attach user to context on successful jwt validation
-                    var user = await userService.GetByIdAsync(userId);
-                    if (user is not null)
-                    {
-                        context.Items["User"] = user;
-                        var roles = await userService.GetUserRolesAsync(user);
-                        context.Items["UserRoles"] = roles;
-                        logger.LogDebug("Jwt validation passed successfully. User '{UserName}' was added to the HTTP context items", user.UserName);
-                    }
-                }
-            }
-            catch(Exception ex)
-            {
-                logger.LogDebug(message: "The security token had not passed the validation", exception: ex);
-            }
+            logger.LogDebug(message: "The security token had not passed the validation", exception: ex);
         }
     }
 }

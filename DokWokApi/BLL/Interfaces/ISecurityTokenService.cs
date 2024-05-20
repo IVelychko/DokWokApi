@@ -1,8 +1,12 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.IdentityModel.Tokens;
 
 namespace DokWokApi.BLL.Interfaces;
 
-public interface ISecurityTokenService<in TIdentity> where TIdentity : IdentityUser
+public interface ISecurityTokenService<in TUser, out IToken> 
+    where TUser : class
+    where IToken : SecurityToken
 {
-    string CreateToken(TIdentity user);
+    string CreateToken(TUser user);
+
+    IToken ValidateToken(string token);
 }

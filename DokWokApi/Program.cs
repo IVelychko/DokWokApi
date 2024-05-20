@@ -1,6 +1,7 @@
 using AutoMapper;
 using DokWokApi.BLL;
 using DokWokApi.BLL.Interfaces;
+using DokWokApi.BLL.Models.User;
 using DokWokApi.BLL.Services;
 using DokWokApi.DAL;
 using DokWokApi.DAL.Entities;
@@ -10,6 +11,7 @@ using DokWokApi.Middlewares;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -69,7 +71,7 @@ builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService, SessionCartService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ISecurityTokenService<ApplicationUser>, JwtService>();
+builder.Services.AddScoped<ISecurityTokenService<UserModel, JwtSecurityToken>, JwtService>();
 
 builder.Services.AddSwaggerGen(c => {
     c.SwaggerDoc("v1", new OpenApiInfo
