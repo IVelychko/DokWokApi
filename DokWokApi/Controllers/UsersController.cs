@@ -164,7 +164,7 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpGet("login")]
+    [HttpPost("login")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
@@ -194,7 +194,7 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpGet("register")]
+    [HttpPost("register")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
