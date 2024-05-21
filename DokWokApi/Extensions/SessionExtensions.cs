@@ -25,7 +25,28 @@ public static class SessionExtensions
         session.SetString(key, JsonSerializer.Serialize(value));
     }
 
-    public static async Task RemoveJsonAsync(this ISession session, string key)
+    public static async Task<string?> GetStringAsync(this ISession session, string key)
+    {
+        if (!session.IsAvailable)
+        {
+            await session.LoadAsync();
+        }
+
+        var sessionData = session.GetString(key);
+        return sessionData;
+    }
+
+    public static async Task SetStringAsync(this ISession session, string key, string value)
+    {
+        if (!session.IsAvailable)
+        {
+            await session.LoadAsync();
+        }
+
+        session.SetString(key, value);
+    }
+
+    public static async Task RemoveAsync(this ISession session, string key)
     {
         if (!session.IsAvailable)
         {

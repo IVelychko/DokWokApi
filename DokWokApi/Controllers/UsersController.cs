@@ -36,17 +36,22 @@ public class UsersController : ControllerBase
     }
 
     [Authorize("Customer")]
-    [HttpGet("username/{userName}")]
+    [HttpGet("username/{userName?}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> GetUserByUserName(string userName)
+    public async Task<ActionResult<UserModel>> GetUserByUserName(string? userName)
     {
-        if (HttpContext.Items["User"] is not UserModel authenticatedUser || authenticatedUser.UserName != userName)
+        if (HttpContext.Items["User"] is not UserModel authenticatedUser)
         {
             return Unauthorized("Unauthorized access.");
         }
+        else if (userName is not null && authenticatedUser.UserName != userName)
+        {
+            return Unauthorized("Unauthorized access.");
+        }
+        userName ??= authenticatedUser.UserName ?? string.Empty;
 
         try
         {
@@ -64,12 +69,23 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpGet("id/{id}")]
+    [Authorize("Customer")]
+    [HttpGet("id/{id?}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> GetUserById(string id)
+    public async Task<ActionResult<UserModel>> GetUserById(string? id)
     {
+        if (HttpContext.Items["User"] is not UserModel authenticatedUser)
+        {
+            return Unauthorized("Unauthorized access.");
+        }
+        else if (id is not null && authenticatedUser.Id != id)
+        {
+            return Unauthorized("Unauthorized access.");
+        }
+        id ??= authenticatedUser.Id ?? string.Empty;
+
         try
         {
             var user = await userService.GetByIdAsync(id);
@@ -169,12 +185,12 @@ public class UsersController : ControllerBase
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<AuthenticationResponse>> LoginUser(UserLoginModel loginModel)
+    public async Task<ActionResult> LoginUser(UserLoginModel loginModel)
     {
         try
         {
-            var response = await userService.AuthenticateLoginAsync(loginModel);
-            return Ok(response);
+            await userService.AuthenticateLoginAsync(loginModel);
+            return Ok();
         }
         catch (ArgumentNullException ex)
         {
@@ -198,12 +214,12 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<AuthenticationResponse>> RegisterUser(UserRegisterModel registerModel)
+    public async Task<ActionResult> RegisterUser(UserRegisterModel registerModel)
     {
         try
         {
-            var response = await userService.AuthenticateRegisterAsync(registerModel);
-            return Ok(response);
+            await userService.AuthenticateRegisterAsync(registerModel);
+            return Ok();
         }
         catch (ArgumentNullException ex)
         {
@@ -212,6 +228,44 @@ public class UsersController : ControllerBase
         catch (UserException ex)
         {
             return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
+    [HttpGet("isloggedin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserModel>> IsLoggedIn()
+    {
+        try
+        {
+            var user = await userService.IsLoggedInAsync();
+            if (user is null)
+            {
+                return Unauthorized("Unauthorized.");
+            }
+
+            return Ok(user);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
+    [HttpGet("logout")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> LogOutUser()
+    {
+        try
+        {
+            await userService.LogOutAsync();
+            return Ok();
         }
         catch (Exception ex)
         {

@@ -18,7 +18,11 @@ public interface IUserService
 
     Task<IEnumerable<string>> GetUserRolesAsync(UserModel model);
 
-    Task<AuthenticationResponse> AuthenticateLoginAsync(UserLoginModel model);
+    Task AuthenticateLoginAsync(UserLoginModel model);
 
-    Task<AuthenticationResponse> AuthenticateRegisterAsync(UserRegisterModel model);
+    Task AuthenticateRegisterAsync(UserRegisterModel model);
+
+    Task<UserModel?> IsLoggedInAsync();
+
+    Task LogOutAsync();
 }

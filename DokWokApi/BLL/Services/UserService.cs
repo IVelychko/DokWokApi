@@ -3,6 +3,7 @@ using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.User;
 using DokWokApi.DAL.Entities;
 using DokWokApi.Exceptions;
+using DokWokApi.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
@@ -17,12 +18,16 @@ public class UserService : IUserService
 
     private readonly ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService;
 
+    private readonly ISession? session;
+
     public UserService(UserManager<ApplicationUser> userManager, IMapper mapper, 
-        ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService)
+        ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService,
+        IHttpContextAccessor httpContextAccessor)
     {
         this.userManager = userManager;
         this.mapper = mapper;
         this.securityTokenService = securityTokenService;
+        session = httpContextAccessor.HttpContext?.Session;
     }
 
     private static T CheckForNull<T>(T? model, string errorMessage)
@@ -151,7 +156,7 @@ public class UserService : IUserService
         return roles;
     }
 
-    public async Task<AuthenticationResponse> AuthenticateLoginAsync(UserLoginModel model)
+    public async Task AuthenticateLoginAsync(UserLoginModel model)
     {
         model = CheckForNull(model, "The passed model is null.");
 
@@ -163,18 +168,15 @@ public class UserService : IUserService
 
         var userModel = mapper.Map<UserModel>(user);
         var token = securityTokenService.CreateToken(userModel);
-        var response = new AuthenticationResponse
+        if (session is null)
         {
-            UserName = user.UserName ?? string.Empty,
-            Email = user.Email ?? string.Empty,
-            FirstName = user.FirstName ?? string.Empty,
-            PhoneNumber = user.PhoneNumber ?? string.Empty,
-            Token = token,
-        };
-        return response;
+            throw new SessionException(nameof(session), "The session is null");
+        }
+
+        await session.SetStringAsync("userToken", token);
     }
 
-    public async Task<AuthenticationResponse> AuthenticateRegisterAsync(UserRegisterModel model)
+    public async Task AuthenticateRegisterAsync(UserRegisterModel model)
     {
         model = CheckForNull(model, "The passed model is null.");
 
@@ -182,14 +184,50 @@ public class UserService : IUserService
         userModel = await AddAsync(userModel, model.Password);
 
         var token = securityTokenService.CreateToken(userModel);
-        var response = new AuthenticationResponse
+        if (session is null)
         {
-            UserName = userModel.UserName ?? string.Empty,
-            Email = userModel.Email ?? string.Empty,
-            FirstName = userModel.FirstName ?? string.Empty,
-            PhoneNumber = userModel.PhoneNumber ?? string.Empty,
-            Token = token,
-        };
-        return response;
-    } 
+            throw new SessionException(nameof(session), "The session is null");
+        }
+
+        await session.SetStringAsync("userToken", token);
+    }
+
+    public async Task<UserModel?> IsLoggedInAsync()
+    {
+        if (session is null)
+        {
+            throw new SessionException(nameof(session), "The session is null");
+        }
+
+        var token = await session.GetStringAsync("userToken");
+        if (token is null)
+        {
+            return null;
+        }
+
+        var jwtSecurityToken = securityTokenService.ValidateToken(token);
+        var idClaim = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == "id");
+        var userId = idClaim?.Value;
+        if (userId is null)
+        {
+            return null;
+        }
+
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return null;
+        }
+        return mapper.Map<UserModel>(user);
+    }
+
+    public async Task LogOutAsync()
+    {
+        if (session is null)
+        {
+            throw new SessionException(nameof(session), "The session is null");
+        }
+
+        await session.RemoveAsync("userToken");
+    }
 }

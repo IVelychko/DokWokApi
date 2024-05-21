@@ -83,9 +83,9 @@ builder.Services.AddSwaggerGen(c => {
 
 var app = builder.Build();
 
-app.UseMiddleware<JwtMiddleware>();
-app.UseSession();
 app.UseCors(policyName);
+app.UseSession();
+app.UseMiddleware<JwtMiddleware>();
 app.MapControllers();
 
 app.UseSwagger();

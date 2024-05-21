@@ -136,7 +136,7 @@ public class SessionCartService : ICartService
         }
         else
         {
-            await session.RemoveJsonAsync("Cart");
+            await session.RemoveAsync("Cart");
             return new();
         }
     }
@@ -148,6 +148,6 @@ public class SessionCartService : ICartService
             throw new CartException(nameof(session), "There is no session available.");
         }
 
-        await session.RemoveJsonAsync("Cart");
+        await session.RemoveAsync("Cart");
     }
 }
