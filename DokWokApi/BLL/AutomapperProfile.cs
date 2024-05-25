@@ -32,13 +32,14 @@ public class AutomapperProfile : Profile
         CreateMap<UserPutModel, UserModel>();
 
         // Order
-        CreateMap<Order, OrderModel>();
-        CreateMap<OrderForm, Order>();
+        CreateMap<Order, OrderModel>().ReverseMap();
+        CreateMap<OrderForm, OrderModel>();
 
         // Order line
         CreateMap<OrderLine, OrderLineModel>();
-        CreateMap<CartLine, OrderLine>()
-            .ForMember(ol => ol.ProductId, opt => opt.MapFrom(cl => cl.Product.Id))
-            .ForMember(ol => ol.Product, opt => opt.Ignore());
+        CreateMap<OrderLineModel, OrderLine>()
+            .ForMember(ol => ol.Product, opt => opt.Ignore())
+            .ForMember(ol => ol.ProductId, opt => opt.MapFrom(olm => olm.Product != null ? olm.Product.Id : 0));
+        CreateMap<CartLine, OrderLineModel>();
     }
 }

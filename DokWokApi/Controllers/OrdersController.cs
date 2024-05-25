@@ -1,7 +1,6 @@
-﻿using DokWokApi.BLL.Interfaces;
+﻿using AutoMapper;
+using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
-using DokWokApi.BLL.Models.Product;
-using DokWokApi.BLL.Services;
 using DokWokApi.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,11 +20,14 @@ public class OrdersController : ControllerBase
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<OrderModel>>> GetAllOrders()
+    public async Task<ActionResult<IEnumerable<OrderModel>>> GetAllOrders(string? userId)
     {
         try
         {
-            var orders = await orderService.GetAllAsync();
+            var orders = userId is null ? 
+                await orderService.GetAllAsync() : 
+                await orderService.GetAllByUserIdAsync(userId);
+
             return Ok(orders);
         }
         catch (Exception ex)
@@ -61,11 +63,11 @@ public class OrdersController : ControllerBase
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<OrderModel>> AddOrder(OrderForm model)
+    public async Task<ActionResult<OrderModel>> AddOrder(OrderForm form)
     {
         try
         {
-            var addedModel = await orderService.AddAsync(model);
+            var addedModel = await orderService.AddOrderFromCartAsync(form);
             return Ok(addedModel);
         }
         catch (ArgumentNullException ex)

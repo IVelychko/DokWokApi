@@ -2,13 +2,9 @@
 
 namespace DokWokApi.BLL.Interfaces;
 
-public interface IOrderService
+public interface IOrderService : ICrud<OrderModel>
 {
-    Task<OrderModel> AddAsync(OrderForm model);
+    Task<IEnumerable<OrderModel>> GetAllByUserIdAsync(string userId);
 
-    Task DeleteAsync(long id);
-
-    Task<IEnumerable<OrderModel>> GetAllAsync();
-
-    Task<OrderModel?> GetByIdAsync(long id);
+    Task<OrderModel> AddOrderFromCartAsync(OrderForm form);
 }
