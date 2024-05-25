@@ -33,7 +33,7 @@ builder.Services.AddCors(opts =>
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(opts =>
 {
-    opts.IdleTimeout = TimeSpan.FromMinutes(10);
+    opts.IdleTimeout = TimeSpan.FromMinutes(30);
     opts.Cookie.Name = "DokWokApi.Session";
     opts.Cookie.IsEssential = true;
     opts.Cookie.HttpOnly = true;
@@ -45,11 +45,7 @@ builder.Services.AddDbContext<StoreDbContext>(opts =>
     opts.UseSqlServer(builder.Configuration["ConnectionStrings:FoodStoreConnection"]);
 });
 
-builder.Services.AddDbContext<IdentityContext>(opts =>
-{
-    opts.UseSqlServer(builder.Configuration["ConnectionStrings:IdentityConnection"]);
-});
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<IdentityContext>();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<StoreDbContext>();
 builder.Services.Configure<IdentityOptions>(opts => {
     opts.Password.RequiredLength = 6;
     opts.Password.RequireNonAlphanumeric = false;
@@ -67,8 +63,11 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderLineRepository, OrderLineRepository>();
 builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICartService, SessionCartService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISecurityTokenService<UserModel, JwtSecurityToken>, JwtService>();
@@ -93,7 +92,6 @@ app.UseSwaggerUI(options => {
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "WebApp");
 });
 
-SeedData.SeedDatabase(app);
-await SeedIdentityData.SeedIdentityDatabase(app);
+await SeedData.SeedDatabaseAsync(app);
 
 app.Run();

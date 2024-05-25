@@ -5,4 +5,6 @@ namespace DokWokApi.DAL.Entities;
 public class ApplicationUser : IdentityUser
 {
     public string? FirstName { get; set; }
+
+    public ICollection<Order> Orders { get; set; } = [];
 }

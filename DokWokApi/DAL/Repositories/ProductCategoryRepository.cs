@@ -37,9 +37,9 @@ public class ProductCategoryRepository : IProductCategoryRepository
     public async Task DeleteByIdAsync(long id)
     {
         var entity = await context.FindAsync<ProductCategory>(id);
-        RepositoryHelper.CheckRetrievedEntity(entity, "There is no entity with this ID in the database.");
+        entity = RepositoryHelper.CheckRetrievedEntity(entity, "There is no entity with this ID in the database.");
 
-        context.Remove(entity!);
+        context.Remove(entity);
         await context.SaveChangesAsync();
     }
 
@@ -57,8 +57,8 @@ public class ProductCategoryRepository : IProductCategoryRepository
     {
         RepositoryHelper.CheckForNull(entity, "The passed entity is null.");
         var entityToUpdate = await context.ProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == entity.Id);
-        RepositoryHelper.CheckRetrievedEntity(entityToUpdate, "There is no entity with this ID in the database.");
-        if (entity.Name != entityToUpdate!.Name)
+        entityToUpdate = RepositoryHelper.CheckRetrievedEntity(entityToUpdate, "There is no entity with this ID in the database.");
+        if (entity.Name != entityToUpdate.Name)
         {
             RepositoryHelper.ThrowIfExists(await context.ProductCategories.AnyAsync(c => c.Name == entity.Name),
                 "The entity with the same Name value is already present in the database.");

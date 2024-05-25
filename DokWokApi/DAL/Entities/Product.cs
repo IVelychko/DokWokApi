@@ -14,4 +14,6 @@ public class Product : BaseEntity
     public long CategoryId { get; set; }
 
     public ProductCategory? Category { get; set; }
+
+    public ICollection<OrderLine> OrderLines { get; set; } = [];
 }

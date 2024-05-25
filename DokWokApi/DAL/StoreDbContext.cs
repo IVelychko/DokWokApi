@@ -1,9 +1,10 @@
 ﻿using DokWokApi.DAL.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace DokWokApi.DAL;
 
-public class StoreDbContext : DbContext
+public class StoreDbContext : IdentityDbContext<ApplicationUser>
 {
     public StoreDbContext(DbContextOptions<StoreDbContext> options) : base(options) { }
 
@@ -11,20 +12,43 @@ public class StoreDbContext : DbContext
 
     public DbSet<Product> Products => Set<Product>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public DbSet<Order> Orders => Set<Order>();
+
+    public DbSet<OrderLine> OrderLines => Set<OrderLine>();
+
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        modelBuilder.Entity<ProductCategory>()
+        base.OnModelCreating(builder);
+        builder.Entity<ProductCategory>()
             .HasIndex(c => c.Name)
             .IsUnique();
 
-        modelBuilder.Entity<Product>()
+        builder.Entity<Product>()
             .HasIndex(p => p.Name)
             .IsUnique();
 
-        modelBuilder.Entity<ProductCategory>()
+        builder.Entity<Product>()
+            .HasMany(p => p.OrderLines)
+            .WithOne(ol => ol.Product)
+            .HasForeignKey(ol => ol.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ProductCategory>()
             .HasMany(c => c.Products)
             .WithOne(p => p.Category)
             .HasForeignKey(p => p.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Order>()
+            .HasMany(o => o.OrderLines)
+            .WithOne(ol => ol.Order)
+            .HasForeignKey(ol => ol.OrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ApplicationUser>()
+            .HasMany(u => u.Orders)
+            .WithOne(o => o.User)
+            .HasForeignKey(o => o.UserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

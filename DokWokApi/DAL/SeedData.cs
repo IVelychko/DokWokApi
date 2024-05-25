@@ -1,4 +1,5 @@
 ﻿using DokWokApi.DAL.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace DokWokApi.DAL;
@@ -30,10 +31,24 @@ public static class SeedData
         return products;
     }
 
-    public static void SeedDatabase(IApplicationBuilder app)
+    private static IdentityRole[] roles = [
+            new IdentityRole { Name = "Admin" },
+            new IdentityRole { Name = "Customer" }
+        ];
+
+    public static async Task SeedDatabaseAsync(IApplicationBuilder app)
     {
-        StoreDbContext context = app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<StoreDbContext>();
+        var context = app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<StoreDbContext>();
+        var roleManager = app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         context.Database.Migrate();
+
+        if (!roleManager.Roles.Any())
+        {
+            foreach (var role in roles)
+            {
+                await roleManager.CreateAsync(role);
+            }
+        }
 
         if (!context.ProductCategories.Any() && !context.Products.Any())
         {
