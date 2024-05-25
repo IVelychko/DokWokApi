@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models;
+using DokWokApi.BLL.Models.ProductCategory;
 using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -19,17 +19,9 @@ public class ProductCategoryService : IProductCategoryService
         this.mapper = mapper;
     }
 
-    private static void CheckForNull(ProductCategoryModel? model, string errorMessage)
-    {
-        if (model is null)
-        {
-            throw new ArgumentNullException(nameof(model), errorMessage);
-        }
-    }
-
     public async Task<ProductCategoryModel> AddAsync(ProductCategoryModel model)
     {
-        CheckForNull(model, "The passed model is null.");
+        ServiceHelper.CheckForNull(model, "The passed model is null.");
         var entity = mapper.Map<ProductCategory>(model);
         var addedEntity = await repository.AddAsync(entity);
         return mapper.Map<ProductCategoryModel>(addedEntity);
@@ -61,7 +53,7 @@ public class ProductCategoryService : IProductCategoryService
 
     public async Task<ProductCategoryModel> UpdateAsync(ProductCategoryModel model)
     {
-        CheckForNull(model, "The passed model is null.");
+        ServiceHelper.CheckForNull(model, "The passed model is null.");
 
         var entity = mapper.Map<ProductCategory>(model);
         var updatedEntity = await repository.UpdateAsync(entity);

@@ -1,10 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace DokWokApi.BLL.Models.Post;
+namespace DokWokApi.BLL.Models.Product;
 
-public class ProductPostModel
+public class ProductPutModel
 {
+    [Required]
+    public long? Id { get; set; }
+
     [Required]
     public string? Name { get; set; }
 

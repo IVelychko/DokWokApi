@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DokWokApi.BLL.Models.Post;
+namespace DokWokApi.BLL.Models.ProductCategory;
 
 public class ProductCategoryPostModel
 {

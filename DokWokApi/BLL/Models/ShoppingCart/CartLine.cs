@@ -1,4 +1,6 @@
-﻿namespace DokWokApi.BLL.Models.ShoppingCart;
+﻿using DokWokApi.BLL.Models.Product;
+
+namespace DokWokApi.BLL.Models.ShoppingCart;
 
 public class CartLine
 {

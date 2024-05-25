@@ -1,8 +1,7 @@
 ﻿using AutoMapper;
 using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models;
-using DokWokApi.BLL.Models.Post;
-using DokWokApi.BLL.Models.Put;
+using DokWokApi.BLL.Models.Product;
+using DokWokApi.BLL.Models.ProductCategory;
 using DokWokApi.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 

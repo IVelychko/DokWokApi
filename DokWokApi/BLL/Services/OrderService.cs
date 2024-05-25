@@ -1,9 +1,10 @@
 ﻿using AutoMapper;
 using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models;
+using DokWokApi.BLL.Models.Order;
+using DokWokApi.BLL.Models.Product;
 using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
-using DokWokApi.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace DokWokApi.BLL.Services;
 
@@ -22,28 +23,12 @@ public class OrderService : IOrderService
         this.mapper = mapper;
     }
 
-    private static void CheckForNull<T>(T? model, string errorMessage)
-    {
-        if (model is null)
-        {
-            throw new ArgumentNullException(nameof(model), errorMessage);
-        }
-    }
-
-    public static void ThrowIfTrue(bool value, string errorMessage)
-    {
-        if (value)
-        {
-            throw new OrderException(nameof(value), errorMessage);
-        }
-    }
-
     public async Task<OrderModel> AddAsync(OrderForm model)
     {
-        CheckForNull(model, "The passed model is null.");
+        ServiceHelper.CheckForNull(model, "The passed model is null.");
         var entity = mapper.Map<Order>(model);
         var cart = await cartService.GetCart();
-        ThrowIfTrue(cart.Lines.Count < 1, "There are no products in the cart");
+        ServiceHelper.ThrowIfTrue(cart.Lines.Count < 1, "There are no products in the cart");
         var orderLines = mapper.Map<List<OrderLine>>(cart.Lines);
         entity.CreationDate = DateTime.Now;
         entity.OrderLines = orderLines;
@@ -54,19 +39,29 @@ public class OrderService : IOrderService
         return mapper.Map<OrderModel>(addedEntityWithDetails);
     }
 
-    public Task DeleteAsync(long id)
+    public async Task DeleteAsync(long id)
     {
-        throw new NotImplementedException();
+        await orderRepository.DeleteByIdAsync(id);
     }
 
-    public Task<IEnumerable<OrderModel>> GetAllAsync()
+    public async Task<IEnumerable<OrderModel>> GetAllAsync()
     {
-        throw new NotImplementedException();
+        var queryable = orderRepository.GetAllWithDetails();
+        var entities = await queryable.ToListAsync();
+        var models = mapper.Map<IEnumerable<OrderModel>>(entities);
+        return models;
     }
 
-    public Task<OrderModel?> GetByIdAsync(long id)
+    public async Task<OrderModel?> GetByIdAsync(long id)
     {
-        throw new NotImplementedException();
+        var entity = await orderRepository.GetByIdWithDetailsAsync(id);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        var model = mapper.Map<OrderModel>(entity);
+        return model;
     }
 
     public Task<OrderModel> UpdateAsync(OrderModel model)

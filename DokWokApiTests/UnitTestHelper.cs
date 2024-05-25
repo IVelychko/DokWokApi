@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using DokWokApi.BLL;
-using DokWokApi.BLL.Models;
+using DokWokApi.BLL.Models.Product;
+using DokWokApi.BLL.Models.ProductCategory;
 using DokWokApi.DAL;
 using DokWokApi.DAL.Entities;
 using Microsoft.EntityFrameworkCore;

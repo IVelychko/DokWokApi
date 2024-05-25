@@ -59,7 +59,9 @@ public class OrderRepository : IOrderRepository
     {
         return context.Orders
             .Include(o => o.User)
-            .Include(o => o.OrderLines);
+            .Include(o => o.OrderLines)
+                .ThenInclude(ol => ol.Product)
+                    .ThenInclude(p => p!.Category);
     }
 
     public async Task<Order?> GetByIdAsync(long id)

@@ -1,11 +1,11 @@
-﻿using DokWokApi.BLL.Models;
-using DokWokApi.BLL.Services;
+﻿using DokWokApi.BLL.Services;
 using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
 using DokWokApi.DAL.Repositories;
 using DokWokApi.DAL;
 using DokWokApiTests.EqualityComparers;
 using Moq;
+using DokWokApi.BLL.Models.ProductCategory;
 
 namespace DokWokApiTests.BLL;
 

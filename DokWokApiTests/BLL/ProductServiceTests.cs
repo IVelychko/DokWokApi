@@ -1,4 +1,4 @@
-﻿using DokWokApi.BLL.Models;
+﻿using DokWokApi.BLL.Models.Product;
 using DokWokApi.BLL.Services;
 using DokWokApi.DAL;
 using DokWokApi.DAL.Entities;

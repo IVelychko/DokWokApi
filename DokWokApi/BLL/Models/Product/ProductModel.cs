@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace DokWokApi.BLL.Models;
+namespace DokWokApi.BLL.Models.Product;
 
 public class ProductModel : BaseModel
 {

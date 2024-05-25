@@ -19,6 +19,8 @@ public class Order : BaseEntity
 
     public DateTime CreationDate { get; set; }
 
+    public bool IsCheckedOut { get; set; }
+
     public string? UserId { get; set; }
 
     public ApplicationUser? User { get; set; }

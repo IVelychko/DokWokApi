@@ -1,4 +1,6 @@
-﻿namespace DokWokApi.BLL.Models;
+﻿using DokWokApi.BLL.Models.Product;
+
+namespace DokWokApi.BLL.Models.Order;
 
 public class OrderLineModel : BaseModel
 {

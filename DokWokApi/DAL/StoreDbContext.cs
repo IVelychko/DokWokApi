@@ -43,7 +43,7 @@ public class StoreDbContext : IdentityDbContext<ApplicationUser>
             .HasMany(o => o.OrderLines)
             .WithOne(ol => ol.Order)
             .HasForeignKey(ol => ol.OrderId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<ApplicationUser>()
             .HasMany(u => u.Orders)

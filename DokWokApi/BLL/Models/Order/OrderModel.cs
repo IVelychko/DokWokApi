@@ -1,4 +1,4 @@
-﻿namespace DokWokApi.BLL.Models;
+﻿namespace DokWokApi.BLL.Models.Order;
 
 public class OrderModel : BaseModel
 {
@@ -15,6 +15,8 @@ public class OrderModel : BaseModel
     public decimal TotalOrderPrice { get; set; }
 
     public DateTime CreationDate { get; set; }
+
+    public bool IsCheckedOut { get; set; }
 
     public string? UserId { get; set; }
 

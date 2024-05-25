@@ -1,4 +1,4 @@
-﻿namespace DokWokApi.BLL.Models;
+﻿namespace DokWokApi.BLL.Models.Order;
 
 public class OrderForm
 {

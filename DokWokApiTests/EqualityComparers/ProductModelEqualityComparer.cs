@@ -1,4 +1,4 @@
-﻿using DokWokApi.BLL.Models;
+﻿using DokWokApi.BLL.Models.Product;
 
 namespace DokWokApiTests.EqualityComparers;
 
