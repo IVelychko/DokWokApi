@@ -5,14 +5,9 @@ using DokWokApi.BLL.Models.User;
 namespace DokWokApi.Attributes;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public class AuthorizeAttribute : Attribute, IAuthorizationFilter
+public class AuthorizeAttribute(string role) : Attribute, IAuthorizationFilter
 {
-    public string Role { get; set; }
-
-    public AuthorizeAttribute(string role)
-    {
-        Role = role;
-    }
+    public string Role { get; set; } = role;
 
     public void OnAuthorization(AuthorizationFilterContext context)
     {

@@ -19,7 +19,7 @@ public class Order : BaseEntity
 
     public DateTime CreationDate { get; set; }
 
-    public bool IsCheckedOut { get; set; }
+    public string Status { get; set; } = string.Empty;
 
     public string? UserId { get; set; }
 

@@ -11,11 +11,11 @@ namespace DokWokApi.Controllers;
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
 {
-    private readonly IUserService userService;
+    private readonly IUserService _userService;
 
     public UsersController(IUserService userService)
     {
-        this.userService = userService;
+        _userService = userService;
     }
 
     [HttpGet]
@@ -25,7 +25,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            var users = await userService.GetAllAsync();
+            var users = await _userService.GetAllAsync();
 
             return Ok(users);
         }
@@ -55,7 +55,7 @@ public class UsersController : ControllerBase
 
         try
         {
-            var user = await userService.GetByUserNameAsync(userName);
+            var user = await _userService.GetByUserNameAsync(userName);
             if (user is null)
             {
                 return NotFound("The user was not found.");
@@ -88,7 +88,7 @@ public class UsersController : ControllerBase
 
         try
         {
-            var user = await userService.GetByIdAsync(id);
+            var user = await _userService.GetByIdAsync(id);
             if (user is null)
             {
                 return NotFound("The user was not found.");
@@ -111,7 +111,7 @@ public class UsersController : ControllerBase
         try
         {
             var model = mapper.Map<UserModel>(postModel);
-            var addedModel = await userService.AddAsync(model, postModel.Password);
+            var addedModel = await _userService.AddAsync(model, postModel.Password);
             return Ok(addedModel);
         }
         catch (ArgumentNullException ex)
@@ -137,7 +137,7 @@ public class UsersController : ControllerBase
         try
         {
             var model = mapper.Map<UserModel>(putModel);
-            var updatedModel = await userService.UpdateAsync(model, putModel.Password);
+            var updatedModel = await _userService.UpdateAsync(model, putModel.Password);
             return Ok(updatedModel);
         }
         catch (ArgumentNullException ex)
@@ -163,7 +163,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            await userService.DeleteAsync(userName);
+            await _userService.DeleteAsync(userName);
             return Ok();
         }
         catch (EntityNotFoundException ex)
@@ -189,7 +189,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            await userService.AuthenticateLoginAsync(loginModel);
+            await _userService.AuthenticateLoginAsync(loginModel);
             return Ok();
         }
         catch (ArgumentNullException ex)
@@ -218,7 +218,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            await userService.AuthenticateRegisterAsync(registerModel);
+            await _userService.AuthenticateRegisterAsync(registerModel);
             return Ok();
         }
         catch (ArgumentNullException ex)
@@ -243,7 +243,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            var user = await userService.IsLoggedInAsync();
+            var user = await _userService.IsLoggedInAsync();
             if (user is null)
             {
                 return Unauthorized("Unauthorized.");
@@ -264,7 +264,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            await userService.LogOutAsync();
+            await _userService.LogOutAsync();
             return Ok();
         }
         catch (Exception ex)

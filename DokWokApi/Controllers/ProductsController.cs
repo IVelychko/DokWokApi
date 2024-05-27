@@ -11,14 +11,14 @@ namespace DokWokApi.Controllers;
 [Route("api/[controller]")]
 public class ProductsController : ControllerBase
 {
-    private readonly IProductService productService;
+    private readonly IProductService _productService;
 
-    private readonly IProductCategoryService categoryService;
+    private readonly IProductCategoryService _categoryService;
 
     public ProductsController(IProductService productService, IProductCategoryService categoryService)
     {
-        this.productService = productService;
-        this.categoryService = categoryService;
+        _productService = productService;
+        _categoryService = categoryService;
     }
 
     [HttpGet]
@@ -29,8 +29,8 @@ public class ProductsController : ControllerBase
         try
         {
             var products = categoryId.HasValue ? 
-                await productService.GetAllByCategoryIdAsync(categoryId.Value) : 
-                await productService.GetAllAsync();
+                await _productService.GetAllByCategoryIdAsync(categoryId.Value) : 
+                await _productService.GetAllAsync();
 
             return Ok(products);
         }
@@ -48,7 +48,7 @@ public class ProductsController : ControllerBase
     {
         try
         {
-            var product = await productService.GetByIdAsync(id);
+            var product = await _productService.GetByIdAsync(id);
             if (product is null)
             {
                 return NotFound("The product was not found.");
@@ -71,7 +71,7 @@ public class ProductsController : ControllerBase
         try
         {
             var model = mapper.Map<ProductModel>(postModel);
-            var addedModel = await productService.AddAsync(model);
+            var addedModel = await _productService.AddAsync(model);
             return Ok(addedModel);
         }
         catch (ArgumentNullException ex)
@@ -98,7 +98,7 @@ public class ProductsController : ControllerBase
         try
         {
             var model = mapper.Map<ProductModel>(putModel);
-            var updatedModel = await productService.UpdateAsync(model);
+            var updatedModel = await _productService.UpdateAsync(model);
             return Ok(updatedModel);
         }
         catch (ArgumentNullException ex)
@@ -127,7 +127,7 @@ public class ProductsController : ControllerBase
     {
         try
         {
-            await productService.DeleteAsync(id);
+            await _productService.DeleteAsync(id);
             return Ok();
         }
         catch (EntityNotFoundException ex)
@@ -147,7 +147,7 @@ public class ProductsController : ControllerBase
     {
         try
         {
-            var categories = await categoryService.GetAllAsync();
+            var categories = await _categoryService.GetAllAsync();
             return Ok(categories);
         }
         catch (Exception ex)
@@ -164,7 +164,7 @@ public class ProductsController : ControllerBase
     {
         try
         {
-            var category = await categoryService.GetByIdAsync(id);
+            var category = await _categoryService.GetByIdAsync(id);
             if (category is null)
             {
                 return NotFound("The product category was not found.");
@@ -187,7 +187,7 @@ public class ProductsController : ControllerBase
         try
         {
             var model = mapper.Map<ProductCategoryModel>(postModel);
-            var addedModel = await categoryService.AddAsync(model);
+            var addedModel = await _categoryService.AddAsync(model);
             return Ok(addedModel);
         }
         catch (ArgumentNullException ex)
@@ -214,7 +214,7 @@ public class ProductsController : ControllerBase
         try
         {
             var model = mapper.Map<ProductCategoryModel>(putModel);
-            var updatedModel = await categoryService.UpdateAsync(model);
+            var updatedModel = await _categoryService.UpdateAsync(model);
             return Ok(updatedModel);
         }
         catch (ArgumentNullException ex)
@@ -243,7 +243,7 @@ public class ProductsController : ControllerBase
     {
         try
         {
-            await categoryService.DeleteAsync(id);
+            await _categoryService.DeleteAsync(id);
             return Ok();
         }
         catch (EntityNotFoundException ex)

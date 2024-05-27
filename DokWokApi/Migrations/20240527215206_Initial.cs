@@ -183,6 +183,7 @@ namespace DokWokApi.Migrations
                     PaymentType = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     TotalOrderPrice = table.Column<decimal>(type: "decimal(8,2)", nullable: false),
                     CreationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: true)
                 },
                 constraints: table =>
@@ -237,7 +238,7 @@ namespace DokWokApi.Migrations
                         column: x => x.OrderId,
                         principalTable: "Orders",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_OrderLines_Products_ProductId",
                         column: x => x.ProductId,

@@ -9,25 +9,25 @@ namespace DokWokApi.BLL.Services
 {
     public class JwtService : ISecurityTokenService<UserModel, JwtSecurityToken>
     {
-        private readonly IConfiguration config;
+        private readonly IConfiguration _configuration;
 
         public JwtService(IConfiguration configuration)
         {
-            config = configuration;
+            _configuration = configuration;
         }
 
         public JwtSecurityToken ValidateToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(config["Jwt:Key"]!);
+            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
             tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuer = true,
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = config["Jwt:Issuer"],
-                ValidAudience = config["Jwt:Audience"],
+                ValidIssuer = _configuration["Jwt:Issuer"],
+                ValidAudience = _configuration["Jwt:Audience"],
                 IssuerSigningKey = new SymmetricSecurityKey(key),
                 // set clockskew to zero so tokens expire exactly at token expiration time (instead of 5 minutes later)
                 ClockSkew = TimeSpan.Zero
@@ -42,12 +42,12 @@ namespace DokWokApi.BLL.Services
             const int ExpirationDays = 1;
             DateTime expiration = DateTime.UtcNow.AddDays(ExpirationDays);
 
-            var encodedKey = Encoding.UTF8.GetBytes(config["Jwt:Key"]!);
+            var encodedKey = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
             SymmetricSecurityKey securityKey = new(encodedKey);
             SigningCredentials tokenSigningCredentials = new(securityKey, SecurityAlgorithms.HmacSha256);
 
             Claim[] claims = [
-                new(JwtRegisteredClaimNames.Sub, config["Jwt:Subject"]!),
+                new(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]!),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
                 new("id", user.Id ?? string.Empty),
@@ -55,8 +55,8 @@ namespace DokWokApi.BLL.Services
             ];
 
             var token = new JwtSecurityToken(
-                config["Jwt:Issuer"]!,
-                config["Jwt:Audience"]!,
+                _configuration["Jwt:Issuer"]!,
+                _configuration["Jwt:Audience"]!,
                 claims,
                 expires: expiration,
                 signingCredentials: tokenSigningCredentials);

@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using DokWokApi.BLL.Interfaces;
+﻿using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
 using DokWokApi.Exceptions;
 using Microsoft.AspNetCore.Mvc;
@@ -10,11 +9,11 @@ namespace DokWokApi.Controllers;
 [Route("api/[controller]")]
 public class OrdersController : ControllerBase
 {
-    private readonly IOrderService orderService;
+    private readonly IOrderService _orderService;
 
     public OrdersController(IOrderService orderService)
     {
-        this.orderService = orderService;
+        _orderService = orderService;
     }
 
     [HttpGet]
@@ -25,8 +24,8 @@ public class OrdersController : ControllerBase
         try
         {
             var orders = userId is null ? 
-                await orderService.GetAllAsync() : 
-                await orderService.GetAllByUserIdAsync(userId);
+                await _orderService.GetAllAsync() : 
+                await _orderService.GetAllByUserIdAsync(userId);
 
             return Ok(orders);
         }
@@ -44,7 +43,7 @@ public class OrdersController : ControllerBase
     {
         try
         {
-            var order = await orderService.GetByIdAsync(id);
+            var order = await _orderService.GetByIdAsync(id);
             if (order is null)
             {
                 return NotFound("The order was not found.");
@@ -67,7 +66,7 @@ public class OrdersController : ControllerBase
     {
         try
         {
-            var addedModel = await orderService.AddOrderFromCartAsync(form);
+            var addedModel = await _orderService.AddOrderFromCartAsync(form);
             return Ok(addedModel);
         }
         catch (ArgumentNullException ex)
@@ -96,7 +95,7 @@ public class OrdersController : ControllerBase
     {
         try
         {
-            await orderService.DeleteAsync(id);
+            await _orderService.DeleteAsync(id);
             return Ok();
         }
         catch (EntityNotFoundException ex)

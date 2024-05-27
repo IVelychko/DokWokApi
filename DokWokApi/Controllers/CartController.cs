@@ -9,11 +9,11 @@ namespace DokWokApi.Controllers;
 [Route("api/[controller]")]
 public class CartController : ControllerBase
 {
-    private readonly ICartService cartService;
+    private readonly ICartService _cartService;
 
     public CartController(ICartService cartService)
     {
-        this.cartService = cartService;
+        _cartService = cartService;
     }
 
     [HttpGet]
@@ -23,7 +23,7 @@ public class CartController : ControllerBase
     {
         try
         {
-            var cart = await cartService.GetCart();
+            var cart = await _cartService.GetCart();
             return Ok(cart);
         }
         catch (CartException ex)
@@ -50,7 +50,7 @@ public class CartController : ControllerBase
 
         try
         {
-            var modifiedCart = await cartService.AddItem(productId, quantity);
+            var modifiedCart = await _cartService.AddItem(productId, quantity);
             return Ok(modifiedCart);
         }
         catch (CartException ex)
@@ -81,7 +81,7 @@ public class CartController : ControllerBase
 
         try
         {
-            var modifiedCart = await cartService.RemoveItem(productId, quantity);
+            var modifiedCart = await _cartService.RemoveItem(productId, quantity);
             return Ok(modifiedCart);
         }
         catch (EntityNotFoundException ex)
@@ -110,7 +110,7 @@ public class CartController : ControllerBase
     {
         try
         {
-            var modifiedCart = await cartService.RemoveLine(productId);
+            var modifiedCart = await _cartService.RemoveLine(productId);
             return Ok(modifiedCart);
         }
         catch (EntityNotFoundException ex)
@@ -138,7 +138,7 @@ public class CartController : ControllerBase
     {
         try
         {
-            await cartService.ClearCart();
+            await _cartService.ClearCart();
             return Ok("The cart was cleared successfully.");
         }
         catch (CartException ex)

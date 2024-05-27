@@ -7,14 +7,14 @@ namespace DokWokApi.Middlewares;
 
 public class JwtMiddleware
 {
-    private readonly RequestDelegate next;
+    private readonly RequestDelegate _next;
 
-    private readonly ILogger logger;
+    private readonly ILogger _logger;
 
     public JwtMiddleware(RequestDelegate next, ILogger<JwtMiddleware> logger)
     {
-        this.next = next;
-        this.logger = logger;
+        _next = next;
+        _logger = logger;
     }
 
     public async Task Invoke(HttpContext context, IUserService userService, 
@@ -27,7 +27,7 @@ public class JwtMiddleware
             await AttachUserToContext(context, userService, securityTokenService, token);
         }
 
-        await next(context);
+        await _next(context);
     }
 
     private async Task AttachUserToContext(HttpContext context, IUserService userService, 
@@ -43,12 +43,12 @@ public class JwtMiddleware
                 var roles = await userService.GetUserRolesAsync(user);
                 context.Items["User"] = user;
                 context.Items["UserRoles"] = roles;
-                logger.LogDebug("Jwt validation passed successfully. User '{UserName}' was added to the HTTP context items", user.UserName);
+                _logger.LogDebug("Jwt validation passed successfully. User '{UserName}' was added to the HTTP context items", user.UserName);
             }
         }
         catch(Exception ex)
         {
-            logger.LogDebug(message: "The security token had not passed the validation", exception: ex);
+            _logger.LogDebug(message: "The security token had not passed the validation", exception: ex);
         }
     }
 }

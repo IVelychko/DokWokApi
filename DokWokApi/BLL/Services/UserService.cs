@@ -12,22 +12,22 @@ namespace DokWokApi.BLL.Services;
 
 public class UserService : IUserService
 {
-    private readonly UserManager<ApplicationUser> userManager;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    private readonly IMapper mapper;
+    private readonly IMapper _mapper;
 
-    private readonly ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService;
+    private readonly ISecurityTokenService<UserModel, JwtSecurityToken> _securityTokenService;
 
-    private readonly ISession? session;
+    private readonly ISession? _session;
 
     public UserService(UserManager<ApplicationUser> userManager, IMapper mapper, 
         ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService,
         IHttpContextAccessor httpContextAccessor)
     {
-        this.userManager = userManager;
-        this.mapper = mapper;
-        this.securityTokenService = securityTokenService;
-        session = httpContextAccessor.HttpContext?.Session;
+        _userManager = userManager;
+        _mapper = mapper;
+        _securityTokenService = securityTokenService;
+        _session = httpContextAccessor.HttpContext?.Session;
     }
 
     private static T CheckForNull<T>(T? model, string errorMessage)
@@ -72,87 +72,87 @@ public class UserService : IUserService
     public async Task<UserModel> AddAsync(UserModel model, string password)
     {
         model = CheckForNull(model, "The passed model is null.");
-        var user = mapper.Map<ApplicationUser>(model);
+        var user = _mapper.Map<ApplicationUser>(model);
         user.Id = Guid.NewGuid().ToString();
-        var result = await userManager.CreateAsync(user, password);
+        var result = await _userManager.CreateAsync(user, password);
         ThrowIfNotSucceeded(result.Succeeded, result.Errors);
 
-        var addedUser = await userManager.FindByNameAsync(user.UserName!);
-        await userManager.AddToRoleAsync(addedUser!, "Customer");
-        return mapper.Map<UserModel>(addedUser!);
+        var addedUser = await _userManager.FindByNameAsync(user.UserName!);
+        await _userManager.AddToRoleAsync(addedUser!, "Customer");
+        return _mapper.Map<UserModel>(addedUser!);
     }
 
     public async Task DeleteAsync(string userName)
     {
-        var user = await userManager.FindByNameAsync(userName);
+        var user = await _userManager.FindByNameAsync(userName);
         user = CheckRetrievedUser(user, "There is no user with this user name in the database.");
 
-        var result = await userManager.DeleteAsync(user);
+        var result = await _userManager.DeleteAsync(user);
         ThrowIfNotSucceeded(result.Succeeded, result.Errors);
     }
 
     public async Task<IEnumerable<UserModel>> GetAllAsync()
     {
-        var queryable = userManager.Users;
+        var queryable = _userManager.Users;
         var entities = await queryable.ToListAsync();
-        var models = mapper.Map<IEnumerable<UserModel>>(entities);
+        var models = _mapper.Map<IEnumerable<UserModel>>(entities);
         return models;
     }
 
     public async Task<UserModel?> GetByUserNameAsync(string userName)
     {
-        var entity = await userManager.FindByNameAsync(userName);
+        var entity = await _userManager.FindByNameAsync(userName);
         if (entity is null)
         {
             return null;
         }
 
-        var model = mapper.Map<UserModel>(entity);
+        var model = _mapper.Map<UserModel>(entity);
         return model;
     }
 
     public async Task<UserModel?> GetByIdAsync(string id)
     {
-        var entity = await userManager.FindByIdAsync(id);
+        var entity = await _userManager.FindByIdAsync(id);
         if (entity is null)
         {
             return null;
         }
 
-        var model = mapper.Map<UserModel>(entity);
+        var model = _mapper.Map<UserModel>(entity);
         return model;
     }
 
     public async Task<UserModel> UpdateAsync(UserModel model, string? password = null)
     {
         model = CheckForNull(model, "The passed model is null.");
-        var user = await userManager.FindByIdAsync(model.Id!);
+        var user = await _userManager.FindByIdAsync(model.Id!);
         user = CheckRetrievedUser(user, "There is no user with this ID in the database.");
 
         user.FirstName = model.FirstName;
         user.UserName = model.UserName;
         user.Email = model.Email;
         user.PhoneNumber = model.PhoneNumber;
-        var result = await userManager.UpdateAsync(user);
+        var result = await _userManager.UpdateAsync(user);
         ThrowIfNotSucceeded(result.Succeeded, result.Errors);
 
         if (password is not null)
         {
-            await userManager.RemovePasswordAsync(user);
-            var passwordResult = await userManager.AddPasswordAsync(user, password);
+            await _userManager.RemovePasswordAsync(user);
+            var passwordResult = await _userManager.AddPasswordAsync(user, password);
             ThrowIfNotSucceeded(passwordResult.Succeeded, passwordResult.Errors);
         }
 
-        var updatedUser = await userManager.FindByNameAsync(user.UserName!);
-        return mapper.Map<UserModel>(updatedUser);
+        var updatedUser = await _userManager.FindByNameAsync(user.UserName!);
+        return _mapper.Map<UserModel>(updatedUser);
     }
 
     public async Task<IEnumerable<string>> GetUserRolesAsync(UserModel model)
     {
         model = CheckForNull(model, "The passed model is null.");
         
-        var user = mapper.Map<ApplicationUser>(model);
-        var roles = await userManager.GetRolesAsync(user);
+        var user = _mapper.Map<ApplicationUser>(model);
+        var roles = await _userManager.GetRolesAsync(user);
         return roles;
     }
 
@@ -160,52 +160,52 @@ public class UserService : IUserService
     {
         model = CheckForNull(model, "The passed model is null.");
 
-        var user = await userManager.FindByNameAsync(model.UserName);
+        var user = await _userManager.FindByNameAsync(model.UserName);
         user = CheckRetrievedUser(user, "The credentials are wrong.");
 
-        var isValidPassword = await userManager.CheckPasswordAsync(user, model.Password);
+        var isValidPassword = await _userManager.CheckPasswordAsync(user, model.Password);
         ThrowIfNotValid(isValidPassword, "The credentials are wrong.");
 
-        var userModel = mapper.Map<UserModel>(user);
-        var token = securityTokenService.CreateToken(userModel);
-        if (session is null)
+        var userModel = _mapper.Map<UserModel>(user);
+        var token = _securityTokenService.CreateToken(userModel);
+        if (_session is null)
         {
-            throw new SessionException(nameof(session), "The session is null");
+            throw new SessionException(nameof(_session), "The session is null");
         }
 
-        await session.SetStringAsync("userToken", token);
+        await _session.SetStringAsync("userToken", token);
     }
 
     public async Task AuthenticateRegisterAsync(UserRegisterModel model)
     {
         model = CheckForNull(model, "The passed model is null.");
 
-        var userModel = mapper.Map<UserModel>(model);
+        var userModel = _mapper.Map<UserModel>(model);
         userModel = await AddAsync(userModel, model.Password);
 
-        var token = securityTokenService.CreateToken(userModel);
-        if (session is null)
+        var token = _securityTokenService.CreateToken(userModel);
+        if (_session is null)
         {
-            throw new SessionException(nameof(session), "The session is null");
+            throw new SessionException(nameof(_session), "The session is null");
         }
 
-        await session.SetStringAsync("userToken", token);
+        await _session.SetStringAsync("userToken", token);
     }
 
     public async Task<UserModel?> IsLoggedInAsync()
     {
-        if (session is null)
+        if (_session is null)
         {
-            throw new SessionException(nameof(session), "The session is null");
+            throw new SessionException(nameof(_session), "The session is null");
         }
 
-        var token = await session.GetStringAsync("userToken");
+        var token = await _session.GetStringAsync("userToken");
         if (token is null)
         {
             return null;
         }
 
-        var jwtSecurityToken = securityTokenService.ValidateToken(token);
+        var jwtSecurityToken = _securityTokenService.ValidateToken(token);
         var idClaim = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == "id");
         var userId = idClaim?.Value;
         if (userId is null)
@@ -213,21 +213,21 @@ public class UserService : IUserService
             return null;
         }
 
-        var user = await userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
             return null;
         }
-        return mapper.Map<UserModel>(user);
+        return _mapper.Map<UserModel>(user);
     }
 
     public async Task LogOutAsync()
     {
-        if (session is null)
+        if (_session is null)
         {
-            throw new SessionException(nameof(session), "The session is null");
+            throw new SessionException(nameof(_session), "The session is null");
         }
 
-        await session.RemoveAsync("userToken");
+        await _session.RemoveAsync("userToken");
     }
 }

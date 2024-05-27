@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
-using DokWokApi.BLL.Models.Product;
+using DokWokApi.DAL;
 using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -10,76 +10,77 @@ namespace DokWokApi.BLL.Services;
 
 public class OrderService : IOrderService
 {
-    private readonly IOrderRepository orderRepository;
+    private readonly IOrderRepository _orderRepository;
 
-    private readonly ICartService cartService;
+    private readonly ICartService _cartService;
 
-    private readonly IMapper mapper;
+    private readonly IMapper _mapper;
 
     public OrderService(IOrderRepository orderRepository, ICartService cartService, IMapper mapper)
     {
-        this.orderRepository = orderRepository;
-        this.cartService = cartService;
-        this.mapper = mapper;
+        _orderRepository = orderRepository;
+        _cartService = cartService;
+        _mapper = mapper;
     }
 
     public async Task<OrderModel> AddAsync(OrderModel model)
     {
         ServiceHelper.CheckForNull(model, "The passed model is null.");
-        var entity = mapper.Map<Order>(model);
+        var entity = _mapper.Map<Order>(model);
 
-        var addedEntity = await orderRepository.AddAsync(entity);
-        var addedEntityWithDetails = await orderRepository.GetByIdWithDetailsAsync(addedEntity.Id);
-        return mapper.Map<OrderModel>(addedEntityWithDetails);
+        var addedEntity = await _orderRepository.AddAsync(entity);
+        var addedEntityWithDetails = await _orderRepository.GetByIdWithDetailsAsync(addedEntity.Id);
+        return _mapper.Map<OrderModel>(addedEntityWithDetails);
     }
 
     public async Task<OrderModel> AddOrderFromCartAsync(OrderForm form)
     {
         ServiceHelper.CheckForNull(form, "The passed model is null.");
-        var model = mapper.Map<OrderModel>(form);
-        var cart = await cartService.GetCart();
+        var model = _mapper.Map<OrderModel>(form);
+        var cart = await _cartService.GetCart();
         ServiceHelper.ThrowIfTrue(cart.Lines.Count < 1, "There are no products in the cart");
-        var orderLines = mapper.Map<List<OrderLineModel>>(cart.Lines);
+        var orderLines = _mapper.Map<List<OrderLineModel>>(cart.Lines);
         model.CreationDate = DateTime.Now;
         model.OrderLines = orderLines;
         model.TotalOrderPrice = cart.TotalCartPrice;
+        model.Status = OrderStatuses.BeingProcessed;
         
         var addedModel = await AddAsync(model);
-        await cartService.ClearCart();
+        await _cartService.ClearCart();
         return addedModel;
     }
 
     public async Task DeleteAsync(long id)
     {
-        await orderRepository.DeleteByIdAsync(id);
+        await _orderRepository.DeleteByIdAsync(id);
     }
 
     public async Task<IEnumerable<OrderModel>> GetAllAsync()
     {
-        var queryable = orderRepository.GetAllWithDetails();
+        var queryable = _orderRepository.GetAllWithDetails();
         var entities = await queryable.ToListAsync();
-        var models = mapper.Map<IEnumerable<OrderModel>>(entities);
+        var models = _mapper.Map<IEnumerable<OrderModel>>(entities);
         return models;
     }
 
     public async Task<IEnumerable<OrderModel>> GetAllByUserIdAsync(string userId)
     {
-        var entities = orderRepository.GetAllWithDetails();
+        var entities = _orderRepository.GetAllWithDetails();
         var filteredEntities = entities.Where(o => o.UserId == userId);
         var list = await filteredEntities.ToListAsync();
-        var models = mapper.Map<IEnumerable<OrderModel>>(list);
+        var models = _mapper.Map<IEnumerable<OrderModel>>(list);
         return models;
     }
 
     public async Task<OrderModel?> GetByIdAsync(long id)
     {
-        var entity = await orderRepository.GetByIdWithDetailsAsync(id);
+        var entity = await _orderRepository.GetByIdWithDetailsAsync(id);
         if (entity is null)
         {
             return null;
         }
 
-        var model = mapper.Map<OrderModel>(entity);
+        var model = _mapper.Map<OrderModel>(entity);
         return model;
     }
 
@@ -87,9 +88,25 @@ public class OrderService : IOrderService
     {
         ServiceHelper.CheckForNull(model, "The passed model is null.");
 
-        var entity = mapper.Map<Order>(model);
-        var updatedEntity = await orderRepository.UpdateAsync(entity);
-        var updatedEntityWithDetails = await orderRepository.GetByIdWithDetailsAsync(updatedEntity.Id);
-        return mapper.Map<OrderModel>(updatedEntityWithDetails);
+        var entity = _mapper.Map<Order>(model);
+        var updatedEntity = await _orderRepository.UpdateAsync(entity);
+        var updatedEntityWithDetails = await _orderRepository.GetByIdWithDetailsAsync(updatedEntity.Id);
+        return _mapper.Map<OrderModel>(updatedEntityWithDetails);
+    }
+
+    public async Task CompleteOrder(long id)
+    {
+        var entity = await _orderRepository.GetByIdAsync(id);
+        entity = RepositoryHelper.CheckRetrievedEntity(entity, "There is no entity with the passed ID in the database.");
+        entity.Status = OrderStatuses.Completed;
+        await _orderRepository.UpdateAsync(entity);
+    }
+
+    public async Task CancelOrder(long id)
+    {
+        var entity = await _orderRepository.GetByIdAsync(id);
+        entity = RepositoryHelper.CheckRetrievedEntity(entity, "There is no entity with the passed ID in the database.");
+        entity.Status = OrderStatuses.Cancelled;
+        await _orderRepository.UpdateAsync(entity);
     }
 }

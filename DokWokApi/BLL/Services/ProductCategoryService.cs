@@ -9,45 +9,45 @@ namespace DokWokApi.BLL.Services;
 
 public class ProductCategoryService : IProductCategoryService
 {
-    private readonly IProductCategoryRepository repository;
+    private readonly IProductCategoryRepository _repository;
 
-    private readonly IMapper mapper;
+    private readonly IMapper _mapper;
 
     public ProductCategoryService(IProductCategoryRepository repository, IMapper mapper)
     {
-        this.repository = repository;
-        this.mapper = mapper;
+        _repository = repository;
+        _mapper = mapper;
     }
 
     public async Task<ProductCategoryModel> AddAsync(ProductCategoryModel model)
     {
         ServiceHelper.CheckForNull(model, "The passed model is null.");
-        var entity = mapper.Map<ProductCategory>(model);
-        var addedEntity = await repository.AddAsync(entity);
-        return mapper.Map<ProductCategoryModel>(addedEntity);
+        var entity = _mapper.Map<ProductCategory>(model);
+        var addedEntity = await _repository.AddAsync(entity);
+        return _mapper.Map<ProductCategoryModel>(addedEntity);
     }
 
     public async Task DeleteAsync(long id)
     {
-        await repository.DeleteByIdAsync(id);
+        await _repository.DeleteByIdAsync(id);
     }
 
     public async Task<IEnumerable<ProductCategoryModel>> GetAllAsync()
     {
-        var entities = await repository.GetAll().ToListAsync();
-        var models = mapper.Map<IEnumerable<ProductCategoryModel>>(entities);
+        var entities = await _repository.GetAll().ToListAsync();
+        var models = _mapper.Map<IEnumerable<ProductCategoryModel>>(entities);
         return models;
     }
 
     public async Task<ProductCategoryModel?> GetByIdAsync(long id)
     {
-        var entity = await repository.GetByIdAsync(id);
+        var entity = await _repository.GetByIdAsync(id);
         if (entity is null)
         {
             return null;
         }
 
-        var model = mapper.Map<ProductCategoryModel>(entity);
+        var model = _mapper.Map<ProductCategoryModel>(entity);
         return model;
     }
 
@@ -55,8 +55,8 @@ public class ProductCategoryService : IProductCategoryService
     {
         ServiceHelper.CheckForNull(model, "The passed model is null.");
 
-        var entity = mapper.Map<ProductCategory>(model);
-        var updatedEntity = await repository.UpdateAsync(entity);
-        return mapper.Map<ProductCategoryModel>(updatedEntity);
+        var entity = _mapper.Map<ProductCategory>(model);
+        var updatedEntity = await _repository.UpdateAsync(entity);
+        return _mapper.Map<ProductCategoryModel>(updatedEntity);
     }
 }
