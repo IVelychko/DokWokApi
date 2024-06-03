@@ -34,7 +34,7 @@ public class ProductCategoryService : IProductCategoryService
 
     public async Task<IEnumerable<ProductCategoryModel>> GetAllAsync()
     {
-        var entities = await _repository.GetAll().ToListAsync();
+        var entities = await _repository.GetAll().OrderBy(c => c.Id).ToListAsync();
         var models = _mapper.Map<IEnumerable<ProductCategoryModel>>(entities);
         return models;
     }

@@ -47,19 +47,20 @@ public class OrderLineRepository : IOrderLineRepository
 
     public IQueryable<OrderLine> GetAll()
     {
-        return _context.OrderLines;
+        return _context.OrderLines.AsNoTracking();
     }
 
     public IQueryable<OrderLine> GetAllWithDetails()
     {
         return _context.OrderLines
             .Include(ol => ol.Order)
-            .Include(ol => ol.Product);
+            .Include(ol => ol.Product)
+                .ThenInclude(p => p!.Category).AsNoTracking();
     }
 
     public async Task<OrderLine?> GetByIdAsync(long id)
     {
-        return await _context.FindAsync<OrderLine>(id);
+        return await _context.OrderLines.AsNoTracking().FirstOrDefaultAsync(ol => ol.Id == id);
     }
 
     public async Task<OrderLine?> GetByIdWithDetailsAsync(long id)
@@ -67,6 +68,8 @@ public class OrderLineRepository : IOrderLineRepository
         return await _context.OrderLines
             .Include(ol => ol.Order)
             .Include(ol => ol.Product)
+                .ThenInclude(p => p!.Category)
+            .AsNoTracking()
             .FirstOrDefaultAsync(ol => ol.Id == id);
     }
 

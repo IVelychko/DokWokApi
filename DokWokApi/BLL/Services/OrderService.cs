@@ -44,7 +44,7 @@ public class OrderService : IOrderService
         model.OrderLines = orderLines;
         model.TotalOrderPrice = cart.TotalCartPrice;
         model.Status = OrderStatuses.BeingProcessed;
-        
+
         var addedModel = await AddAsync(model);
         await _cartService.ClearCart();
         return addedModel;

@@ -47,22 +47,25 @@ public class ProductRepository : IProductRepository
 
     public IQueryable<Product> GetAll()
     {
-        return _context.Products;
+        return _context.Products.AsNoTracking();
     }
 
     public IQueryable<Product> GetAllWithDetails()
     {
-        return _context.Products.Include(p => p.Category);
+        return _context.Products.Include(p => p.Category).AsNoTracking();
     }
 
     public async Task<Product?> GetByIdAsync(long id)
     {
-        return await _context.FindAsync<Product>(id);
+        return await _context.Products.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == id);
     }
 
     public async Task<Product?> GetByIdWithDetailsAsync(long id)
     {
-        return await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == id);
+        return await _context.Products.Include(p => p.Category)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == id);
     }
 
     public async Task<Product> UpdateAsync(Product entity)

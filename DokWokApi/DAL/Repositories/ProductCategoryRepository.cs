@@ -45,12 +45,12 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public IQueryable<ProductCategory> GetAll()
     {
-        return _context.ProductCategories;
+        return _context.ProductCategories.AsNoTracking();
     }
 
     public async Task<ProductCategory?> GetByIdAsync(long id)
     {
-        return await _context.FindAsync<ProductCategory>(id);
+        return await _context.ProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
     }
 
     public async Task<ProductCategory> UpdateAsync(ProductCategory entity)

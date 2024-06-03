@@ -35,7 +35,7 @@ public class ProductService : IProductService
 
     public async Task<IEnumerable<ProductModel>> GetAllAsync()
     {
-        var queryable = _repository.GetAllWithDetails();
+        var queryable = _repository.GetAllWithDetails().OrderBy(p => p.Id);
         var entities = await queryable.ToListAsync();
         var models = _mapper.Map<IEnumerable<ProductModel>>(entities);
         return models;

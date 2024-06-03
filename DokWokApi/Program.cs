@@ -68,6 +68,7 @@ builder.Services.AddScoped<IOrderLineRepository, OrderLineRepository>();
 builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IOrderLineService, OrderLineService>();
 builder.Services.AddScoped<ICartService, SessionCartService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISecurityTokenService<UserModel, JwtSecurityToken>, JwtService>();
