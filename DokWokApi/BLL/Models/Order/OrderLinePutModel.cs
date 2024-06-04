@@ -15,7 +15,4 @@ public class OrderLinePutModel
 
     [Required]
     public int? Quantity { get; set; }
-
-    [Required]
-    public decimal? TotalLinePrice { get; set; }
 }

@@ -21,7 +21,7 @@ public class ProductCategoryService : IProductCategoryService
 
     public async Task<ProductCategoryModel> AddAsync(ProductCategoryModel model)
     {
-        ServiceHelper.CheckForNull(model, "The passed model is null.");
+        ServiceHelper.ThrowIfNull(model, "The passed model is null.");
         var entity = _mapper.Map<ProductCategory>(model);
         var addedEntity = await _repository.AddAsync(entity);
         return _mapper.Map<ProductCategoryModel>(addedEntity);
@@ -53,7 +53,7 @@ public class ProductCategoryService : IProductCategoryService
 
     public async Task<ProductCategoryModel> UpdateAsync(ProductCategoryModel model)
     {
-        ServiceHelper.CheckForNull(model, "The passed model is null.");
+        ServiceHelper.ThrowIfNull(model, "The passed model is null.");
 
         var entity = _mapper.Map<ProductCategory>(model);
         var updatedEntity = await _repository.UpdateAsync(entity);

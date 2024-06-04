@@ -15,10 +15,10 @@ public class ProductRepository : IProductRepository
 
     public async Task<Product> AddAsync(Product entity)
     {
-        RepositoryHelper.CheckForNull(entity, "The passed entity is null.");
+        RepositoryHelper.ThrowIfNull(entity, "The passed entity is null.");
         var category = await _context.ProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == entity.CategoryId);
-        RepositoryHelper.CheckRetrievedEntity(category, "There is no product category with the ID specified in the CategoryId property of the Product entity.");
-        RepositoryHelper.ThrowIfExists(await _context.Products.AnyAsync(p => p.Name == entity.Name),
+        RepositoryHelper.ThrowEntityNotFoundIfNull(category, "There is no product category with the ID specified in the CategoryId property of the Product entity.");
+        RepositoryHelper.ThrowIfTrue(await _context.Products.AnyAsync(p => p.Name == entity.Name),
             "The entity with the same Name value is already present in the database.");
         
         await _context.AddAsync(entity);
@@ -28,9 +28,9 @@ public class ProductRepository : IProductRepository
 
     public async Task DeleteAsync(Product entity)
     {
-        RepositoryHelper.CheckForNull(entity, "The passed entity is null.");
+        RepositoryHelper.ThrowIfNull(entity, "The passed entity is null.");
         var entityToDelete = await _context.FindAsync<Product>(entity.Id);
-        RepositoryHelper.CheckRetrievedEntity(entityToDelete, "There is no entity with this ID in the database.");
+        RepositoryHelper.ThrowEntityNotFoundIfNull(entityToDelete, "There is no entity with this ID in the database.");
 
         _context.Remove(entity);
         await _context.SaveChangesAsync();
@@ -39,7 +39,7 @@ public class ProductRepository : IProductRepository
     public async Task DeleteByIdAsync(long id)
     {
         var entity = await _context.FindAsync<Product>(id);
-        entity = RepositoryHelper.CheckRetrievedEntity(entity, "There is no entity with this ID in the database.");
+        entity = RepositoryHelper.ThrowEntityNotFoundIfNull(entity, "There is no entity with this ID in the database.");
 
         _context.Remove(entity);
         await _context.SaveChangesAsync();
@@ -70,14 +70,14 @@ public class ProductRepository : IProductRepository
 
     public async Task<Product> UpdateAsync(Product entity)
     {
-        RepositoryHelper.CheckForNull(entity, "The passed entity is null.");
+        RepositoryHelper.ThrowIfNull(entity, "The passed entity is null.");
         var entityToUpdate = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == entity.Id);
-        entityToUpdate = RepositoryHelper.CheckRetrievedEntity(entityToUpdate, "There is no entity with this ID in the database.");
+        entityToUpdate = RepositoryHelper.ThrowEntityNotFoundIfNull(entityToUpdate, "There is no entity with this ID in the database.");
         var category = await _context.ProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == entity.CategoryId);
-        RepositoryHelper.CheckRetrievedEntity(category, "There is no product category with the ID specified in the CategoryId property of the Product entity.");
+        RepositoryHelper.ThrowEntityNotFoundIfNull(category, "There is no product category with the ID specified in the CategoryId property of the Product entity.");
         if (entity.Name != entityToUpdate.Name)
         {
-            RepositoryHelper.ThrowIfExists(await _context.Products.AnyAsync(p => p.Name == entity.Name),
+            RepositoryHelper.ThrowIfTrue(await _context.Products.AnyAsync(p => p.Name == entity.Name),
             "The entity with the same Name value is already present in the database.");
         }
 

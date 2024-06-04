@@ -4,7 +4,7 @@ namespace DokWokApi.BLL;
 
 public static class ServiceHelper
 {
-    public static void CheckForNull<T>(T? model, string errorMessage)
+    public static void ThrowIfNull<T>(T? model, string errorMessage)
     {
         if (model is null)
         {

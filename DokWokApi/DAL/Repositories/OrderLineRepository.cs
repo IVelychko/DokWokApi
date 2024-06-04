@@ -15,11 +15,17 @@ public class OrderLineRepository : IOrderLineRepository
 
     public async Task<OrderLine> AddAsync(OrderLine entity)
     {
-        RepositoryHelper.CheckForNull(entity, "The passed entity is null.");
+        RepositoryHelper.ThrowIfNull(entity, "The passed entity is null.");
         var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == entity.OrderId);
-        RepositoryHelper.CheckRetrievedEntity(order, "There is no order with the ID specified in the OrderId property of the OrderLine entity.");
+        RepositoryHelper.ThrowEntityNotFoundIfNull(order, "There is no order with the ID specified in the OrderId property of the OrderLine entity.");
         var product = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == entity.ProductId);
-        RepositoryHelper.CheckRetrievedEntity(product, "There is no product with the ID specified in the ProductId property of the OrderLine entity.");
+        product = RepositoryHelper.ThrowEntityNotFoundIfNull(product, "There is no product with the ID specified in the ProductId property of the OrderLine entity.");
+
+        if (entity.TotalLinePrice == 0)
+        {
+            var totalPrice = product.Price * entity.Quantity;
+            entity.TotalLinePrice = totalPrice;
+        }
 
         await _context.AddAsync(entity);
         await _context.SaveChangesAsync();
@@ -28,9 +34,9 @@ public class OrderLineRepository : IOrderLineRepository
 
     public async Task DeleteAsync(OrderLine entity)
     {
-        RepositoryHelper.CheckForNull(entity, "The passed entity is null.");
+        RepositoryHelper.ThrowIfNull(entity, "The passed entity is null.");
         var entityToDelete = await _context.FindAsync<OrderLine>(entity.Id);
-        RepositoryHelper.CheckRetrievedEntity(entityToDelete, "There is no entity with this ID in the database.");
+        RepositoryHelper.ThrowEntityNotFoundIfNull(entityToDelete, "There is no entity with this ID in the database.");
 
         _context.Remove(entity);
         await _context.SaveChangesAsync();
@@ -39,7 +45,7 @@ public class OrderLineRepository : IOrderLineRepository
     public async Task DeleteByIdAsync(long id)
     {
         var entity = await _context.FindAsync<OrderLine>(id);
-        entity = RepositoryHelper.CheckRetrievedEntity(entity, "There is no entity with this ID in the database.");
+        entity = RepositoryHelper.ThrowEntityNotFoundIfNull(entity, "There is no entity with this ID in the database.");
 
         _context.Remove(entity);
         await _context.SaveChangesAsync();
@@ -75,13 +81,21 @@ public class OrderLineRepository : IOrderLineRepository
 
     public async Task<OrderLine> UpdateAsync(OrderLine entity)
     {
-        RepositoryHelper.CheckForNull(entity, "The passed entity is null.");
+        RepositoryHelper.ThrowIfNull(entity, "The passed entity is null.");
+        RepositoryHelper.ThrowIfTrue(entity.Quantity < 1, "The quantity must be greater than zero.");
+
         var entityToUpdate = await _context.OrderLines.AsNoTracking().FirstOrDefaultAsync(ol => ol.Id == entity.Id);
-        RepositoryHelper.CheckRetrievedEntity(entityToUpdate, "There is no entity with this ID in the database.");
+        RepositoryHelper.ThrowEntityNotFoundIfNull(entityToUpdate, "There is no entity with this ID in the database.");
         var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == entity.OrderId);
-        RepositoryHelper.CheckRetrievedEntity(order, "There is no order with the ID specified in the OrderId property of the OrderLine entity.");
+        RepositoryHelper.ThrowEntityNotFoundIfNull(order, "There is no order with the ID specified in the OrderId property of the OrderLine entity.");
         var product = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == entity.ProductId);
-        RepositoryHelper.CheckRetrievedEntity(product, "There is no product with the ID specified in the ProductId property of the OrderLine entity.");
+        product = RepositoryHelper.ThrowEntityNotFoundIfNull(product, "There is no product with the ID specified in the ProductId property of the OrderLine entity.");
+
+        if (entity.TotalLinePrice == 0)
+        {
+            var totalPrice = product.Price * entity.Quantity;
+            entity.TotalLinePrice = totalPrice;
+        }
 
         _context.Update(entity);
         await _context.SaveChangesAsync();

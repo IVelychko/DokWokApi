@@ -25,7 +25,7 @@ public class OrderService : IOrderService
 
     public async Task<OrderModel> AddAsync(OrderModel model)
     {
-        ServiceHelper.CheckForNull(model, "The passed model is null.");
+        ServiceHelper.ThrowIfNull(model, "The passed model is null.");
         var entity = _mapper.Map<Order>(model);
 
         var addedEntity = await _orderRepository.AddAsync(entity);
@@ -35,7 +35,7 @@ public class OrderService : IOrderService
 
     public async Task<OrderModel> AddOrderFromCartAsync(OrderForm form)
     {
-        ServiceHelper.CheckForNull(form, "The passed model is null.");
+        ServiceHelper.ThrowIfNull(form, "The passed model is null.");
         var model = _mapper.Map<OrderModel>(form);
         var cart = await _cartService.GetCart();
         ServiceHelper.ThrowIfTrue(cart.Lines.Count < 1, "There are no products in the cart");
@@ -86,7 +86,7 @@ public class OrderService : IOrderService
 
     public async Task<OrderModel> UpdateAsync(OrderModel model)
     {
-        ServiceHelper.CheckForNull(model, "The passed model is null.");
+        ServiceHelper.ThrowIfNull(model, "The passed model is null.");
 
         var entity = _mapper.Map<Order>(model);
         var updatedEntity = await _orderRepository.UpdateAsync(entity);
@@ -97,7 +97,7 @@ public class OrderService : IOrderService
     public async Task CompleteOrder(long id)
     {
         var entity = await _orderRepository.GetByIdAsync(id);
-        entity = RepositoryHelper.CheckRetrievedEntity(entity, "There is no entity with the passed ID in the database.");
+        entity = RepositoryHelper.ThrowIfNull(entity, "There is no entity with the passed ID in the database.");
         entity.Status = OrderStatuses.Completed;
         await _orderRepository.UpdateAsync(entity);
     }
@@ -105,7 +105,7 @@ public class OrderService : IOrderService
     public async Task CancelOrder(long id)
     {
         var entity = await _orderRepository.GetByIdAsync(id);
-        entity = RepositoryHelper.CheckRetrievedEntity(entity, "There is no entity with the passed ID in the database.");
+        entity = RepositoryHelper.ThrowIfNull(entity, "There is no entity with the passed ID in the database.");
         entity.Status = OrderStatuses.Cancelled;
         await _orderRepository.UpdateAsync(entity);
     }
