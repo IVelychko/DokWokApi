@@ -2,8 +2,11 @@
 
 namespace DokWokApi.BLL.Models.Order;
 
-public class OrderPutModel : BaseModel
+public class OrderPutModel
 {
+    [Required]
+    public long? Id { get; set; }
+
     [Required]
     public string? CustomerName { get; set; }
 

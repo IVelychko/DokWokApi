@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.User;
+using DokWokApi.DAL;
 using DokWokApi.DAL.Entities;
 using DokWokApi.Exceptions;
 using DokWokApi.Extensions;
@@ -30,71 +31,42 @@ public class UserService : IUserService
         _session = httpContextAccessor.HttpContext?.Session;
     }
 
-    private static T CheckForNull<T>(T? model, string errorMessage)
-    {
-        if (model is null)
-        {
-            throw new ArgumentNullException(nameof(model), errorMessage);
-        }
-
-        return model;
-    }
-
-    private static ApplicationUser CheckRetrievedUser(ApplicationUser? user, string errorMessage)
-    {
-        if (user is null)
-        {
-            throw new EntityNotFoundException(nameof(user), errorMessage);
-        }
-
-        return user;
-    }
-
-    private static void ThrowIfNotSucceeded(bool succeeded, IEnumerable<IdentityError> errors)
-    {
-        if (!succeeded)
-        {
-            var error = errors.Select(e => e.Description)
-                .Aggregate((e1, e2) => $"{e1}\n{e2}");
-
-            throw new UserException(nameof(succeeded), error);
-        }
-    }
-
-    private static void ThrowIfNotValid(bool isValid, string errorMessage)
-    {
-        if (!isValid)
-        {
-            throw new UserException(nameof(isValid), errorMessage);
-        }
-    }
-
     public async Task<UserModel> AddAsync(UserModel model, string password)
     {
-        model = CheckForNull(model, "The passed model is null.");
+        model = ServiceHelper.ThrowIfNull(model, "The passed model is null.");
         var user = _mapper.Map<ApplicationUser>(model);
         user.Id = Guid.NewGuid().ToString();
         var result = await _userManager.CreateAsync(user, password);
-        ThrowIfNotSucceeded(result.Succeeded, result.Errors);
+        ServiceHelper.ThrowIfNotSucceeded(result.Succeeded, result.Errors);
 
         var addedUser = await _userManager.FindByNameAsync(user.UserName!);
-        await _userManager.AddToRoleAsync(addedUser!, "Customer");
+        await _userManager.AddToRoleAsync(addedUser!, UserRoles.Customer);
         return _mapper.Map<UserModel>(addedUser!);
     }
 
     public async Task DeleteAsync(string userName)
     {
         var user = await _userManager.FindByNameAsync(userName);
-        user = CheckRetrievedUser(user, "There is no user with this user name in the database.");
+        user = RepositoryHelper.ThrowEntityNotFoundIfNull(user, "There is no user with this user name in the database.");
+
+        var isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+        ServiceHelper.ThrowUserExcepyionIfTrue(isAdmin, "Action is not allowed");
 
         var result = await _userManager.DeleteAsync(user);
-        ThrowIfNotSucceeded(result.Succeeded, result.Errors);
+        ServiceHelper.ThrowIfNotSucceeded(result.Succeeded, result.Errors);
     }
 
     public async Task<IEnumerable<UserModel>> GetAllAsync()
     {
-        var queryable = _userManager.Users;
+        var queryable = _userManager.Users.AsNoTracking();
         var entities = await queryable.ToListAsync();
+        var models = _mapper.Map<IEnumerable<UserModel>>(entities);
+        return models;
+    }
+
+    public async Task<IEnumerable<UserModel>> GetAllCustomersAsync()
+    {
+        var entities = await _userManager.GetUsersInRoleAsync(UserRoles.Customer);
         var models = _mapper.Map<IEnumerable<UserModel>>(entities);
         return models;
     }
@@ -123,48 +95,73 @@ public class UserService : IUserService
         return model;
     }
 
-    public async Task<UserModel> UpdateAsync(UserModel model, string? password = null)
+    public async Task<UserModel?> GetCustomerByIdAsync(string id)
     {
-        model = CheckForNull(model, "The passed model is null.");
+        var entity = await _userManager.FindByIdAsync(id);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        var isCustomer = await _userManager.IsInRoleAsync(entity, UserRoles.Customer);
+        if (!isCustomer)
+        {
+            return null;
+        }
+
+        var model = _mapper.Map<UserModel>(entity);
+        return model;
+    }
+
+    public async Task<UserModel> UpdateAsync(UserModel model)
+    {
+        model = ServiceHelper.ThrowIfNull(model, "The passed model is null.");
         var user = await _userManager.FindByIdAsync(model.Id!);
-        user = CheckRetrievedUser(user, "There is no user with this ID in the database.");
+        user = RepositoryHelper.ThrowEntityNotFoundIfNull(user, "There is no user with this ID in the database.");
 
         user.FirstName = model.FirstName;
         user.UserName = model.UserName;
         user.Email = model.Email;
         user.PhoneNumber = model.PhoneNumber;
         var result = await _userManager.UpdateAsync(user);
-        ThrowIfNotSucceeded(result.Succeeded, result.Errors);
-
-        if (password is not null)
-        {
-            await _userManager.RemovePasswordAsync(user);
-            var passwordResult = await _userManager.AddPasswordAsync(user, password);
-            ThrowIfNotSucceeded(passwordResult.Succeeded, passwordResult.Errors);
-        }
+        ServiceHelper.ThrowIfNotSucceeded(result.Succeeded, result.Errors);
 
         var updatedUser = await _userManager.FindByNameAsync(user.UserName!);
         return _mapper.Map<UserModel>(updatedUser);
     }
 
-    public async Task<IEnumerable<string>> GetUserRolesAsync(UserModel model)
+    public async Task UpdateCustomerPasswordAsync(UserPasswordChangeModel model)
     {
-        model = CheckForNull(model, "The passed model is null.");
-        
-        var user = _mapper.Map<ApplicationUser>(model);
+        model = ServiceHelper.ThrowIfNull(model, "The passed model is null.");
+        var user = await _userManager.FindByIdAsync(model.UserId!);
+        user = RepositoryHelper.ThrowEntityNotFoundIfNull(user, "There is no user with this ID in the database.");
+        bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+        ServiceHelper.ThrowUserExcepyionIfTrue(isAdmin, "Action is not allowed");
+        bool isOldPasswordValid = await _userManager.CheckPasswordAsync(user, model.OldPassword!);
+        ServiceHelper.ThrowUserExcepyionIfTrue(!isOldPasswordValid, "The old password is not valid.");
+
+        await _userManager.RemovePasswordAsync(user);
+        var passwordResult = await _userManager.AddPasswordAsync(user, model.NewPassword!);
+        ServiceHelper.ThrowIfNotSucceeded(passwordResult.Succeeded, passwordResult.Errors);
+    }
+
+    public async Task<IEnumerable<string>> GetUserRolesAsync(string userId)
+    {   
+        var user = await _userManager.FindByIdAsync(userId);
+        user = RepositoryHelper.ThrowEntityNotFoundIfNull(user, "There is no user with this id.");
         var roles = await _userManager.GetRolesAsync(user);
         return roles;
     }
 
-    public async Task AuthenticateLoginAsync(UserLoginModel model)
+    public async Task<UserModel> AuthenticateLoginAsync(UserLoginModel model)
     {
-        model = CheckForNull(model, "The passed model is null.");
+        model = ServiceHelper.ThrowIfNull(model, "The passed model is null.");
 
         var user = await _userManager.FindByNameAsync(model.UserName);
-        user = CheckRetrievedUser(user, "The credentials are wrong.");
+        user = RepositoryHelper.ThrowEntityNotFoundIfNull(user, "The credentials are wrong.");
 
         var isValidPassword = await _userManager.CheckPasswordAsync(user, model.Password);
-        ThrowIfNotValid(isValidPassword, "The credentials are wrong.");
+        ServiceHelper.ThrowIfUserIsNotValid(isValidPassword, "The credentials are wrong.");
 
         var userModel = _mapper.Map<UserModel>(user);
         var token = _securityTokenService.CreateToken(userModel);
@@ -174,11 +171,12 @@ public class UserService : IUserService
         }
 
         await _session.SetStringAsync("userToken", token);
+        return userModel;
     }
 
-    public async Task AuthenticateRegisterAsync(UserRegisterModel model)
+    public async Task<UserModel> AuthenticateRegisterAsync(UserRegisterModel model)
     {
-        model = CheckForNull(model, "The passed model is null.");
+        model = ServiceHelper.ThrowIfNull(model, "The passed model is null.");
 
         var userModel = _mapper.Map<UserModel>(model);
         userModel = await AddAsync(userModel, model.Password);
@@ -190,9 +188,10 @@ public class UserService : IUserService
         }
 
         await _session.SetStringAsync("userToken", token);
+        return userModel;
     }
 
-    public async Task<UserModel?> IsLoggedInAsync()
+    public async Task<UserModel?> IsCustomerLoggedInAsync()
     {
         if (_session is null)
         {
@@ -218,6 +217,50 @@ public class UserService : IUserService
         {
             return null;
         }
+
+        bool isCustomer = await _userManager.IsInRoleAsync(user, UserRoles.Customer);
+        bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+        if (!isCustomer && !isAdmin)
+        {
+            return null;
+        }
+
+        return _mapper.Map<UserModel>(user);
+    }
+
+    public async Task<UserModel?> IsAdminLoggedInAsync()
+    {
+        if (_session is null)
+        {
+            throw new SessionException(nameof(_session), "The session is null");
+        }
+
+        var token = await _session.GetStringAsync("userToken");
+        if (token is null)
+        {
+            return null;
+        }
+
+        var jwtSecurityToken = _securityTokenService.ValidateToken(token);
+        var idClaim = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == "id");
+        var userId = idClaim?.Value;
+        if (userId is null)
+        {
+            return null;
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return null;
+        }
+
+        bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+        if (!isAdmin)
+        {
+            return null;
+        }
+
         return _mapper.Map<UserModel>(user);
     }
 

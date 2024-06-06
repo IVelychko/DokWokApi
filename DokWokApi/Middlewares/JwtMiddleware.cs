@@ -40,7 +40,7 @@ public class JwtMiddleware
             var user = userId is not null ? await userService.GetByIdAsync(userId) : null;
             if (user is not null)
             {
-                var roles = await userService.GetUserRolesAsync(user);
+                var roles = await userService.GetUserRolesAsync(user.Id!);
                 context.Items["User"] = user;
                 context.Items["UserRoles"] = roles;
                 _logger.LogDebug("Jwt validation passed successfully. User '{UserName}' was added to the HTTP context items", user.UserName);

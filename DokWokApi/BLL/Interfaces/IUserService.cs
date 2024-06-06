@@ -6,23 +6,31 @@ public interface IUserService
 {
     Task<IEnumerable<UserModel>> GetAllAsync();
 
+    Task<IEnumerable<UserModel>> GetAllCustomersAsync();
+
     Task<UserModel?> GetByUserNameAsync(string userName);
 
     Task<UserModel?> GetByIdAsync(string id);
 
+    Task<UserModel?> GetCustomerByIdAsync(string id);
+
     Task<UserModel> AddAsync(UserModel model, string password);
 
-    Task<UserModel> UpdateAsync(UserModel model, string? password = null);
+    Task<UserModel> UpdateAsync(UserModel model);
+
+    Task UpdateCustomerPasswordAsync(UserPasswordChangeModel model);
 
     Task DeleteAsync(string userName);
 
-    Task<IEnumerable<string>> GetUserRolesAsync(UserModel model);
+    Task<IEnumerable<string>> GetUserRolesAsync(string userId);
 
-    Task AuthenticateLoginAsync(UserLoginModel model);
+    Task<UserModel> AuthenticateLoginAsync(UserLoginModel model);
 
-    Task AuthenticateRegisterAsync(UserRegisterModel model);
+    Task<UserModel> AuthenticateRegisterAsync(UserRegisterModel model);
 
-    Task<UserModel?> IsLoggedInAsync();
+    Task<UserModel?> IsCustomerLoggedInAsync();
+
+    Task<UserModel?> IsAdminLoggedInAsync();
 
     Task LogOutAsync();
 }

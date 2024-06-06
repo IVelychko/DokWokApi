@@ -38,7 +38,7 @@ public class OrderService : IOrderService
         ServiceHelper.ThrowIfNull(form, "The passed model is null.");
         var model = _mapper.Map<OrderModel>(form);
         var cart = await _cartService.GetCart();
-        ServiceHelper.ThrowIfTrue(cart.Lines.Count < 1, "There are no products in the cart");
+        ServiceHelper.ThrowOrderExcepyionIfTrue(cart.Lines.Count < 1, "There are no products in the cart");
         var orderLines = _mapper.Map<List<OrderLineModel>>(cart.Lines);
         model.CreationDate = DateTime.Now;
         model.OrderLines = orderLines;

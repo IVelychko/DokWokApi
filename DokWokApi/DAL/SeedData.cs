@@ -1,4 +1,5 @@
-﻿using DokWokApi.DAL.Entities;
+﻿using DokWokApi.BLL;
+using DokWokApi.DAL.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,14 +33,15 @@ public static class SeedData
     }
 
     private static IdentityRole[] roles = [
-            new IdentityRole { Name = "Admin" },
-            new IdentityRole { Name = "Customer" }
+            new IdentityRole { Name = UserRoles.Admin },
+            new IdentityRole { Name = UserRoles.Customer }
         ];
 
     public static async Task SeedDatabaseAsync(IApplicationBuilder app)
     {
         var context = app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<StoreDbContext>();
         var roleManager = app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var userManager = app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         context.Database.Migrate();
 
         if (!roleManager.Roles.Any())
@@ -48,6 +50,20 @@ public static class SeedData
             {
                 await roleManager.CreateAsync(role);
             }
+        }
+
+        var admins = await userManager.GetUsersInRoleAsync(UserRoles.Admin);
+        if (admins.Count < 1)
+        {
+            await userManager.CreateAsync(new ApplicationUser
+            {
+                FirstName = "Ihor",
+                UserName = "Admin1",
+                Email = "admin@example.com",
+                PhoneNumber = "1234567890"
+            }, "AdminPassword1");
+            var admin = await userManager.FindByNameAsync("Admin1");
+            await userManager.AddToRoleAsync(admin!, UserRoles.Admin);
         }
 
         if (!context.ProductCategories.Any() && !context.Products.Any())

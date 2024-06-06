@@ -5,20 +5,18 @@ namespace DokWokApi.BLL.Models.User;
 public class UserPutModel
 {
     [Required]
-    public string Id { get; set; } = string.Empty;
+    public string? Id { get; set; }
 
     [Required]
-    public string FirstName { get; set; } = string.Empty;
+    public string? FirstName { get; set; }
 
     [Required]
-    public string UserName { get; set; } = string.Empty;
+    public string? UserName { get; set; }
 
     [Required]
     [EmailAddress]
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
 
     [Required]
-    public string PhoneNumber { get; set; } = string.Empty;
-
-    public string? Password { get; set; }
+    public string? PhoneNumber { get; set; }
 }
