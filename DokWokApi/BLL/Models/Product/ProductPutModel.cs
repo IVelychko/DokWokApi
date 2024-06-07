@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace DokWokApi.BLL.Models.Product;
 
@@ -12,8 +11,13 @@ public class ProductPutModel
     public string? Name { get; set; }
 
     [Required]
-    [Column(TypeName = "decimal(8, 2)")]
     public decimal? Price { get; set; }
+
+    [Required]
+    public decimal? Weight { get; set; }
+
+    [Required]
+    public string? MeasurementUnit { get; set; }
 
     [Required]
     public string? Description { get; set; }

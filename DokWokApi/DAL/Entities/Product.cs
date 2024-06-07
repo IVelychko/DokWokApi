@@ -9,6 +9,11 @@ public class Product : BaseEntity
     [Column(TypeName = "decimal(8, 2)")]
     public decimal Price { get; set; }
 
+    [Column(TypeName = "decimal(8, 2)")]
+    public decimal Weight { get; set; }
+
+    public string MeasurementUnit { get; set; } = string.Empty;
+
     public string Description { get; set; } = string.Empty;
 
     public long CategoryId { get; set; }

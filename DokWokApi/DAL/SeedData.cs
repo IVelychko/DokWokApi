@@ -18,15 +18,15 @@ public static class SeedData
         ];
 
         Product[] products = [
-        new Product { Name = "California", Description = "desc", Price = 234, Category = categories[0] },
-        new Product { Name = "Red Dragon", Description = "desc", Price = 197, Category = categories[0] },
-        new Product { Name = "Pepperoni", Description = "desc", Price = 254, Category = categories[1] },
-        new Product { Name = "Texas", Description = "desc", Price = 265, Category = categories[1] },
-        new Product { Name = "Food set 1", Description = "desc", Price = 678, Category = categories[2] },
-        new Product { Name = "Food set 2", Description = "desc", Price = 721, Category = categories[2] },
-        new Product { Name = "Udon", Description = "desc", Price = 178, Category = categories[3] },
-        new Product { Name = "Soba", Description = "desc", Price = 180, Category = categories[3] },
-        new Product { Name = "Pepsi", Description = "desc", Price = 45, Category = categories[4] },
+        new Product { Name = "California", Description = "desc", Price = 234, Weight = 200, MeasurementUnit = "г", Category = categories[0] },
+        new Product { Name = "Red Dragon", Description = "desc", Price = 197, Weight = 250, MeasurementUnit = "г", Category = categories[0] },
+        new Product { Name = "Pepperoni", Description = "desc", Price = 254, Weight = 500, MeasurementUnit = "г", Category = categories[1] },
+        new Product { Name = "Texas", Description = "desc", Price = 265, Weight = 520, MeasurementUnit = "г", Category = categories[1] },
+        new Product { Name = "Food set 1", Description = "desc", Price = 678, Weight = 1200, MeasurementUnit = "г", Category = categories[2] },
+        new Product { Name = "Food set 2", Description = "desc", Price = 721, Weight = 1600, MeasurementUnit = "г", Category = categories[2] },
+        new Product { Name = "Udon", Description = "desc", Price = 178, Weight = 320, MeasurementUnit = "г", Category = categories[3] },
+        new Product { Name = "Soba", Description = "desc", Price = 180, Weight = 340, MeasurementUnit = "г", Category = categories[3] },
+        new Product { Name = "Pepsi", Description = "desc", Price = 45, Weight = 500, MeasurementUnit = "г", Category = categories[4] },
         ];
 
         return products;

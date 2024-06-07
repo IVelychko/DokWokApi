@@ -176,7 +176,7 @@ public class UsersController : ControllerBase
         try
         {
             var model = mapper.Map<UserModel>(postModel);
-            var addedModel = await _userService.AddAsync(model, postModel.Password);
+            var addedModel = await _userService.AddAsync(model, postModel.Password!);
             return Ok(addedModel);
         }
         catch (ArgumentNullException ex)

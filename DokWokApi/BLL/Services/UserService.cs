@@ -179,7 +179,7 @@ public class UserService : IUserService
         model = ServiceHelper.ThrowIfNull(model, "The passed model is null.");
 
         var userModel = _mapper.Map<UserModel>(model);
-        userModel = await AddAsync(userModel, model.Password);
+        userModel = await AddAsync(userModel, model.Password!);
 
         var token = _securityTokenService.CreateToken(userModel);
         if (_session is null)
