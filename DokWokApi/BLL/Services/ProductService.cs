@@ -71,4 +71,11 @@ public class ProductService : IProductService
         var updatedEntityWithDetails = await _repository.GetByIdWithDetailsAsync(updatedEntity.Id);
         return _mapper.Map<ProductModel>(updatedEntityWithDetails);
     }
+
+    public async Task<bool> IsNameTaken(string name)
+    {
+        ServiceHelper.ThrowIfNull(name, "Name is null");
+        var product = await _repository.GetAll().FirstOrDefaultAsync(p => p.Name == name);
+        return product is not null;
+    }
 }

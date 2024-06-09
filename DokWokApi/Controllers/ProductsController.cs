@@ -2,6 +2,7 @@
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Product;
 using DokWokApi.BLL.Models.ProductCategory;
+using DokWokApi.BLL.Services;
 using DokWokApi.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -140,6 +141,27 @@ public class ProductsController : ControllerBase
         }
     }
 
+    [HttpGet("isNameTaken/{name}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> IsProductNameTaken(string name)
+    {
+        try
+        {
+            var isTaken = await _productService.IsNameTaken(name);
+            return new JsonResult(new { isTaken }) { StatusCode = StatusCodes.Status200OK };
+        }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
     [HttpGet("categories")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
@@ -249,6 +271,27 @@ public class ProductsController : ControllerBase
         catch (EntityNotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
+    [HttpGet("categories/isNameTaken/{name}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> IsCategoryNameTaken(string name)
+    {
+        try
+        {
+            var isTaken = await _categoryService.IsNameTaken(name);
+            return new JsonResult(new { isTaken }) { StatusCode = StatusCodes.Status200OK };
+        }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {

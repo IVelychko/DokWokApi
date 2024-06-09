@@ -268,16 +268,16 @@ public class UsersController : ControllerBase
     }
 
     [Authorize(UserRoles.Admin)]
-    [HttpDelete("{userName}")]
+    [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> DeleteUser(string userName)
+    public async Task<ActionResult> DeleteUserById(string id)
     {
         try
         {
-            await _userService.DeleteAsync(userName);
+            await _userService.DeleteAsync(id);
             return Ok();
         }
         catch (EntityNotFoundException ex)
@@ -425,6 +425,48 @@ public class UsersController : ControllerBase
         catch (EntityNotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
+    [HttpGet("customers/isUserNameTaken/{userName}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> IsUserNameTaken(string userName)
+    {
+        try
+        {
+            var isTaken = await _userService.IsUserNameTaken(userName);
+            return new JsonResult(new { isTaken }) { StatusCode = StatusCodes.Status200OK };
+        }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
+    [HttpGet("customers/isEmailTaken/{email}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> IsEmailTaken(string email)
+    {
+        try
+        {
+            var isTaken = await _userService.IsEmailTaken(email);
+            return new JsonResult(new { isTaken }) { StatusCode = StatusCodes.Status200OK };
+        }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {

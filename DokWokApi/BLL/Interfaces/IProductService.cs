@@ -5,4 +5,6 @@ namespace DokWokApi.BLL.Interfaces;
 public interface IProductService : ICrud<ProductModel>
 {
     Task<IEnumerable<ProductModel>> GetAllByCategoryIdAsync(long categoryId);
+
+    Task<bool> IsNameTaken(string name);
 }

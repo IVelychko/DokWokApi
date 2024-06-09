@@ -1,16 +1,30 @@
-﻿namespace DokWokApi.BLL.Models.Order;
+﻿using DokWokApi.Attributes;
+using System.ComponentModel.DataAnnotations;
+
+namespace DokWokApi.BLL.Models.Order;
 
 public class OrderForm
 {
-    public string CustomerName { get; set; } = string.Empty;
+    [Required]
+    [RegularExpression(RegularExpressions.FirstName)]
+    public string? CustomerName { get; set; }
 
-    public string PhoneNumber { get; set; } = string.Empty;
+    [Required]
+    [RegularExpression(RegularExpressions.PhoneNumber)]
+    public string? PhoneNumber { get; set; }
 
-    public string Email { get; set; } = string.Empty;
+    [Required]
+    [EmailAddress]
+    public string? Email { get; set; }
 
-    public string DeliveryAddress { get; set; } = string.Empty;
+    [Required]
+    [RegularExpression(RegularExpressions.Address)]
+    public string? DeliveryAddress { get; set; }
 
-    public string PaymentType { get; set; } = string.Empty;
+    [Required]
+    [RegularExpression(RegularExpressions.PaymentType)]
+    public string? PaymentType { get; set; }
 
+    [GuidOrNull]
     public string? UserId { get; set; }
 }

@@ -3,6 +3,7 @@ using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.ProductCategory;
 using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace DokWokApi.BLL.Services;
@@ -58,5 +59,12 @@ public class ProductCategoryService : IProductCategoryService
         var entity = _mapper.Map<ProductCategory>(model);
         var updatedEntity = await _repository.UpdateAsync(entity);
         return _mapper.Map<ProductCategoryModel>(updatedEntity);
+    }
+
+    public async Task<bool> IsNameTaken(string name)
+    {
+        ServiceHelper.ThrowIfNull(name, "Name is null");
+        var category = await _repository.GetAll().FirstOrDefaultAsync(c => c.Name == name);
+        return category is not null;
     }
 }

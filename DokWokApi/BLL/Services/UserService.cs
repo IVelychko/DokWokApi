@@ -44,9 +44,9 @@ public class UserService : IUserService
         return _mapper.Map<UserModel>(addedUser!);
     }
 
-    public async Task DeleteAsync(string userName)
+    public async Task DeleteAsync(string id)
     {
-        var user = await _userManager.FindByNameAsync(userName);
+        var user = await _userManager.FindByIdAsync(id);
         user = RepositoryHelper.ThrowEntityNotFoundIfNull(user, "There is no user with this user name in the database.");
 
         var isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
@@ -272,5 +272,19 @@ public class UserService : IUserService
         }
 
         await _session.RemoveAsync("userToken");
+    }
+
+    public async Task<bool> IsUserNameTaken(string userName)
+    {
+        ServiceHelper.ThrowIfNull(userName, "Username is null");
+        var user = await _userManager.FindByNameAsync(userName);
+        return user is not null;
+    }
+
+    public async Task<bool> IsEmailTaken(string email)
+    {
+        ServiceHelper.ThrowIfNull(email, "Email is null");
+        var user = await _userManager.FindByEmailAsync(email);
+        return user is not null;
     }
 }
