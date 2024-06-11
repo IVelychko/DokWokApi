@@ -62,6 +62,18 @@ public class OrderLineService : IOrderLineService
         return model;
     }
 
+    public async Task<OrderLineModel?> GetByOrderAndProductIdsAsync(long orderId, long productId)
+    {
+        var entity = await _orderLineRepository.GetByOrderAndProductIdsWithDetailsAsync(orderId, productId);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        var model = _mapper.Map<OrderLineModel>(entity);
+        return model;
+    }
+
     public async Task<OrderLineModel> UpdateAsync(OrderLineModel model)
     {
         ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");

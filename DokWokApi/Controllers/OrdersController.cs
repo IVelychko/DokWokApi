@@ -180,6 +180,28 @@ public class OrdersController : ControllerBase
         }
     }
 
+    [HttpGet("lines/{orderId}/{productId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<OrderLineModel>> GetOrderLineByOrderAndProductIds(long orderId, long productId)
+    {
+        try
+        {
+            var orderLine = await _orderLineService.GetByOrderAndProductIdsAsync(orderId, productId);
+            if (orderLine is null)
+            {
+                return NotFound("The order line was not found.");
+            }
+
+            return Ok(orderLine);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
     [HttpPost("lines")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
