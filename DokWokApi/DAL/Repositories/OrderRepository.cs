@@ -19,11 +19,11 @@ public class OrderRepository : IOrderRepository
 
     public async Task<Order> AddAsync(Order entity)
     {
-        RepositoryHelper.ThrowIfNull(entity, "The passed entity is null.");
+        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
         if (entity.UserId is not null)
         {
             var user = await _userManager.FindByIdAsync(entity.UserId);
-            RepositoryHelper.ThrowEntityNotFoundIfNull(user, "There is no user with the ID specified in the UserId property of the Order entity.");
+            RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "There is no user with the ID specified in the UserId property of the Order entity.");
         }
 
         await _context.AddAsync(entity);
@@ -33,9 +33,9 @@ public class OrderRepository : IOrderRepository
 
     public async Task DeleteAsync(Order entity)
     {
-        RepositoryHelper.ThrowIfNull(entity, "The passed entity is null.");
+        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
         var entityToDelete = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == entity.Id);
-        RepositoryHelper.ThrowEntityNotFoundIfNull(entityToDelete, "There is no entity with this ID in the database.");
+        RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entityToDelete, "There is no entity with this ID in the database.");
 
         _context.Remove(entity);
         await _context.SaveChangesAsync();
@@ -44,7 +44,7 @@ public class OrderRepository : IOrderRepository
     public async Task DeleteByIdAsync(long id)
     {
         var entity = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id);
-        entity = RepositoryHelper.ThrowEntityNotFoundIfNull(entity, "There is no entity with this ID in the database.");
+        entity = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entity, "There is no entity with this ID in the database.");
 
         _context.Remove(entity);
         await _context.SaveChangesAsync();
@@ -84,13 +84,13 @@ public class OrderRepository : IOrderRepository
 
     public async Task<Order> UpdateAsync(Order entity)
     {
-        RepositoryHelper.ThrowIfNull(entity, "The passed entity is null.");
+        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
         var entityToUpdate = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == entity.Id);
-        RepositoryHelper.ThrowEntityNotFoundIfNull(entityToUpdate, "There is no entity with this ID in the database.");
+        RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entityToUpdate, "There is no entity with this ID in the database.");
         if (entity.UserId is not null)
         {
             var user = await _userManager.FindByIdAsync(entity.UserId);
-            RepositoryHelper.ThrowEntityNotFoundIfNull(user, "There is no user with the ID specified in the UserId property of the Order entity.");
+            RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "There is no user with the ID specified in the UserId property of the Order entity.");
         }
 
         _context.Update(entity);

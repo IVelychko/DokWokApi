@@ -21,7 +21,7 @@ public class OrderLineService : IOrderLineService
 
     public async Task<OrderLineModel> AddAsync(OrderLineModel model)
     {
-        ServiceHelper.ThrowIfNull(model, "The passed model is null.");
+        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
         var entity = _mapper.Map<OrderLine>(model);
 
         var addedEntity = await _orderLineRepository.AddAsync(entity);
@@ -64,7 +64,7 @@ public class OrderLineService : IOrderLineService
 
     public async Task<OrderLineModel> UpdateAsync(OrderLineModel model)
     {
-        ServiceHelper.ThrowIfNull(model, "The passed model is null.");
+        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
 
         var entity = _mapper.Map<OrderLine>(model);
         var updatedEntity = await _orderLineRepository.UpdateAsync(entity);

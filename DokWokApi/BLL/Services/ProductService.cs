@@ -21,7 +21,7 @@ public class ProductService : IProductService
 
     public async Task<ProductModel> AddAsync(ProductModel model)
     {
-        ServiceHelper.ThrowIfNull(model, "The passed model is null.");
+        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
         var entity = _mapper.Map<Product>(model);
         var addedEntity = await _repository.AddAsync(entity);
         var addedEntityWithDetails = await _repository.GetByIdWithDetailsAsync(addedEntity.Id);
@@ -64,7 +64,7 @@ public class ProductService : IProductService
 
     public async Task<ProductModel> UpdateAsync(ProductModel model)
     {
-        ServiceHelper.ThrowIfNull(model, "The passed model is null.");
+        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
 
         var entity = _mapper.Map<Product>(model);
         var updatedEntity = await _repository.UpdateAsync(entity);
@@ -74,7 +74,7 @@ public class ProductService : IProductService
 
     public async Task<bool> IsNameTaken(string name)
     {
-        ServiceHelper.ThrowIfNull(name, "Name is null");
+        ServiceHelper.ThrowArgumentNullExceptionIfNull(name, "Name is null");
         var product = await _repository.GetAll().FirstOrDefaultAsync(p => p.Name == name);
         return product is not null;
     }

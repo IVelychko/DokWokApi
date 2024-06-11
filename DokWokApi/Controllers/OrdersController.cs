@@ -197,6 +197,10 @@ public class OrdersController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
         catch (EntityNotFoundException ex)
         {
             return NotFound(ex.Message);
@@ -221,6 +225,10 @@ public class OrdersController : ControllerBase
             return Ok(updatedModel);
         }
         catch (ArgumentNullException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
         {
             return BadRequest(ex.Message);
         }

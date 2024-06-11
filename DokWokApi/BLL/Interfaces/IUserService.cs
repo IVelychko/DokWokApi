@@ -20,11 +20,15 @@ public interface IUserService
 
     Task UpdateCustomerPasswordAsync(UserPasswordChangeModel model);
 
+    Task UpdateCustomerPasswordAsAdminAsync(UserPasswordChangeAsAdminModel model);
+
     Task DeleteAsync(string id);
 
     Task<IEnumerable<string>> GetUserRolesAsync(string userId);
 
-    Task<UserModel> AuthenticateLoginAsync(UserLoginModel model);
+    Task<UserModel> AuthenticateCustomerLoginAsync(UserLoginModel model);
+
+    Task<UserModel> AuthenticateAdminLoginAsync(UserLoginModel model);
 
     Task<UserModel> AuthenticateRegisterAsync(UserRegisterModel model);
 
@@ -37,4 +41,6 @@ public interface IUserService
     Task<bool> IsUserNameTaken(string userName);
 
     Task<bool> IsEmailTaken(string email);
+
+    Task<bool> IsPhoneNumberTaken(string phoneNumber);
 }

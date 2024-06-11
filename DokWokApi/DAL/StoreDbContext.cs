@@ -19,12 +19,21 @@ public class StoreDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        builder.Entity<ApplicationUser>()
+            .HasIndex(u => u.PhoneNumber)
+            .IsUnique();
+
         builder.Entity<ProductCategory>()
             .HasIndex(c => c.Name)
             .IsUnique();
 
         builder.Entity<Product>()
             .HasIndex(p => p.Name)
+            .IsUnique();
+
+        builder.Entity<OrderLine>()
+            .HasIndex(ol => new { ol.OrderId, ol.ProductId })
             .IsUnique();
 
         builder.Entity<Product>()

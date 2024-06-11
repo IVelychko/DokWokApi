@@ -5,7 +5,7 @@ namespace DokWokApi.BLL;
 
 public static class ServiceHelper
 {
-    public static T ThrowIfNull<T>(T? model, string errorMessage)
+    public static T ThrowArgumentNullExceptionIfNull<T>(T? model, string errorMessage)
     {
         if (model is null)
         {
@@ -15,7 +15,7 @@ public static class ServiceHelper
         return model;
     }
 
-    public static void ThrowOrderExcepyionIfTrue(bool value, string errorMessage)
+    public static void ThrowOrderExceptionIfTrue(bool value, string errorMessage)
     {
         if (value)
         {
@@ -23,7 +23,7 @@ public static class ServiceHelper
         }
     }
 
-    public static void ThrowUserExcepyionIfTrue(bool value, string errorMessage)
+    public static void ThrowUserExceptionIfTrue(bool value, string errorMessage)
     {
         if (value)
         {
@@ -31,7 +31,7 @@ public static class ServiceHelper
         }
     }
 
-    public static void ThrowIfNotSucceeded(bool succeeded, IEnumerable<IdentityError> errors)
+    public static void ThrowUserExceptionIfNotSucceeded(bool succeeded, IEnumerable<IdentityError> errors)
     {
         if (!succeeded)
         {
@@ -42,7 +42,7 @@ public static class ServiceHelper
         }
     }
 
-    public static void ThrowIfUserIsNotValid(bool isValid, string errorMessage)
+    public static void ThrowUserExceptionIfUserIsNotValid(bool isValid, string errorMessage)
     {
         if (!isValid)
         {

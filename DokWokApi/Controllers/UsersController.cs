@@ -197,6 +197,7 @@ public class UsersController : ControllerBase
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserModel>> UpdateUser(UserPutModel putModel, [FromServices] IMapper mapper, bool isAdmin = false)
     {
@@ -226,6 +227,10 @@ public class UsersController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
         catch (Exception ex)
         {
             return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
@@ -236,6 +241,7 @@ public class UsersController : ControllerBase
     [HttpPut("password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> UpdateCustomerPassword(UserPasswordChangeModel model)
     {
@@ -260,6 +266,41 @@ public class UsersController : ControllerBase
         catch (UserException ex)
         {
             return BadRequest(ex.Message);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
+    [Authorize(UserRoles.Admin)]
+    [HttpPut("password/asAdmin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> UpdateCustomerPasswordAsAdmin(UserPasswordChangeAsAdminModel model)
+    {
+        try
+        {
+            await _userService.UpdateCustomerPasswordAsAdminAsync(model);
+            return Ok();
+        }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (UserException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFound(ex.Message);
         }
         catch (Exception ex)
         {
@@ -294,16 +335,46 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpPost("login")]
+    [HttpPost("customers/login")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> LoginUser(UserLoginModel loginModel)
+    public async Task<ActionResult<UserModel>> LoginCustomer(UserLoginModel loginModel)
     {
         try
         {
-            var loggedInUser = await _userService.AuthenticateLoginAsync(loginModel);
+            var loggedInUser = await _userService.AuthenticateCustomerLoginAsync(loginModel);
+            return Ok(loggedInUser);
+        }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (UserException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
+    [HttpPost("admins/login")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserModel>> LoginAdmin(UserLoginModel loginModel)
+    {
+        try
+        {
+            var loggedInUser = await _userService.AuthenticateAdminLoginAsync(loginModel);
             return Ok(loggedInUser);
         }
         catch (ArgumentNullException ex)
@@ -462,6 +533,27 @@ public class UsersController : ControllerBase
         try
         {
             var isTaken = await _userService.IsEmailTaken(email);
+            return new JsonResult(new { isTaken }) { StatusCode = StatusCodes.Status200OK };
+        }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
+    [HttpGet("customers/isPhoneTaken/{phoneNumber}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> IsPhoneNumberTaken(string phoneNumber)
+    {
+        try
+        {
+            var isTaken = await _userService.IsPhoneNumberTaken(phoneNumber);
             return new JsonResult(new { isTaken }) { StatusCode = StatusCodes.Status200OK };
         }
         catch (ArgumentNullException ex)

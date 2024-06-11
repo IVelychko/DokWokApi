@@ -25,7 +25,7 @@ public class OrderService : IOrderService
 
     public async Task<OrderModel> AddAsync(OrderModel model)
     {
-        ServiceHelper.ThrowIfNull(model, "The passed model is null.");
+        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
         var entity = _mapper.Map<Order>(model);
 
         var addedEntity = await _orderRepository.AddAsync(entity);
@@ -35,10 +35,10 @@ public class OrderService : IOrderService
 
     public async Task<OrderModel> AddOrderFromCartAsync(OrderForm form)
     {
-        ServiceHelper.ThrowIfNull(form, "The passed model is null.");
+        ServiceHelper.ThrowArgumentNullExceptionIfNull(form, "The passed model is null.");
         var model = _mapper.Map<OrderModel>(form);
         var cart = await _cartService.GetCart();
-        ServiceHelper.ThrowOrderExcepyionIfTrue(cart.Lines.Count < 1, "There are no products in the cart");
+        ServiceHelper.ThrowOrderExceptionIfTrue(cart.Lines.Count < 1, "There are no products in the cart");
         var orderLines = _mapper.Map<List<OrderLineModel>>(cart.Lines);
         model.CreationDate = DateTime.Now;
         model.OrderLines = orderLines;
@@ -86,7 +86,7 @@ public class OrderService : IOrderService
 
     public async Task<OrderModel> UpdateAsync(OrderModel model)
     {
-        ServiceHelper.ThrowIfNull(model, "The passed model is null.");
+        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
 
         var entity = _mapper.Map<Order>(model);
         var updatedEntity = await _orderRepository.UpdateAsync(entity);
@@ -97,7 +97,7 @@ public class OrderService : IOrderService
     public async Task CompleteOrder(long id)
     {
         var entity = await _orderRepository.GetByIdAsync(id);
-        entity = RepositoryHelper.ThrowIfNull(entity, "There is no entity with the passed ID in the database.");
+        entity = RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "There is no entity with the passed ID in the database.");
         entity.Status = OrderStatuses.Completed;
         await _orderRepository.UpdateAsync(entity);
     }
@@ -105,7 +105,7 @@ public class OrderService : IOrderService
     public async Task CancelOrder(long id)
     {
         var entity = await _orderRepository.GetByIdAsync(id);
-        entity = RepositoryHelper.ThrowIfNull(entity, "There is no entity with the passed ID in the database.");
+        entity = RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "There is no entity with the passed ID in the database.");
         entity.Status = OrderStatuses.Cancelled;
         await _orderRepository.UpdateAsync(entity);
     }

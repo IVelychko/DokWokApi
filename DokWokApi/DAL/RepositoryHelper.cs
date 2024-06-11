@@ -4,7 +4,7 @@ namespace DokWokApi.DAL;
 
 public static class RepositoryHelper
 {
-    public static T ThrowIfNull<T>(T? entity, string errorMessage) where T : class
+    public static T ThrowArgumentNullExceptionIfNull<T>(T? entity, string errorMessage) where T : class
     {
         if (entity is null)
         {
@@ -14,7 +14,7 @@ public static class RepositoryHelper
         return entity;
     }
 
-    public static T ThrowEntityNotFoundIfNull<T>(T? entity, string errorMessage) where T : class
+    public static T ThrowEntityNotFoundExceptionIfNull<T>(T? entity, string errorMessage) where T : class
     {
         if (entity is null)
         {
@@ -24,7 +24,7 @@ public static class RepositoryHelper
         return entity;
     }
 
-    public static void ThrowIfTrue(bool value, string errorMessage)
+    public static void ThrowArgumentExceptionIfTrue(bool value, string errorMessage)
     {
         if (value)
         {
