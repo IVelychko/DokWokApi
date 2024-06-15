@@ -19,4 +19,12 @@ public static class RegularExpressions
     public const string Password = @"^(?=.*[A-Z])(?=.*\d)[A-Za-z\d_-]{6,}$";
 
     public const string UserName = @"^[a-zA-Z0-9_-]{5,}$";
+
+    public const string Street = @"^[a-zA-Zа-яА-ЯёЁіїІЇєЄґҐ\s\-'`"".]+$";
+
+    public const string Building = @"^[0-9a-zA-Zа-яА-ЯёЁіїІЇєЄґҐ\s\-\/]+$";
+
+    public const string Apartment = @"^[0-9a-zA-Zа-яА-ЯёЁіїІЇєЄґҐ]+$";
+
+    public const string Hour = @"^(?:[01]\d|2[0-3]):[0-5]\d$";
 }

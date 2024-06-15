@@ -6,7 +6,7 @@ public interface IOrderService : ICrud<OrderModel>
 {
     Task<IEnumerable<OrderModel>> GetAllByUserIdAsync(string userId);
 
-    Task<OrderModel> AddOrderFromCartAsync(OrderForm form);
+    Task<OrderModel> AddOrderFromCartAsync(OrderModel model);
 
     Task CompleteOrder(long id);
 

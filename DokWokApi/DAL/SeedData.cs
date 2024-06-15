@@ -10,31 +10,38 @@ public static class SeedData
     private static Product[] GetProductsToAdd()
     {
         ProductCategory[] categories = [
-            new ProductCategory { Name = "Roll" },
-            new ProductCategory { Name = "Pizza" },
-            new ProductCategory { Name = "Food set" },
-            new ProductCategory { Name = "Noodles" },
-            new ProductCategory { Name = "Cold beverage" }
+            new() { Name = "Roll" },
+            new() { Name = "Pizza" },
+            new() { Name = "Food set" },
+            new() { Name = "Noodles" },
+            new() { Name = "Cold beverage" }
         ];
 
         Product[] products = [
-        new Product { Name = "California", Description = "desc", Price = 234, Weight = 200, MeasurementUnit = "г", Category = categories[0] },
-        new Product { Name = "Red Dragon", Description = "desc", Price = 197, Weight = 250, MeasurementUnit = "г", Category = categories[0] },
-        new Product { Name = "Pepperoni", Description = "desc", Price = 254, Weight = 500, MeasurementUnit = "г", Category = categories[1] },
-        new Product { Name = "Texas", Description = "desc", Price = 265, Weight = 520, MeasurementUnit = "г", Category = categories[1] },
-        new Product { Name = "Food set 1", Description = "desc", Price = 678, Weight = 1200, MeasurementUnit = "г", Category = categories[2] },
-        new Product { Name = "Food set 2", Description = "desc", Price = 721, Weight = 1600, MeasurementUnit = "г", Category = categories[2] },
-        new Product { Name = "Udon", Description = "desc", Price = 178, Weight = 320, MeasurementUnit = "г", Category = categories[3] },
-        new Product { Name = "Soba", Description = "desc", Price = 180, Weight = 340, MeasurementUnit = "г", Category = categories[3] },
-        new Product { Name = "Pepsi", Description = "desc", Price = 45, Weight = 500, MeasurementUnit = "г", Category = categories[4] },
+        new() { Name = "California", Description = "desc", Price = 234, Weight = 200, MeasurementUnit = "г", Category = categories[0] },
+        new() { Name = "Red Dragon", Description = "desc", Price = 197, Weight = 250, MeasurementUnit = "г", Category = categories[0] },
+        new() { Name = "Pepperoni", Description = "desc", Price = 254, Weight = 500, MeasurementUnit = "г", Category = categories[1] },
+        new() { Name = "Texas", Description = "desc", Price = 265, Weight = 520, MeasurementUnit = "г", Category = categories[1] },
+        new() { Name = "Food set 1", Description = "desc", Price = 678, Weight = 1200, MeasurementUnit = "г", Category = categories[2] },
+        new() { Name = "Food set 2", Description = "desc", Price = 721, Weight = 1600, MeasurementUnit = "г", Category = categories[2] },
+        new() { Name = "Udon", Description = "desc", Price = 178, Weight = 320, MeasurementUnit = "г", Category = categories[3] },
+        new() { Name = "Soba", Description = "desc", Price = 180, Weight = 340, MeasurementUnit = "г", Category = categories[3] },
+        new() { Name = "Pepsi", Description = "desc", Price = 45, Weight = 500, MeasurementUnit = "г", Category = categories[4] },
         ];
 
         return products;
     }
 
     private static IdentityRole[] roles = [
-            new IdentityRole { Name = UserRoles.Admin },
-            new IdentityRole { Name = UserRoles.Customer }
+            new() { Name = UserRoles.Admin },
+            new() { Name = UserRoles.Customer }
+        ];
+
+    private static Shop[] shops = [
+            new() { Street = "Олександра Поля", Building = "36", OpeningTime = "10:00", ClosingTime = "22:00" },
+            new() { Street = "Незалежності", Building = "42", OpeningTime = "09:00", ClosingTime = "21:00" },
+            new() { Street = "Дмитра Яворницького", Building = "12", OpeningTime = "10:00", ClosingTime = "21:00" },
+            new() { Street = "Робоча", Building = "54", OpeningTime = "10:00", ClosingTime = "22:00" },
         ];
 
     public static async Task SeedDatabaseAsync(IApplicationBuilder app)
@@ -69,6 +76,12 @@ public static class SeedData
         if (!context.ProductCategories.Any() && !context.Products.Any())
         {
             context.Products.AddRange(GetProductsToAdd());
+            context.SaveChanges();
+        }
+
+        if (!context.Shops.Any())
+        {
+            context.Shops.AddRange(shops);
             context.SaveChanges();
         }
     }

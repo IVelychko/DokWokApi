@@ -10,7 +10,7 @@ public class Order : BaseEntity
 
     public string Email { get; set; } = string.Empty;
 
-    public string DeliveryAddress { get; set; } = string.Empty;
+    public string? DeliveryAddress { get; set; }
 
     public string PaymentType { get; set; } = string.Empty;
 
@@ -23,7 +23,11 @@ public class Order : BaseEntity
 
     public string? UserId { get; set; }
 
+    public long? ShopId { get; set; }
+
     public ApplicationUser? User { get; set; }
+
+    public Shop? Shop { get; set; }
 
     public ICollection<OrderLine> OrderLines { get; set; } = [];
 }

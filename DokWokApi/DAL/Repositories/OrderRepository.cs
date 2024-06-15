@@ -26,6 +26,12 @@ public class OrderRepository : IOrderRepository
             RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "There is no user with the ID specified in the UserId property of the Order entity.");
         }
 
+        if (entity.ShopId is not null)
+        {
+            var shop = await _context.Shops.AsNoTracking().FirstOrDefaultAsync(s => s.Id == entity.ShopId);
+            RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(shop, "There is no shop with the ID specified in the ShopId property of the Order entity.");
+        }
+
         await _context.AddAsync(entity);
         await _context.SaveChangesAsync();
         return entity;
@@ -59,6 +65,7 @@ public class OrderRepository : IOrderRepository
     {
         return _context.Orders
             .Include(o => o.User)
+            .Include(o => o.Shop)
             .Include(o => o.OrderLines)
                 .ThenInclude(ol => ol.Product)
                     .ThenInclude(p => p!.Category).AsNoTracking();
@@ -75,6 +82,7 @@ public class OrderRepository : IOrderRepository
     {
         return await _context.Orders
             .Include(o => o.User)
+            .Include(o => o.Shop)
             .Include(o => o.OrderLines)
                 .ThenInclude(ol => ol.Product)
                     .ThenInclude(p => p!.Category)
@@ -91,6 +99,12 @@ public class OrderRepository : IOrderRepository
         {
             var user = await _userManager.FindByIdAsync(entity.UserId);
             RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "There is no user with the ID specified in the UserId property of the Order entity.");
+        }
+
+        if (entity.ShopId is not null)
+        {
+            var shop = await _context.Shops.AsNoTracking().FirstOrDefaultAsync(s => s.Id == entity.ShopId);
+            RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(shop, "There is no shop with the ID specified in the ShopId property of the Order entity.");
         }
 
         _context.Update(entity);

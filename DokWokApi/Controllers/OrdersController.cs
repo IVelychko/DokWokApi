@@ -61,16 +61,48 @@ public class OrdersController : ControllerBase
         }
     }
 
-    [HttpPost]
+    [HttpPost("delivery")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<OrderModel>> AddOrder(OrderForm form)
+    public async Task<ActionResult<OrderModel>> AddDeliveryOrder(DeliveryOrderForm form, [FromServices] IMapper mapper)
     {
         try
         {
-            var addedModel = await _orderService.AddOrderFromCartAsync(form);
+            var model = mapper.Map<OrderModel>(form);
+            var addedModel = await _orderService.AddOrderFromCartAsync(model);
+            return Ok(addedModel);
+        }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (OrderException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
+    [HttpPost("takeaway")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<OrderModel>> AddTakeawayOrder(TakeawayOrderForm form, [FromServices] IMapper mapper)
+    {
+        try
+        {
+            var model = mapper.Map<OrderModel>(form);
+            var addedModel = await _orderService.AddOrderFromCartAsync(model);
             return Ok(addedModel);
         }
         catch (ArgumentNullException ex)

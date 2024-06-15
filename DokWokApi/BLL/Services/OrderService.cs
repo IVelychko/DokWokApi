@@ -33,10 +33,9 @@ public class OrderService : IOrderService
         return _mapper.Map<OrderModel>(addedEntityWithDetails);
     }
 
-    public async Task<OrderModel> AddOrderFromCartAsync(OrderForm form)
+    public async Task<OrderModel> AddOrderFromCartAsync(OrderModel model)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(form, "The passed model is null.");
-        var model = _mapper.Map<OrderModel>(form);
+        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
         var cart = await _cartService.GetCart();
         ServiceHelper.ThrowOrderExceptionIfTrue(cart.Lines.Count < 1, "There are no products in the cart");
         var orderLines = _mapper.Map<List<OrderLineModel>>(cart.Lines);

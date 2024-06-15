@@ -37,7 +37,6 @@ builder.Services.AddSession(opts =>
     opts.Cookie.Name = "DokWokApi.Session";
     opts.Cookie.IsEssential = true;
     opts.Cookie.HttpOnly = true;
-    //opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
 builder.Services.AddDbContext<StoreDbContext>(opts =>
@@ -65,10 +64,13 @@ builder.Services.AddScoped<IProductCategoryRepository, ProductCategoryRepository
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderLineRepository, OrderLineRepository>();
+builder.Services.AddScoped<IShopRepository, ShopRepository>();
+
 builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderLineService, OrderLineService>();
+builder.Services.AddScoped<IShopService, ShopService>();
 builder.Services.AddScoped<ICartService, SessionCartService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISecurityTokenService<UserModel, JwtSecurityToken>, JwtService>();

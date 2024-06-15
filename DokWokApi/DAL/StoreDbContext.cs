@@ -16,6 +16,8 @@ public class StoreDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<OrderLine> OrderLines => Set<OrderLine>();
 
+    public DbSet<Shop> Shops => Set<Shop>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -34,6 +36,10 @@ public class StoreDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<OrderLine>()
             .HasIndex(ol => new { ol.OrderId, ol.ProductId })
+            .IsUnique();
+
+        builder.Entity<Shop>()
+            .HasIndex(s => new { s.Street, s.Building })
             .IsUnique();
 
         builder.Entity<Product>()
@@ -58,6 +64,12 @@ public class StoreDbContext : IdentityDbContext<ApplicationUser>
             .HasMany(u => u.Orders)
             .WithOne(o => o.User)
             .HasForeignKey(o => o.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Shop>()
+            .HasMany(s => s.Orders)
+            .WithOne(o => o.Shop)
+            .HasForeignKey(o => o.ShopId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

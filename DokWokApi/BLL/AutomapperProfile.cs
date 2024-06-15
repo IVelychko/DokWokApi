@@ -2,6 +2,7 @@
 using DokWokApi.BLL.Models.Order;
 using DokWokApi.BLL.Models.Product;
 using DokWokApi.BLL.Models.ProductCategory;
+using DokWokApi.BLL.Models.Shop;
 using DokWokApi.BLL.Models.ShoppingCart;
 using DokWokApi.BLL.Models.User;
 using DokWokApi.DAL.Entities;
@@ -33,7 +34,8 @@ public class AutomapperProfile : Profile
 
         // Order
         CreateMap<Order, OrderModel>().ReverseMap();
-        CreateMap<OrderForm, OrderModel>();
+        CreateMap<DeliveryOrderForm, OrderModel>();
+        CreateMap<TakeawayOrderForm, OrderModel>();
         CreateMap<OrderPutModel, OrderModel>();
 
         // Order line
@@ -44,5 +46,10 @@ public class AutomapperProfile : Profile
             .ForMember(olm => olm.ProductId, opt => opt.MapFrom(cl => cl.Product != null ? cl.Product.Id : 0));
         CreateMap<OrderLinePostModel, OrderLineModel>();
         CreateMap<OrderLinePutModel, OrderLineModel>();
+
+        // Shop
+        CreateMap<Shop, ShopModel>().ReverseMap();
+        CreateMap<ShopPostModel, ShopModel>();
+        CreateMap<ShopPutModel, ShopModel>();
     }
 }
