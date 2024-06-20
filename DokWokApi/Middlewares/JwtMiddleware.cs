@@ -20,7 +20,6 @@ public class JwtMiddleware
     public async Task Invoke(HttpContext context, IUserService userService, 
         ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService)
     {   
-        // Get token from session
         var token = await context.Session.GetStringAsync("userToken");
         if (token is not null)
         {

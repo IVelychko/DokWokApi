@@ -23,7 +23,8 @@ builder.Services.AddCors(opts =>
 {
     opts.AddPolicy(policyName, policy =>
     {
-        policy.WithOrigins(builder.Configuration["AllowedCorsUrls:ReactProject"]!)
+        policy.WithOrigins(builder.Configuration["AllowedCorsUrls:ReactHttpProject"]!, 
+            builder.Configuration["AllowedCorsUrls:ReactHttpsProject"]!)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
