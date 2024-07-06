@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using DokWokApi.Attributes;
+using DokWokApi.BLL;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
 using DokWokApi.Exceptions;
@@ -20,6 +22,7 @@ public class OrdersController : ControllerBase
         _orderLineService = orderLineService;
     }
 
+    [Authorize(UserRoles.Customer, UserRoles.Admin)]
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
@@ -39,6 +42,7 @@ public class OrdersController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Customer, UserRoles.Admin)]
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
@@ -123,6 +127,7 @@ public class OrdersController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -150,6 +155,7 @@ public class OrdersController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
@@ -171,6 +177,7 @@ public class OrdersController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Customer, UserRoles.Admin)]
     [HttpGet("lines")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
@@ -190,6 +197,7 @@ public class OrdersController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Customer, UserRoles.Admin)]
     [HttpGet("lines/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
@@ -212,6 +220,7 @@ public class OrdersController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Customer, UserRoles.Admin)]
     [HttpGet("lines/{orderId}/{productId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
@@ -234,6 +243,7 @@ public class OrdersController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpPost("lines")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -265,6 +275,7 @@ public class OrdersController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpPut("lines")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -296,6 +307,7 @@ public class OrdersController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpDelete("lines/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]

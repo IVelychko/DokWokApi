@@ -1,8 +1,9 @@
 ﻿using AutoMapper;
+using DokWokApi.Attributes;
+using DokWokApi.BLL;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Product;
 using DokWokApi.BLL.Models.ProductCategory;
-using DokWokApi.BLL.Services;
 using DokWokApi.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
@@ -63,6 +64,7 @@ public class ProductsController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -89,6 +91,7 @@ public class ProductsController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -120,6 +123,7 @@ public class ProductsController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
@@ -140,6 +144,7 @@ public class ProductsController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
         }
     }
+
 
     [HttpGet("isNameTaken/{name}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -200,6 +205,7 @@ public class ProductsController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpPost("categories")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -226,6 +232,7 @@ public class ProductsController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpPut("categories")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -257,6 +264,7 @@ public class ProductsController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpDelete("categories/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]

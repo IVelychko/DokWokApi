@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
+using DokWokApi.Attributes;
+using DokWokApi.BLL;
 using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models.ProductCategory;
 using DokWokApi.BLL.Models.Shop;
 using DokWokApi.Exceptions;
 using Microsoft.AspNetCore.Mvc;
@@ -78,6 +79,7 @@ public class ShopsController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -104,6 +106,7 @@ public class ShopsController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -135,6 +138,7 @@ public class ShopsController : ControllerBase
         }
     }
 
+    [Authorize(UserRoles.Admin)]
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
