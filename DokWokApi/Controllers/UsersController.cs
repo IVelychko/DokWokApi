@@ -3,13 +3,14 @@ using DokWokApi.BLL.Interfaces;
 using DokWokApi.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using DokWokApi.BLL.Models.User;
-using DokWokApi.Attributes;
 using DokWokApi.BLL;
+using Microsoft.AspNetCore.Authorization;
+using DokWokApi.BLL.Services;
 
 namespace DokWokApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/users")]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -19,7 +20,7 @@ public class UsersController : ControllerBase
         _userService = userService;
     }
 
-    [Authorize(UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
@@ -28,7 +29,6 @@ public class UsersController : ControllerBase
         try
         {
             var users = await _userService.GetAllAsync();
-
             return Ok(users);
         }
         catch (Exception ex)
@@ -37,7 +37,7 @@ public class UsersController : ControllerBase
         }
     }
 
-    [Authorize(UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpGet("customers")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
@@ -46,7 +46,6 @@ public class UsersController : ControllerBase
         try
         {
             var customers = await _userService.GetAllCustomersAsync();
-
             return Ok(customers);
         }
         catch (Exception ex)
@@ -55,24 +54,29 @@ public class UsersController : ControllerBase
         }
     }
 
-    [Authorize(UserRoles.Customer, UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("username/{userName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<string>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> GetUserByUserName(string userName, bool isAdmin = false)
+    public async Task<ActionResult<UserModel>> GetUserByUserName(string userName, [FromServices] IUserService userService, bool isAdmin = false)
     {
         if (!isAdmin)
         {
-            if (HttpContext.Items["User"] is not UserModel authenticatedUser)
+            var token = HttpContext.Request.Headers.Authorization.FirstOrDefault()?.Split(" ")[^1];
+            if (token is null)
+                return Unauthorized();
+
+            var authorizedUser = await userService.GetUserFromToken(token);
+            if (authorizedUser is null)
             {
-                return Unauthorized("Unauthorized access.");
+                return Unauthorized();
             }
-            else if (authenticatedUser.UserName != userName)
+            else if (authorizedUser.UserName != userName)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Action is not allowed.");
+                return StatusCode(StatusCodes.Status403Forbidden);
             }
         }
 
@@ -80,36 +84,39 @@ public class UsersController : ControllerBase
         {
             var user = await _userService.GetByUserNameAsync(userName);
             if (user is null)
-            {
-                return NotFound("The user was not found.");
-            }
+                return NotFound();
 
             return Ok(user);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Customer, UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("id/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<string>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> GetUserById(string id, bool isAdmin = false)
+    public async Task<ActionResult<UserModel>> GetUserById(string id, [FromServices] IUserService userService, bool isAdmin = false)
     {
         if (!isAdmin)
         {
-            if (HttpContext.Items["User"] is not UserModel authenticatedUser)
+            var token = HttpContext.Request.Headers.Authorization.FirstOrDefault()?.Split(" ")[^1];
+            if (token is null)
+                return Unauthorized();
+
+            var authorizedUser = await userService.GetUserFromToken(token);
+            if (authorizedUser is null)
             {
-                return Unauthorized("Unauthorized access.");
+                return Unauthorized();
             }
-            else if (authenticatedUser.Id != id)
+            else if (authorizedUser.Id != id)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Action is not allowed.");
+                return StatusCode(StatusCodes.Status403Forbidden);
             }
         }
 
@@ -117,36 +124,39 @@ public class UsersController : ControllerBase
         {
             var user = await _userService.GetByIdAsync(id);
             if (user is null)
-            {
-                return NotFound("The user was not found.");
-            }
+                return NotFound();
 
             return Ok(user);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Customer, UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("customers/id/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<string>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> GetCustomerById(string id, bool isAdmin = false)
+    public async Task<ActionResult<UserModel>> GetCustomerById(string id, [FromServices] IUserService userService, bool isAdmin = false)
     {
         if (!isAdmin)
         {
-            if (HttpContext.Items["User"] is not UserModel authenticatedUser)
+            var token = HttpContext.Request.Headers.Authorization.FirstOrDefault()?.Split(" ")[^1];
+            if (token is null)
+                return Unauthorized();
+
+            var authorizedUser = await userService.GetUserFromToken(token);
+            if (authorizedUser is null)
             {
-                return Unauthorized("Unauthorized access.");
+                return Unauthorized();
             }
-            else if (authenticatedUser.Id != id)
+            else if (authorizedUser.Id != id)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Action is not allowed.");
+                return Forbid();
             }
         }
 
@@ -154,19 +164,17 @@ public class UsersController : ControllerBase
         {
             var user = await _userService.GetCustomerByIdAsync(id);
             if (user is null)
-            {
-                return NotFound("The customer was not found.");
-            }
+                return NotFound();
 
             return Ok(user);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -193,23 +201,29 @@ public class UsersController : ControllerBase
         }
     }
 
-    [Authorize(UserRoles.Customer, UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> UpdateUser(UserPutModel putModel, [FromServices] IMapper mapper, bool isAdmin = false)
+    public async Task<ActionResult<UserModel>> UpdateUser(
+        UserPutModel putModel, [FromServices] IUserService userService, [FromServices] IMapper mapper, bool isAdmin = false)
     {
         if (!isAdmin)
         {
-            if (HttpContext.Items["User"] is not UserModel authenticatedUser)
+            var token = HttpContext.Request.Headers.Authorization.FirstOrDefault()?.Split(" ")[^1];
+            if (token is null)
+                return Unauthorized();
+
+            var authorizedUser = await userService.GetUserFromToken(token);
+            if (authorizedUser is null)
             {
-                return Unauthorized("Unauthorized access.");
+                return Unauthorized();
             }
-            else if (authenticatedUser.Id != putModel.Id)
+            else if (authorizedUser.Id != putModel.Id)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Action is not allowed.");
+                return Forbid();
             }
         }
 
@@ -237,21 +251,26 @@ public class UsersController : ControllerBase
         }
     }
 
-    [Authorize(UserRoles.Customer)]
+    [Authorize(Roles = $"{UserRoles.Customer}")]
     [HttpPut("password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> UpdateCustomerPassword(UserPasswordChangeModel model)
+    public async Task<ActionResult> UpdateCustomerPassword(UserPasswordChangeModel model, [FromServices] IUserService userService)
     {
-        if (HttpContext.Items["User"] is not UserModel authenticatedUser)
+        var token = HttpContext.Request.Headers.Authorization.FirstOrDefault()?.Split(" ")[^1];
+        if (token is null)
+            return Unauthorized();
+
+        var authorizedUser = await userService.GetUserFromToken(token);
+        if (authorizedUser is null)
         {
-            return Unauthorized("Unauthorized access.");
+            return Unauthorized();
         }
-        else if (authenticatedUser.Id != model.UserId)
+        else if (authorizedUser.Id != model.UserId)
         {
-            return StatusCode(StatusCodes.Status403Forbidden, "Action is not allowed.");
+            return Forbid();
         }
 
         try
@@ -277,7 +296,7 @@ public class UsersController : ControllerBase
         }
     }
 
-    [Authorize(UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut("password/asAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -308,7 +327,7 @@ public class UsersController : ControllerBase
         }
     }
 
-    [Authorize(UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -340,7 +359,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> LoginCustomer(UserLoginModel loginModel)
+    public async Task<ActionResult<AuthorizedUserModel>> LoginCustomer(UserLoginModel loginModel)
     {
         try
         {
@@ -370,7 +389,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> LoginAdmin(UserLoginModel loginModel)
+    public async Task<ActionResult<AuthorizedUserModel>> LoginAdmin(UserLoginModel loginModel)
     {
         try
         {
@@ -399,7 +418,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> RegisterUser(UserRegisterModel registerModel)
+    public async Task<ActionResult<AuthorizedUserModel>> RegisterUser(UserRegisterModel registerModel)
     {
         try
         {
@@ -422,16 +441,23 @@ public class UsersController : ControllerBase
 
     [HttpGet("customers/isloggedin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> IsCustomerLoggedIn()
+    public async Task<ActionResult<UserModel>> IsCustomerTokenValid()
     {
         try
         {
-            var user = await _userService.IsCustomerLoggedInAsync();
+            var token = HttpContext.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ")[^1];
+            if (token is null)
+            {
+                return BadRequest("There was no token provided");
+            }
+
+            var user = await _userService.IsCustomerTokenValidAsync(token);
             if (user is null)
             {
-                return Unauthorized("Unauthorized.");
+                return Unauthorized();
             }
 
             return Ok(user);
@@ -446,11 +472,17 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserModel>> IsAdminLoggedIn()
+    public async Task<ActionResult<UserModel>> IsAdminTokenValid()
     {
         try
         {
-            var user = await _userService.IsAdminLoggedInAsync();
+            var token = HttpContext.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ")[^1];
+            if (token is null)
+            {
+                return BadRequest("There was no token provided");
+            }
+
+            var user = await _userService.IsAdminTokenValidAsync(token);
             if (user is null)
             {
                 return Unauthorized("Unauthorized.");
@@ -464,24 +496,7 @@ public class UsersController : ControllerBase
         }
     }
 
-    [Authorize(UserRoles.Customer, UserRoles.Admin)]
-    [HttpGet("logout")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> LogOutUser()
-    {
-        try
-        {
-            await _userService.LogOutAsync();
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
-    }
-
-    [Authorize(UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpGet("roles")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]

@@ -31,6 +31,9 @@ public class AutomapperProfile : Profile
             .ReverseMap();
         CreateMap<UserRegisterModel, UserModel>();
         CreateMap<UserPutModel, UserModel>();
+        CreateMap<UserModel, AuthorizedUserModel>();
+        CreateMap<ApplicationUser, AuthorizedUserModel>()
+            .ForMember(aum => aum.Token, opt => opt.Ignore());
 
         // Order
         CreateMap<Order, OrderModel>().ReverseMap();

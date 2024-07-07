@@ -3,8 +3,6 @@ using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.User;
 using DokWokApi.DAL;
 using DokWokApi.DAL.Entities;
-using DokWokApi.Exceptions;
-using DokWokApi.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
@@ -19,8 +17,6 @@ public class UserService : IUserService
 
     private readonly ISecurityTokenService<UserModel, JwtSecurityToken> _securityTokenService;
 
-    private readonly ISession? _session;
-
     public UserService(UserManager<ApplicationUser> userManager, IMapper mapper, 
         ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService,
         IHttpContextAccessor httpContextAccessor)
@@ -28,7 +24,6 @@ public class UserService : IUserService
         _userManager = userManager;
         _mapper = mapper;
         _securityTokenService = securityTokenService;
-        _session = httpContextAccessor.HttpContext?.Session;
     }
 
     public async Task<UserModel> AddAsync(UserModel model, string password)
@@ -176,7 +171,7 @@ public class UserService : IUserService
         return roles;
     }
 
-    public async Task<UserModel> AuthenticateCustomerLoginAsync(UserLoginModel model)
+    public async Task<AuthorizedUserModel> AuthenticateCustomerLoginAsync(UserLoginModel model)
     {
         model = ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
 
@@ -191,17 +186,14 @@ public class UserService : IUserService
         ServiceHelper.ThrowUserExceptionIfUserIsNotValid(isValidPassword, "The credentials are wrong.");
 
         var userModel = _mapper.Map<UserModel>(user);
-        var token = _securityTokenService.CreateToken(userModel);
-        if (_session is null)
-        {
-            throw new SessionException(nameof(_session), "The session is null");
-        }
-
-        await _session.SetStringAsync("userToken", token);
-        return userModel;
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = _securityTokenService.CreateToken(userModel, roles);
+        var authUserModel = _mapper.Map<AuthorizedUserModel>(userModel);
+        authUserModel.Token = token;
+        return authUserModel;
     }
 
-    public async Task<UserModel> AuthenticateAdminLoginAsync(UserLoginModel model)
+    public async Task<AuthorizedUserModel> AuthenticateAdminLoginAsync(UserLoginModel model)
     {
         model = ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
 
@@ -215,114 +207,100 @@ public class UserService : IUserService
         ServiceHelper.ThrowUserExceptionIfUserIsNotValid(isValidPassword, "The credentials are wrong.");
 
         var userModel = _mapper.Map<UserModel>(user);
-        var token = _securityTokenService.CreateToken(userModel);
-        if (_session is null)
-        {
-            throw new SessionException(nameof(_session), "The session is null");
-        }
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = _securityTokenService.CreateToken(userModel, roles);
+        var authUserModel = _mapper.Map<AuthorizedUserModel>(userModel);
+        authUserModel.Token = token;
 
-        await _session.SetStringAsync("userToken", token);
-        return userModel;
+        return authUserModel;
     }
 
-    public async Task<UserModel> AuthenticateRegisterAsync(UserRegisterModel model)
+    public async Task<AuthorizedUserModel> AuthenticateRegisterAsync(UserRegisterModel model)
     {
         model = ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
 
         var userModel = _mapper.Map<UserModel>(model);
         userModel = await AddAsync(userModel, model.Password!);
-
-        var token = _securityTokenService.CreateToken(userModel);
-        if (_session is null)
-        {
-            throw new SessionException(nameof(_session), "The session is null");
-        }
-
-        await _session.SetStringAsync("userToken", token);
-        return userModel;
+        var roles = await _userManager.GetRolesAsync(_mapper.Map<ApplicationUser>(userModel));
+        var token = _securityTokenService.CreateToken(userModel, roles);
+        var authUserModel = _mapper.Map<AuthorizedUserModel>(userModel);
+        authUserModel.Token = token;
+        return authUserModel;
     }
 
-    public async Task<UserModel?> IsCustomerLoggedInAsync()
+    public async Task<UserModel?> IsCustomerTokenValidAsync(string token)
     {
-        if (_session is null)
-        {
-            throw new SessionException(nameof(_session), "The session is null");
-        }
-
-        var token = await _session.GetStringAsync("userToken");
         if (token is null)
         {
             return null;
         }
 
-        var jwtSecurityToken = _securityTokenService.ValidateToken(token);
-        var idClaim = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == "id");
-        var userId = idClaim?.Value;
-        if (userId is null)
+        try
+        {
+            var jwtSecurityToken = _securityTokenService.ValidateToken(token);
+            var idClaim = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == "id");
+            var userId = idClaim?.Value;
+            if (userId is null)
+            {
+                return null;
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return null;
+            }
+
+            bool isCustomer = await _userManager.IsInRoleAsync(user, UserRoles.Customer);
+            bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+            if (!isCustomer && !isAdmin)
+            {
+                return null;
+            }
+
+            return _mapper.Map<UserModel>(user);
+        }
+        catch (Exception)
         {
             return null;
         }
-
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user is null)
-        {
-            return null;
-        }
-
-        bool isCustomer = await _userManager.IsInRoleAsync(user, UserRoles.Customer);
-        bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-        if (!isCustomer && !isAdmin)
-        {
-            return null;
-        }
-
-        return _mapper.Map<UserModel>(user);
     }
 
-    public async Task<UserModel?> IsAdminLoggedInAsync()
+    public async Task<UserModel?> IsAdminTokenValidAsync(string token)
     {
-        if (_session is null)
-        {
-            throw new SessionException(nameof(_session), "The session is null");
-        }
-
-        var token = await _session.GetStringAsync("userToken");
         if (token is null)
         {
             return null;
         }
 
-        var jwtSecurityToken = _securityTokenService.ValidateToken(token);
-        var idClaim = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == "id");
-        var userId = idClaim?.Value;
-        if (userId is null)
+        try
+        {
+            var jwtSecurityToken = _securityTokenService.ValidateToken(token);
+            var idClaim = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == "id");
+            var userId = idClaim?.Value;
+            if (userId is null)
+            {
+                return null;
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return null;
+            }
+
+            bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+            if (!isAdmin)
+            {
+                return null;
+            }
+
+            return _mapper.Map<UserModel>(user);
+        }
+        catch (Exception)
         {
             return null;
         }
-
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user is null)
-        {
-            return null;
-        }
-
-        bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-        if (!isAdmin)
-        {
-            return null;
-        }
-
-        return _mapper.Map<UserModel>(user);
-    }
-
-    public async Task LogOutAsync()
-    {
-        if (_session is null)
-        {
-            throw new SessionException(nameof(_session), "The session is null");
-        }
-
-        await _session.RemoveAsync("userToken");
     }
 
     public async Task<bool> IsUserNameTaken(string userName)
@@ -344,5 +322,13 @@ public class UserService : IUserService
         ServiceHelper.ThrowArgumentNullExceptionIfNull(phoneNumber, "Phone number is null");
         var isTaken = await _userManager.Users.AnyAsync(u => u.PhoneNumber == phoneNumber);
         return isTaken;
+    }
+
+    public async Task<UserModel?> GetUserFromToken(string token)
+    {
+        var jwtSecurityToken = _securityTokenService.ValidateToken(token);
+        var userId = jwtSecurityToken.Claims.FirstOrDefault(x => x.Type == "id")?.Value;
+        var user = userId is not null ? await _userManager.FindByIdAsync(userId) : null;
+        return user is null ? null : _mapper.Map<UserModel>(user);
     }
 }

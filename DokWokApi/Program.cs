@@ -1,17 +1,11 @@
 using AutoMapper;
 using DokWokApi.BLL;
-using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models.User;
-using DokWokApi.BLL.Services;
 using DokWokApi.DAL;
 using DokWokApi.DAL.Entities;
-using DokWokApi.DAL.Interfaces;
-using DokWokApi.DAL.Repositories;
-using DokWokApi.Middlewares;
+using DokWokApi.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,20 +55,8 @@ builder.Services.AddSingleton(mapper);
 
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-builder.Services.AddScoped<IOrderLineRepository, OrderLineRepository>();
-builder.Services.AddScoped<IShopRepository, ShopRepository>();
-
-builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-builder.Services.AddScoped<IOrderLineService, OrderLineService>();
-builder.Services.AddScoped<IShopService, ShopService>();
-builder.Services.AddScoped<ICartService, SessionCartService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ISecurityTokenService<UserModel, JwtSecurityToken>, JwtService>();
+builder.Services.AddCustomRepositories();
+builder.Services.AddCustomServices();
 
 builder.Services.AddSwaggerGen(c => {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -84,11 +66,15 @@ builder.Services.AddSwaggerGen(c => {
     });
 });
 
+builder.Services.AddJwtBearerAuthentication(builder.Configuration);
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 app.UseCors(policyName);
 app.UseSession();
-app.UseMiddleware<JwtMiddleware>();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 app.UseSwagger();

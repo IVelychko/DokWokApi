@@ -1,9 +1,11 @@
 ﻿using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.User;
 using Microsoft.IdentityModel.Tokens;
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 
 namespace DokWokApi.BLL.Services
 {
@@ -37,7 +39,7 @@ namespace DokWokApi.BLL.Services
             return jwtToken;
         }
 
-        public string CreateToken(UserModel user)
+        public string CreateToken(UserModel user, IEnumerable<string> roles)
         {
             const int ExpirationDays = 1;
             DateTime expiration = DateTime.UtcNow.AddDays(ExpirationDays);
@@ -49,9 +51,10 @@ namespace DokWokApi.BLL.Services
             Claim[] claims = [
                 new(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]!),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
+                new(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(DateTime.UtcNow).ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64),
                 new("id", user.Id ?? string.Empty),
                 new("username", user.UserName ?? string.Empty),
+                new("role", JsonSerializer.Serialize(roles), JsonClaimValueTypes.JsonArray),
             ];
 
             var token = new JwtSecurityToken(
