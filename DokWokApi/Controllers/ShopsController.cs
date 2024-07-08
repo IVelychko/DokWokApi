@@ -23,8 +23,6 @@ public class ShopsController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<ShopModel>>> GetAllShops()
     {
         try
@@ -40,9 +38,6 @@ public class ShopsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ShopModel>> GetShopById(long id)
     {
         try
@@ -64,9 +59,6 @@ public class ShopsController : ControllerBase
     }
 
     [HttpGet("{street}/{building}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ShopModel>> GetShopByAddress(string street, string building)
     {
         try
@@ -89,9 +81,6 @@ public class ShopsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ShopModel>> AddShop(ShopPostModel postModel, [FromServices] IMapper mapper)
     {
         try
@@ -119,10 +108,6 @@ public class ShopsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ShopModel>> UpdateShop(ShopPutModel putModel, [FromServices] IMapper mapper)
     {
         try
@@ -155,9 +140,6 @@ public class ShopsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteShop(long id)
     {
         try
@@ -178,9 +160,6 @@ public class ShopsController : ControllerBase
     }
 
     [HttpGet("isAddressTaken/{street}/{building}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> IsShopAddressTaken(string street, string building)
     {
         try

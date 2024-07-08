@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using DokWokApi.BLL.Models.User;
 using DokWokApi.BLL;
 using Microsoft.AspNetCore.Authorization;
-using DokWokApi.BLL.Services;
 
 namespace DokWokApi.Controllers;
 
@@ -41,8 +40,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpGet("customers")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<UserModel>>> GetAllCustomers()
     {
         try
@@ -59,11 +56,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("username/{userName}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType<string>(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserModel>> GetUserByUserName(string userName, [FromServices] IUserService userService)
     {
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
@@ -103,11 +95,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("id/{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType<string>(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserModel>> GetUserById(string id, [FromServices] IUserService userService)
     {
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
@@ -147,11 +134,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("customers/id/{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType<string>(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserModel>> GetCustomerById(string id, [FromServices] IUserService userService)
     {
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
@@ -191,9 +173,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserModel>> AddUser(UserRegisterModel postModel, [FromServices] IMapper mapper)
     {
         try
@@ -221,10 +200,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpPut]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserModel>> UpdateUser(
         UserPutModel putModel, [FromServices] IUserService userService, [FromServices] IMapper mapper)
     {
@@ -276,10 +251,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Customer}")]
     [HttpPut("password")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> UpdateCustomerPassword(UserPasswordChangeModel model, [FromServices] IUserService userService)
     {
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
@@ -327,10 +298,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut("password/asAdmin")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> UpdateCustomerPasswordAsAdmin(UserPasswordChangeAsAdminModel model)
     {
         try
@@ -362,10 +329,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteUserById(string id)
     {
         try
@@ -391,10 +354,6 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("customers/login")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<AuthorizedUserModel>> LoginCustomer(UserLoginModel loginModel)
     {
         try
@@ -425,10 +384,6 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("admins/login")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<AuthorizedUserModel>> LoginAdmin(UserLoginModel loginModel)
     {
         try
@@ -459,9 +414,6 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("register")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<AuthorizedUserModel>> RegisterUser(UserRegisterModel registerModel)
     {
         try
@@ -488,9 +440,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Customer},{UserRoles.Admin}")]
     [HttpGet("customers/isloggedin")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserModel>> IsCustomerTokenValid([FromServices] IUserService userService)
     {
         try
@@ -518,9 +467,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpGet("admins/isloggedin")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserModel>> IsAdminTokenValid([FromServices] IUserService userService)
     {
         try
@@ -548,9 +494,6 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpGet("roles")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<string>>> GetUserRoles(string userId)
     {
         try
@@ -571,9 +514,6 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("customers/isUserNameTaken/{userName}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> IsUserNameTaken(string userName)
     {
         try
@@ -594,9 +534,6 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("customers/isEmailTaken/{email}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> IsEmailTaken(string email)
     {
         try
@@ -617,9 +554,6 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("customers/isPhoneTaken/{phoneNumber}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> IsPhoneNumberTaken(string phoneNumber)
     {
         try

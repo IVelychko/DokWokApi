@@ -27,8 +27,6 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<OrderModel>>> GetAllOrders(string? userId)
     {
         try
@@ -48,9 +46,6 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<OrderModel>> GetOrderById(long id)
     {
         try
@@ -72,10 +67,6 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("delivery")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<OrderModel>> AddDeliveryOrder(DeliveryOrderForm form, [FromServices] IMapper mapper)
     {
         try
@@ -107,10 +98,6 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("takeaway")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<OrderModel>> AddTakeawayOrder(TakeawayOrderForm form, [FromServices] IMapper mapper)
     {
         try
@@ -143,10 +130,6 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<OrderModel>> UpdateOrder(OrderPutModel putModel, [FromServices] IMapper mapper)
     {
         try
@@ -174,9 +157,6 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteOrder(long id)
     {
         try
@@ -198,8 +178,6 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("lines")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<OrderLineModel>>> GetAllOrderLines(long? orderId)
     {
         try
@@ -219,9 +197,6 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("lines/{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<OrderLineModel>> GetOrderLineById(long id)
     {
         try
@@ -244,9 +219,6 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("lines/{orderId}/{productId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<OrderLineModel>> GetOrderLineByOrderAndProductIds(long orderId, long productId)
     {
         try
@@ -269,10 +241,6 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost("lines")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<OrderLineModel>> AddOrderLine(OrderLinePostModel postModel, [FromServices] IMapper mapper)
     {
         try
@@ -305,10 +273,6 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut("lines")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<OrderLineModel>> UpdateOrderLine(OrderLinePutModel putModel, [FromServices] IMapper mapper)
     {
         try
@@ -341,9 +305,6 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpDelete("lines/{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteOrderLine(long id)
     {
         try

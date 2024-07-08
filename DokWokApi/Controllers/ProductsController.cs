@@ -27,8 +27,6 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<ProductModel>>> GetAllProducts(long? categoryId)
     {
         try
@@ -47,9 +45,6 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductModel>> GetProductById(long id)
     {
         try
@@ -72,9 +67,6 @@ public class ProductsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductModel>> AddProduct(ProductPostModel postModel, [FromServices] IMapper mapper)
     {
         try
@@ -102,10 +94,6 @@ public class ProductsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductModel>> UpdateProduct(ProductPutModel putModel, [FromServices] IMapper mapper)
     {
         try
@@ -138,9 +126,6 @@ public class ProductsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteProduct(long id)
     {
         try
@@ -162,9 +147,6 @@ public class ProductsController : ControllerBase
 
 
     [HttpGet("isNameTaken/{name}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> IsProductNameTaken(string name)
     {
         try
@@ -185,8 +167,6 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("categories")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<ProductCategoryModel>>> GetAllCategories()
     {
         try
@@ -202,9 +182,6 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("categories/{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductCategoryModel>> GetCategoryById(long id)
     {
         try
@@ -227,9 +204,6 @@ public class ProductsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost("categories")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductCategoryModel>> AddCategory(ProductCategoryPostModel postModel, [FromServices] IMapper mapper)
     {
         try
@@ -257,10 +231,6 @@ public class ProductsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut("categories")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductCategoryModel>> UpdateCategory(ProductCategoryPutModel putModel, [FromServices] IMapper mapper)
     {
         try
@@ -293,9 +263,6 @@ public class ProductsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpDelete("categories/{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteCategory(long id)
     {
         try
@@ -316,9 +283,6 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("categories/isNameTaken/{name}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> IsCategoryNameTaken(string name)
     {
         try
