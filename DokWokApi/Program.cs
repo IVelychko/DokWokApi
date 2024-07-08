@@ -6,6 +6,7 @@ using DokWokApi.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,11 @@ builder.Services.AddCors(opts =>
             .AllowAnyMethod()
             .AllowCredentials();
     });
+});
+
+builder.Host.UseSerilog((context, config) =>
+{
+    config.ReadFrom.Configuration(context.Configuration);
 });
 
 builder.Services.AddDistributedMemoryCache();
@@ -72,6 +78,7 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 app.UseCors(policyName);
+app.UseSerilogRequestLogging();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();

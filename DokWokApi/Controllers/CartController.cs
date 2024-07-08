@@ -6,14 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 namespace DokWokApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/cart")]
 public class CartController : ControllerBase
 {
     private readonly ICartService _cartService;
 
-    public CartController(ICartService cartService)
+    private readonly ILogger<CartController> _logger;
+
+    public CartController(ICartService cartService, ILogger<CartController> logger)
     {
         _cartService = cartService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -28,11 +31,13 @@ public class CartController : ControllerBase
         }
         catch (CartException ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Cart error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
@@ -45,6 +50,7 @@ public class CartController : ControllerBase
     {
         if (quantity <= 0)
         {
+            _logger.LogInformation("Bad request: Wrong product quantity.");
             return BadRequest("The quantity value must be greater than 0");
         }
 
@@ -55,15 +61,18 @@ public class CartController : ControllerBase
         }
         catch (CartException ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Cart error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
         catch (EntityNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
@@ -76,6 +85,7 @@ public class CartController : ControllerBase
     {
         if (quantity <= 0)
         {
+            _logger.LogInformation("Bad request: Wrong product quantity.");
             return BadRequest("The quantity value must be greater than 0");
         }
 
@@ -86,19 +96,23 @@ public class CartController : ControllerBase
         }
         catch (EntityNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (CartNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (CartException ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Cart error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
@@ -115,19 +129,23 @@ public class CartController : ControllerBase
         }
         catch (EntityNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (CartNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (CartException ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Cart error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
@@ -139,15 +157,17 @@ public class CartController : ControllerBase
         try
         {
             await _cartService.ClearCart();
-            return Ok("The cart was cleared successfully.");
+            return Ok();
         }
         catch (CartException ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Cart error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 }

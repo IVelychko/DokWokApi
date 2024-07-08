@@ -1,28 +1,31 @@
 ﻿using AutoMapper;
-using DokWokApi.Attributes;
 using DokWokApi.BLL;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
 using DokWokApi.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DokWokApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/orders")]
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
 
     private readonly IOrderLineService _orderLineService;
 
-    public OrdersController(IOrderService orderService, IOrderLineService orderLineService)
+    private readonly ILogger<OrdersController> _logger;
+
+    public OrdersController(IOrderService orderService, IOrderLineService orderLineService, ILogger<OrdersController> logger)
     {
         _orderService = orderService;
         _orderLineService = orderLineService;
+        _logger = logger;
     }
 
-    [Authorize(UserRoles.Customer, UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
@@ -38,11 +41,12 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Customer, UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
@@ -54,6 +58,7 @@ public class OrdersController : ControllerBase
             var order = await _orderService.GetByIdAsync(id);
             if (order is null)
             {
+                _logger.LogInformation("The order was not found.");
                 return NotFound("The order was not found.");
             }
 
@@ -61,12 +66,13 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
     [HttpPost("delivery")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
@@ -76,28 +82,32 @@ public class OrdersController : ControllerBase
         {
             var model = mapper.Map<OrderModel>(form);
             var addedModel = await _orderService.AddOrderFromCartAsync(model);
-            return Ok(addedModel);
+            return CreatedAtAction(nameof(GetOrderById), new { id = addedModel.Id }, addedModel);
         }
         catch (ArgumentNullException ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogInformation(ex, "Bad request.");
+            return BadRequest();
         }
         catch (OrderException ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogInformation(ex, "Bad request.");
+            return BadRequest();
         }
         catch (EntityNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
     [HttpPost("takeaway")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
@@ -107,27 +117,31 @@ public class OrdersController : ControllerBase
         {
             var model = mapper.Map<OrderModel>(form);
             var addedModel = await _orderService.AddOrderFromCartAsync(model);
-            return Ok(addedModel);
+            return CreatedAtAction(nameof(GetOrderById), new { id = addedModel.Id }, addedModel);
         }
         catch (ArgumentNullException ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogInformation(ex, "Bad request.");
+            return BadRequest();
         }
         catch (OrderException ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogInformation(ex, "Bad request.");
+            return BadRequest();
         }
         catch (EntityNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -143,19 +157,22 @@ public class OrdersController : ControllerBase
         }
         catch (ArgumentNullException ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogInformation(ex, "Bad request.");
+            return BadRequest();
         }
         catch (EntityNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
@@ -169,15 +186,17 @@ public class OrdersController : ControllerBase
         }
         catch (EntityNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Customer, UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("lines")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
@@ -193,11 +212,12 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Customer, UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("lines/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
@@ -209,6 +229,7 @@ public class OrdersController : ControllerBase
             var orderLine = await _orderLineService.GetByIdAsync(id);
             if (orderLine is null)
             {
+                _logger.LogInformation("The order line was not found.");
                 return NotFound("The order line was not found.");
             }
 
@@ -216,11 +237,12 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Customer, UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet("lines/{orderId}/{productId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
@@ -232,6 +254,7 @@ public class OrdersController : ControllerBase
             var orderLine = await _orderLineService.GetByOrderAndProductIdsAsync(orderId, productId);
             if (orderLine is null)
             {
+                _logger.LogInformation("The order line was not found.");
                 return NotFound("The order line was not found.");
             }
 
@@ -239,13 +262,14 @@ public class OrdersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost("lines")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<string>(StatusCodes.Status500InternalServerError)]
@@ -255,27 +279,31 @@ public class OrdersController : ControllerBase
         {
             var model = mapper.Map<OrderLineModel>(postModel);
             var addedModel = await _orderLineService.AddAsync(model);
-            return Ok(addedModel);
+            return CreatedAtAction(nameof(GetOrderLineById), new { id = addedModel.Id }, addedModel);
         }
         catch (ArgumentNullException ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogInformation(ex, "Bad request.");
+            return BadRequest();
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogInformation(ex, "Bad request.");
+            return BadRequest();
         }
         catch (EntityNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut("lines")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status400BadRequest)]
@@ -291,23 +319,27 @@ public class OrdersController : ControllerBase
         }
         catch (ArgumentNullException ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogInformation(ex, "Bad request.");
+            return BadRequest();
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogInformation(ex, "Bad request.");
+            return BadRequest();
         }
         catch (EntityNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
-    [Authorize(UserRoles.Admin)]
+    [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpDelete("lines/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
@@ -321,11 +353,13 @@ public class OrdersController : ControllerBase
         }
         catch (EntityNotFoundException ex)
         {
-            return NotFound(ex.Message);
+            _logger.LogInformation(ex, "Not found.");
+            return NotFound();
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            _logger.LogError(ex, "Server error.");
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 }
