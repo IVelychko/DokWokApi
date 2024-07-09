@@ -11,8 +11,18 @@
         {
         }
 
+        public UserException(string message)
+            : base(message)
+        {
+        }
+
         public UserException(string paramName, string message, Exception inner)
             : base($"{message}; Parameter name: {paramName}", inner)
+        {
+        }
+
+        public UserException(string message, Exception inner)
+            : base(message, inner)
         {
         }
     }

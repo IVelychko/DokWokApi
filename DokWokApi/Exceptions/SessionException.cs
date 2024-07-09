@@ -11,8 +11,18 @@ public class SessionException : Exception
     {
     }
 
+    public SessionException(string message)
+        : base(message)
+    {
+    }
+
     public SessionException(string paramName, string message, Exception inner)
         : base($"{message}; Parameter name: {paramName}", inner)
+    {
+    }
+
+    public SessionException(string message, Exception inner)
+        : base(message, inner)
     {
     }
 }

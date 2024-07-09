@@ -1,10 +1,14 @@
 ﻿using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.User;
 using DokWokApi.BLL.Services;
+using DokWokApi.DAL.Entities;
+using DokWokApi.DAL;
 using DokWokApi.DAL.Interfaces;
 using DokWokApi.DAL.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
@@ -12,6 +16,23 @@ namespace DokWokApi.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddCorsConfiguration(this IServiceCollection services, string policyName, ConfigurationManager configuration)
+    {
+        services.AddCors(opts =>
+        {
+            opts.AddPolicy(policyName, policy =>
+            {
+                policy.WithOrigins(configuration["AllowedCorsUrls:ReactHttpProject"]!,
+                    configuration["AllowedCorsUrls:ReactHttpsProject"]!)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddCustomRepositories(this IServiceCollection services)
     {
         services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
@@ -37,6 +58,21 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    public static IServiceCollection AddIdentityConfiguration(this IServiceCollection services)
+    {
+        services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
+        {
+            opts.Password.RequiredLength = 6;
+            opts.Password.RequireNonAlphanumeric = false;
+            opts.Password.RequireLowercase = false;
+            opts.Password.RequireUppercase = true;
+            opts.Password.RequireDigit = true;
+            opts.User.RequireUniqueEmail = true;
+        }).AddEntityFrameworkStores<StoreDbContext>();
+
+        return services;
+    }
+
     public static IServiceCollection AddJwtBearerAuthentication(this IServiceCollection services, ConfigurationManager configuration)
     {
         services.AddAuthentication(opts =>
@@ -57,6 +93,43 @@ public static class ServiceCollectionExtensions
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!)),
                 ClockSkew = TimeSpan.Zero,
             };
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddSwaggerSetup(this IServiceCollection services)
+    {
+        services.AddSwaggerGen(opts => {
+            opts.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] " +
+                "and then your token in the text input below.\r\n\r\nExample: \"Bearer 1safsfsdfdfd\"",
+            });
+            opts.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+            opts.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "DokWokApi",
+                Version = "v1"
+            });
         });
 
         return services;

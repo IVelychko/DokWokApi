@@ -53,7 +53,7 @@ public class ProductsController : ControllerBase
             if (product is null)
             {
                 _logger.LogInformation("The product was not found.");
-                return NotFound("The product was not found.");
+                return NotFound();
             }
 
             return Ok(product);
@@ -78,12 +78,12 @@ public class ProductsController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (ArgumentException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -105,7 +105,7 @@ public class ProductsController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (EntityNotFoundException ex)
         {
@@ -115,7 +115,7 @@ public class ProductsController : ControllerBase
         catch (ArgumentException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -157,7 +157,7 @@ public class ProductsController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (Exception ex)
         {
@@ -190,7 +190,7 @@ public class ProductsController : ControllerBase
             if (category is null)
             {
                 _logger.LogInformation("The product category was not found.");
-                return NotFound("The product category was not found.");
+                return NotFound();
             }
 
             return Ok(category);
@@ -215,12 +215,12 @@ public class ProductsController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (ArgumentException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -242,7 +242,7 @@ public class ProductsController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (EntityNotFoundException ex)
         {
@@ -252,7 +252,7 @@ public class ProductsController : ControllerBase
         catch (ArgumentException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -293,7 +293,7 @@ public class ProductsController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (Exception ex)
         {

@@ -46,7 +46,7 @@ public class ShopsController : ControllerBase
             if (shop is null)
             {
                 _logger.LogInformation("The shop was not found.");
-                return NotFound("The shop was not found.");
+                return NotFound();
             }
 
             return Ok(shop);
@@ -67,7 +67,7 @@ public class ShopsController : ControllerBase
             if (shop is null)
             {
                 _logger.LogInformation("The shop was not found.");
-                return NotFound("The shop was not found.");
+                return NotFound();
             }
 
             return Ok(shop);
@@ -92,12 +92,12 @@ public class ShopsController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (ArgumentException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -119,7 +119,7 @@ public class ShopsController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (EntityNotFoundException ex)
         {
@@ -129,7 +129,7 @@ public class ShopsController : ControllerBase
         catch (ArgumentException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -170,7 +170,7 @@ public class ShopsController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (Exception ex)
         {

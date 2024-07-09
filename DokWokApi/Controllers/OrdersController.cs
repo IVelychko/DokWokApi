@@ -54,7 +54,7 @@ public class OrdersController : ControllerBase
             if (order is null)
             {
                 _logger.LogInformation("The order was not found.");
-                return NotFound("The order was not found.");
+                return NotFound();
             }
 
             return Ok(order);
@@ -78,12 +78,12 @@ public class OrdersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (OrderException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (EntityNotFoundException ex)
         {
@@ -109,12 +109,12 @@ public class OrdersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (OrderException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (EntityNotFoundException ex)
         {
@@ -141,7 +141,7 @@ public class OrdersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (EntityNotFoundException ex)
         {
@@ -205,7 +205,7 @@ public class OrdersController : ControllerBase
             if (orderLine is null)
             {
                 _logger.LogInformation("The order line was not found.");
-                return NotFound("The order line was not found.");
+                return NotFound();
             }
 
             return Ok(orderLine);
@@ -227,7 +227,7 @@ public class OrdersController : ControllerBase
             if (orderLine is null)
             {
                 _logger.LogInformation("The order line was not found.");
-                return NotFound("The order line was not found.");
+                return NotFound();
             }
 
             return Ok(orderLine);
@@ -252,12 +252,12 @@ public class OrdersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (ArgumentException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (EntityNotFoundException ex)
         {
@@ -284,12 +284,12 @@ public class OrdersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (ArgumentException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (EntityNotFoundException ex)
         {

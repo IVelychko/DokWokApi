@@ -19,7 +19,7 @@ public static class ServiceHelper
     {
         if (value)
         {
-            throw new OrderException(nameof(value), errorMessage);
+            throw new OrderException(errorMessage);
         }
     }
 
@@ -27,7 +27,7 @@ public static class ServiceHelper
     {
         if (value)
         {
-            throw new UserException(nameof(value), errorMessage);
+            throw new UserException(errorMessage);
         }
     }
 
@@ -38,7 +38,7 @@ public static class ServiceHelper
             var error = errors.Select(e => e.Description)
                 .Aggregate((e1, e2) => $"{e1}\n{e2}");
 
-            throw new UserException(nameof(succeeded), error);
+            throw new UserException(error);
         }
     }
 
@@ -46,7 +46,7 @@ public static class ServiceHelper
     {
         if (!isValid)
         {
-            throw new UserException(nameof(isValid), errorMessage);
+            throw new UserException(errorMessage);
         }
     }
 }

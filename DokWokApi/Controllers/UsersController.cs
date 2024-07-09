@@ -184,12 +184,12 @@ public class UsersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (UserException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -230,12 +230,12 @@ public class UsersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (UserException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (EntityNotFoundException ex)
         {
@@ -277,12 +277,12 @@ public class UsersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (UserException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (EntityNotFoundException ex)
         {
@@ -308,12 +308,12 @@ public class UsersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (UserException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (EntityNotFoundException ex)
         {
@@ -344,7 +344,7 @@ public class UsersController : ControllerBase
         catch (UserException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -364,12 +364,12 @@ public class UsersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (UserException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (EntityNotFoundException ex)
         {
@@ -394,12 +394,12 @@ public class UsersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (UserException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (EntityNotFoundException ex)
         {
@@ -424,12 +424,12 @@ public class UsersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (UserException ex)
         {
             _logger.LogInformation(ex, "Not found.");
-            return BadRequest();
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -524,7 +524,7 @@ public class UsersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (Exception ex)
         {
@@ -544,7 +544,7 @@ public class UsersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (Exception ex)
         {
@@ -564,7 +564,7 @@ public class UsersController : ControllerBase
         catch (ArgumentNullException ex)
         {
             _logger.LogInformation(ex, "Bad request.");
-            return BadRequest();
+            return BadRequest("The passed data is null");
         }
         catch (Exception ex)
         {

@@ -11,8 +11,18 @@ public class CartNotFoundException : CartException
     {
     }
 
+    public CartNotFoundException(string message)
+        : base(message)
+    {
+    }
+
     public CartNotFoundException(string paramName, string message, Exception inner)
         : base(paramName, message, inner)
+    {
+    }
+
+    public CartNotFoundException(string message, Exception inner)
+        : base(message, inner)
     {
     }
 }
