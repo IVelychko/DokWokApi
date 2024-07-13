@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using DokWokApi.Validation;
 
 namespace DokWokApi.Extensions;
 
@@ -29,6 +30,18 @@ public static class ServiceCollectionExtensions
                     .AllowCredentials();
             });
         });
+
+        return services;
+    }
+
+    public static IServiceCollection AddValidators(this IServiceCollection services)
+    {
+        services.AddScoped<IValidator<ProductCategory>, ProductCategoryRepositoryValidator>();
+        services.AddScoped<IValidator<Product>, ProductRepositoryValidator>();
+        services.AddScoped<IValidator<Order>, OrderRepositoryValidator>();
+        services.AddScoped<IValidator<OrderLine>, OrderLineRepositoryValidator>();
+        services.AddScoped<IValidator<Shop>, ShopRepositoryValidator>();
+        services.AddScoped<IUserServiceValidator, UserServiceValidator>();
 
         return services;
     }

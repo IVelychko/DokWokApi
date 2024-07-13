@@ -1,6 +1,8 @@
 ﻿using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
-using Microsoft.AspNetCore.Identity;
+using DokWokApi.Exceptions;
+using DokWokApi.Validation;
+using LanguageExt.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace DokWokApi.DAL.Repositories;
@@ -8,52 +10,51 @@ namespace DokWokApi.DAL.Repositories;
 public class OrderRepository : IOrderRepository
 {
     private readonly StoreDbContext _context;
+    private readonly IValidator<Order> _validator;
 
-    private readonly UserManager<ApplicationUser> _userManager;
-
-    public OrderRepository(StoreDbContext context, UserManager<ApplicationUser> userManager)
+    public OrderRepository(StoreDbContext context, IValidator<Order> validator)
     {
         _context = context;
-        _userManager = userManager;
+        _validator = validator;
     }
 
-    public async Task<Order> AddAsync(Order entity)
+    public async Task<Result<Order>> AddAsync(Order entity)
     {
-        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
-        if (entity.UserId is not null)
+        var validationResult = await _validator.ValidateAddAsync(entity);
+        if (!validationResult.IsValid)
         {
-            var user = await _userManager.FindByIdAsync(entity.UserId);
-            RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "There is no user with the ID specified in the UserId property of the Order entity.");
-        }
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
 
-        if (entity.ShopId is not null)
-        {
-            var shop = await _context.Shops.AsNoTracking().FirstOrDefaultAsync(s => s.Id == entity.ShopId);
-            RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(shop, "There is no shop with the ID specified in the ShopId property of the Order entity.");
+            return new Result<Order>(exception);
         }
 
         await _context.AddAsync(entity);
-        await _context.SaveChangesAsync();
-        return entity;
+        var result = await _context.SaveChangesAsync();
+        if (result > 0)
+        {
+            var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
+            return addedEntity is not null ? addedEntity
+                : new Result<Order>(new DbException("There was the database error"));
+        }
+        else
+        {
+            var exception = new DbException("There was the database error");
+            return new Result<Order>(exception);
+        }
     }
 
-    public async Task DeleteAsync(Order entity)
-    {
-        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
-        var entityToDelete = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == entity.Id);
-        RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entityToDelete, "There is no entity with this ID in the database.");
-
-        _context.Remove(entity);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task DeleteByIdAsync(long id)
+    public async Task<bool?> DeleteByIdAsync(long id)
     {
         var entity = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id);
-        entity = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entity, "There is no entity with this ID in the database.");
+        if (entity is null)
+        {
+            return null;
+        }
 
         _context.Remove(entity);
-        await _context.SaveChangesAsync();
+        var result = await _context.SaveChangesAsync();
+        return result > 0;
     }
 
     public IQueryable<Order> GetAll()
@@ -90,25 +91,29 @@ public class OrderRepository : IOrderRepository
             .FirstOrDefaultAsync(o => o.Id == id);
     }
 
-    public async Task<Order> UpdateAsync(Order entity)
+    public async Task<Result<Order>> UpdateAsync(Order entity)
     {
-        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
-        var entityToUpdate = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == entity.Id);
-        RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entityToUpdate, "There is no entity with this ID in the database.");
-        if (entity.UserId is not null)
+        var validationResult = await _validator.ValidateUpdateAsync(entity);
+        if (!validationResult.IsValid)
         {
-            var user = await _userManager.FindByIdAsync(entity.UserId);
-            RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "There is no user with the ID specified in the UserId property of the Order entity.");
-        }
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
 
-        if (entity.ShopId is not null)
-        {
-            var shop = await _context.Shops.AsNoTracking().FirstOrDefaultAsync(s => s.Id == entity.ShopId);
-            RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(shop, "There is no shop with the ID specified in the ShopId property of the Order entity.");
+            return new Result<Order>(exception);
         }
 
         _context.Update(entity);
-        await _context.SaveChangesAsync();
-        return entity;
+        var result = await _context.SaveChangesAsync();
+        if (result > 0)
+        {
+            var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
+            return updatedEntity is not null ? updatedEntity
+                : new Result<Order>(new DbException("There was the database error"));
+        }
+        else
+        {
+            var exception = new DbException("There was the database error");
+            return new Result<Order>(exception);
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using DokWokApi.DAL.Entities;
+using LanguageExt.Common;
 
 namespace DokWokApi.DAL.Interfaces;
 
@@ -8,11 +9,9 @@ public interface IRepository<TEntity> where TEntity : BaseEntity
 
     Task<TEntity?> GetByIdAsync(long id);
 
-    Task<TEntity> AddAsync(TEntity entity);
+    Task<Result<TEntity>> AddAsync(TEntity entity);
 
-    Task<TEntity> UpdateAsync(TEntity entity);
+    Task<Result<TEntity>> UpdateAsync(TEntity entity);
 
-    Task DeleteAsync(TEntity entity);
-
-    Task DeleteByIdAsync(long id);
+    Task<bool?> DeleteByIdAsync(long id);
 }

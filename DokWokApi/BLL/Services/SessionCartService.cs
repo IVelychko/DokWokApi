@@ -2,13 +2,13 @@
 using DokWokApi.BLL.Models.ShoppingCart;
 using DokWokApi.Exceptions;
 using DokWokApi.Extensions;
+using LanguageExt.Common;
 
 namespace DokWokApi.BLL.Services;
 
 public class SessionCartService : ICartService
 {
     private readonly IProductService _productService;
-
     private readonly ISession? _session;
 
     public SessionCartService(IProductService productService, IHttpContextAccessor httpContextAccessor)
@@ -17,32 +17,34 @@ public class SessionCartService : ICartService
         _session = httpContextAccessor.HttpContext?.Session;
     }
 
-    public async Task<Cart> GetCart()
+    public async Task<Cart?> GetCart()
     {
         if (_session is null)
         {
-            throw new CartException(nameof(_session), "There is no session available.");
+            return null;
         }
 
         return await _session.GetJsonAsync<Cart>("Cart") ?? new Cart();
     }
 
-    public async Task<Cart> AddItem(long productId, int quantity)
+    public async Task<Result<Cart?>> AddItem(long productId, int quantity)
     {
         if (_session is null)
         {
-            throw new CartException(nameof(_session), "There is no session available.");
+            return null;
         }
 
         if (quantity <= 0)
         {
-            throw new ArgumentException("The quantity value must be greater than 0", nameof(quantity));
+            var exception = new ValidationException("The quantity value must be greater than 0");
+            return new Result<Cart?>(exception);
         }
 
         var product = await _productService.GetByIdAsync(productId);
         if (product is null)
         {
-            throw new EntityNotFoundException(nameof(product), "There is no entity with this ID in the database.");
+            var exception = new EntityNotFoundException("There is no entity with this ID in the database.");
+            return new Result<Cart?>(exception);
         }
 
         var cart = await _session.GetJsonAsync<Cart>("Cart") ?? new Cart();
@@ -69,34 +71,38 @@ public class SessionCartService : ICartService
         return cart;
     }
 
-    public async Task<Cart> RemoveItem(long productId, int quantity)
+    public async Task<Result<Cart?>> RemoveItem(long productId, int quantity)
     {
         if (_session is null)
         {
-            throw new CartException(nameof(_session), "There is no session available.");
+            return null;
         }
 
         if (quantity <= 0)
         {
-            throw new ArgumentException("The quantity value must be greater than 0", nameof(quantity));
+            var exception = new ValidationException("The quantity value must be greater than 0");
+            return new Result<Cart?>(exception);
         }
 
         var product = await _productService.GetByIdAsync(productId);
         if (product is null)
         {
-            throw new EntityNotFoundException(nameof(product), "There is no entity with this ID in the database.");
+            var exception = new EntityNotFoundException("There is no entity with this ID in the database.");
+            return new Result<Cart?>(exception);
         }
 
         var cart = await _session.GetJsonAsync<Cart>("Cart");
         if (cart is null)
         {
-            throw new CartNotFoundException(nameof(cart), "There is no existing cart object to remove the line from.");
+            var exception = new CartNotFoundException("There is no existing cart object to remove the line from.");
+            return new Result<Cart?>(exception);
         }
 
         var cartLine = cart.Lines.Find(cl => cl.Product.Id == productId);
         if (cartLine is null)
         {
-            throw new CartNotFoundException(nameof(cartLine), "There is no cart line object to remove items from.");
+            var exception = new CartNotFoundException(nameof(cartLine), "There is no cart line object to remove items from.");
+            return new Result<Cart?>(exception);
         }
 
         cartLine.Quantity -= quantity;
@@ -108,23 +114,25 @@ public class SessionCartService : ICartService
         return cart;
     }
 
-    public async Task<Cart> RemoveLine(long productId)
+    public async Task<Result<Cart?>> RemoveLine(long productId)
     {
         if (_session is null)
         {
-            throw new CartException(nameof(_session), "There is no session available.");
+            return null;
         }
 
         var product = await _productService.GetByIdAsync(productId);
         if (product is null)
         {
-            throw new EntityNotFoundException(nameof(product), "There is no entity with this ID in the database.");
+            var exception = new EntityNotFoundException("There is no entity with this ID in the database.");
+            return new Result<Cart?>(exception);
         }
 
         var cart = await _session.GetJsonAsync<Cart>("Cart");
         if (cart is null)
         {
-            throw new CartNotFoundException(nameof(cart), "There is no existing cart object to remove the line from.");
+            var exception = new CartNotFoundException("There is no existing cart object to remove the line from.");
+            return new Result<Cart?>(exception);
         }
 
         cart.Lines.RemoveAll(cl => cl.Product.Id == productId);
@@ -141,13 +149,14 @@ public class SessionCartService : ICartService
         }
     }
 
-    public async Task ClearCart()
+    public async Task<bool> ClearCart()
     {
         if (_session is null)
         {
-            throw new CartException(nameof(_session), "There is no session available.");
+            return false;
         }
 
         await _session.RemoveAsync("Cart");
+        return true;
     }
 }

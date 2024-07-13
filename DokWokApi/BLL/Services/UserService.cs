@@ -3,6 +3,10 @@ using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.User;
 using DokWokApi.DAL;
 using DokWokApi.DAL.Entities;
+using DokWokApi.Exceptions;
+using DokWokApi.Validation;
+using LanguageExt;
+using LanguageExt.Common;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
@@ -12,47 +16,76 @@ namespace DokWokApi.BLL.Services;
 public class UserService : IUserService
 {
     private readonly UserManager<ApplicationUser> _userManager;
-
     private readonly IMapper _mapper;
-
     private readonly ISecurityTokenService<UserModel, JwtSecurityToken> _securityTokenService;
+    private readonly IUserServiceValidator _validator;
 
     public UserService(UserManager<ApplicationUser> userManager, IMapper mapper, 
         ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IUserServiceValidator validator)
     {
         _userManager = userManager;
         _mapper = mapper;
         _securityTokenService = securityTokenService;
+        _validator = validator;
     }
 
-    public async Task<UserModel> AddAsync(UserModel model, string password)
+    public async Task<Result<UserModel>> AddAsync(UserModel model, string password)
     {
-        model = ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
-        ServiceHelper.ThrowUserExceptionIfTrue(model.PhoneNumber is null, "The phone number is null");
-        bool isPhoneNumberTaken = await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber);
-        ServiceHelper.ThrowUserExceptionIfTrue(isPhoneNumberTaken, "The phone number is already taken");
+        var validationResult = await _validator.ValidateAddAsync(model);
+        if (!validationResult.IsValid)
+        {
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
+
+            return new Result<UserModel>(exception);
+        }
 
         var user = _mapper.Map<ApplicationUser>(model);
         user.Id = Guid.NewGuid().ToString();
         var result = await _userManager.CreateAsync(user, password);
-        ServiceHelper.ThrowUserExceptionIfNotSucceeded(result.Succeeded, result.Errors);
+        if (!result.Succeeded)
+        {
+            var exception = new ValidationException(result.Errors.Select(e => e.Description)
+                .Aggregate((e1, e2) => $"{e1}\n{e2}"));
+            return new Result<UserModel>(exception);
+        }
 
         var addedUser = await _userManager.FindByNameAsync(user.UserName!);
-        await _userManager.AddToRoleAsync(addedUser!, UserRoles.Customer);
-        return _mapper.Map<UserModel>(addedUser!);
+        if (addedUser is not null)
+        {
+            await _userManager.AddToRoleAsync(addedUser, UserRoles.Customer);
+            return _mapper.Map<UserModel>(addedUser);
+        }
+        else
+        {
+            var exception = new DbException("There was the database error");
+            return new Result<UserModel>(exception);
+        }
     }
 
-    public async Task DeleteAsync(string id)
+    public async Task<bool?> DeleteAsync(string id)
     {
         var user = await _userManager.FindByIdAsync(id);
-        user = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "There is no user with this user name in the database.");
+        if (user is null)
+        {
+            return null;
+        }
 
         var isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-        ServiceHelper.ThrowUserExceptionIfTrue(isAdmin, "Action is not allowed");
+        if (isAdmin)
+        {
+            return false;
+        }
 
         var result = await _userManager.DeleteAsync(user);
-        ServiceHelper.ThrowUserExceptionIfNotSucceeded(result.Succeeded, result.Errors);
+        if (result.Succeeded)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     public async Task<IEnumerable<UserModel>> GetAllAsync()
@@ -112,79 +145,129 @@ public class UserService : IUserService
         return model;
     }
 
-    public async Task<UserModel> UpdateAsync(UserModel model)
+    public async Task<Result<UserModel>> UpdateAsync(UserModel model)
     {
-        model = ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
-        var user = await _userManager.FindByIdAsync(model.Id!);
-        user = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "There is no user with this ID in the database.");
-        ServiceHelper.ThrowUserExceptionIfTrue(model.PhoneNumber is null, "The phone number is null");
-        if (model.PhoneNumber != user.PhoneNumber)
+        var validationResult = await _validator.ValidateUpdateAsync(model);
+        if (!validationResult.IsValid)
         {
-            bool isPhoneNumberTaken = await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber);
-            ServiceHelper.ThrowUserExceptionIfTrue(isPhoneNumberTaken, "The phone number is already taken");
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
+
+            return new Result<UserModel>(exception);
         }
 
+        var user = (await _userManager.FindByIdAsync(model.Id!))!;
         user.FirstName = model.FirstName;
         user.UserName = model.UserName;
         user.Email = model.Email;
         user.PhoneNumber = model.PhoneNumber;
         var result = await _userManager.UpdateAsync(user);
-        ServiceHelper.ThrowUserExceptionIfNotSucceeded(result.Succeeded, result.Errors);
+        if (!result.Succeeded)
+        {
+            var exception = new ValidationException(result.Errors.Select(e => e.Description)
+                .Aggregate((e1, e2) => $"{e1}\n{e2}"));
+            return new Result<UserModel>(exception);
+        }
 
         var updatedUser = await _userManager.FindByNameAsync(user.UserName!);
-        return _mapper.Map<UserModel>(updatedUser);
+        if (updatedUser is not null)
+        {
+            return _mapper.Map<UserModel>(updatedUser);
+        }
+        else
+        {
+            var exception = new DbException("There was the database error");
+            return new Result<UserModel>(exception);
+        }
     }
 
-    public async Task UpdateCustomerPasswordAsync(UserPasswordChangeModel model)
+    public async Task<Result<bool>> UpdateCustomerPasswordAsync(UserPasswordChangeModel model)
     {
-        model = ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
-        var user = await _userManager.FindByIdAsync(model.UserId!);
-        user = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "There is no user with this ID in the database.");
-        bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-        ServiceHelper.ThrowUserExceptionIfTrue(isAdmin, "Action is not allowed");
-        bool isOldPasswordValid = await _userManager.CheckPasswordAsync(user, model.OldPassword!);
-        ServiceHelper.ThrowUserExceptionIfTrue(!isOldPasswordValid, "The old password is not valid.");
+        var validationResult = await _validator.ValidateUpdateCustomerPasswordAsync(model);
+        if (!validationResult.IsValid)
+        {
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
 
-        await _userManager.RemovePasswordAsync(user);
+            return new Result<bool>(exception);
+        }
+
+        var user = (await _userManager.FindByIdAsync(model.UserId!))!;
+        var oldPasswordResult = await _userManager.RemovePasswordAsync(user);
+        if (!oldPasswordResult.Succeeded)
+        {
+            var exception = new DbException(oldPasswordResult.Errors.Select(e => e.Description)
+                .Aggregate((e1, e2) => $"{e1}\n{e2}"));
+            return new Result<bool>(exception);
+        }
+
         var passwordResult = await _userManager.AddPasswordAsync(user, model.NewPassword!);
-        ServiceHelper.ThrowUserExceptionIfNotSucceeded(passwordResult.Succeeded, passwordResult.Errors);
+        if (!passwordResult.Succeeded)
+        {
+            var exception = new DbException(passwordResult.Errors.Select(e => e.Description)
+                .Aggregate((e1, e2) => $"{e1}\n{e2}"));
+            return new Result<bool>(exception);
+        }
+
+        return true;
     }
 
-    public async Task UpdateCustomerPasswordAsAdminAsync(UserPasswordChangeAsAdminModel model)
+    public async Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(UserPasswordChangeAsAdminModel model)
     {
-        model = ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
-        var user = await _userManager.FindByIdAsync(model.UserId!);
-        user = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "There is no user with this ID in the database.");
-        bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-        ServiceHelper.ThrowUserExceptionIfTrue(isAdmin, "Action is not allowed");
+        var validationResult = await _validator.ValidateUpdateCustomerPasswordAsAdminAsync(model);
+        if (!validationResult.IsValid)
+        {
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
 
-        await _userManager.RemovePasswordAsync(user);
+            return new Result<bool>(exception);
+        }
+
+        var user = (await _userManager.FindByIdAsync(model.UserId!))!;
+        var oldPasswordResult = await _userManager.RemovePasswordAsync(user);
+        if (!oldPasswordResult.Succeeded)
+        {
+            var exception = new DbException(oldPasswordResult.Errors.Select(e => e.Description)
+                .Aggregate((e1, e2) => $"{e1}\n{e2}"));
+            return new Result<bool>(exception);
+        }
+
         var passwordResult = await _userManager.AddPasswordAsync(user, model.NewPassword!);
-        ServiceHelper.ThrowUserExceptionIfNotSucceeded(passwordResult.Succeeded, passwordResult.Errors);
+        if (!passwordResult.Succeeded)
+        {
+            var exception = new DbException(passwordResult.Errors.Select(e => e.Description)
+                .Aggregate((e1, e2) => $"{e1}\n{e2}"));
+            return new Result<bool>(exception);
+        }
+
+        return true;
     }
 
-    public async Task<IEnumerable<string>> GetUserRolesAsync(string userId)
+    public async Task<Result<IEnumerable<string>>> GetUserRolesAsync(string userId)
     {   
         var user = await _userManager.FindByIdAsync(userId);
-        user = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "There is no user with this id.");
+        if (user is null)
+        {
+            var exception = new EntityNotFoundException("There is no user with this id.");
+            return new Result<IEnumerable<string>>(exception);
+        }
+
         var roles = await _userManager.GetRolesAsync(user);
-        return roles;
+        return new Result<IEnumerable<string>>(roles);
     }
 
-    public async Task<AuthorizedUserModel> AuthenticateCustomerLoginAsync(UserLoginModel model)
+    public async Task<Result<AuthorizedUserModel>> AuthenticateCustomerLoginAsync(UserLoginModel model)
     {
-        model = ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
+        var validationResult = await _validator.ValidateCustomerLoginAsync(model);
+        if (!validationResult.IsValid)
+        {
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
 
-        var user = await _userManager.FindByNameAsync(model.UserName);
-        user = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "The credentials are wrong.");
+            return new Result<AuthorizedUserModel>(exception);
+        }
 
-        bool isCustomer = await _userManager.IsInRoleAsync(user, UserRoles.Customer);
-        bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-        ServiceHelper.ThrowUserExceptionIfUserIsNotValid(isCustomer || isAdmin, "The user is not allowed.");
-
-        var isValidPassword = await _userManager.CheckPasswordAsync(user, model.Password);
-        ServiceHelper.ThrowUserExceptionIfUserIsNotValid(isValidPassword, "The credentials are wrong.");
-
+        var user = (await _userManager.FindByNameAsync(model.UserName))!;
         var userModel = _mapper.Map<UserModel>(user);
         var roles = await _userManager.GetRolesAsync(user);
         var token = _securityTokenService.CreateToken(userModel, roles);
@@ -193,19 +276,18 @@ public class UserService : IUserService
         return authUserModel;
     }
 
-    public async Task<AuthorizedUserModel> AuthenticateAdminLoginAsync(UserLoginModel model)
+    public async Task<Result<AuthorizedUserModel>> AuthenticateAdminLoginAsync(UserLoginModel model)
     {
-        model = ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
+        var validationResult = await _validator.ValidateAdminLoginAsync(model);
+        if (!validationResult.IsValid)
+        {
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
 
-        var user = await _userManager.FindByNameAsync(model.UserName);
-        user = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(user, "The credentials are wrong.");
+            return new Result<AuthorizedUserModel>(exception);
+        }
 
-        bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-        ServiceHelper.ThrowUserExceptionIfUserIsNotValid(isAdmin, "The user is not allowed.");
-
-        var isValidPassword = await _userManager.CheckPasswordAsync(user, model.Password);
-        ServiceHelper.ThrowUserExceptionIfUserIsNotValid(isValidPassword, "The credentials are wrong.");
-
+        var user = (await _userManager.FindByNameAsync(model.UserName))!;
         var userModel = _mapper.Map<UserModel>(user);
         var roles = await _userManager.GetRolesAsync(user);
         var token = _securityTokenService.CreateToken(userModel, roles);
@@ -215,17 +297,27 @@ public class UserService : IUserService
         return authUserModel;
     }
 
-    public async Task<AuthorizedUserModel> AuthenticateRegisterAsync(UserRegisterModel model)
+    public async Task<Result<AuthorizedUserModel>> AuthenticateRegisterAsync(UserRegisterModel model)
     {
-        model = ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
+        if (model is null)
+        {
+            var exception = new ValidationException("The passed model is null.");
+            return new Result<AuthorizedUserModel>(exception);
+        }
 
         var userModel = _mapper.Map<UserModel>(model);
-        userModel = await AddAsync(userModel, model.Password!);
-        var roles = await _userManager.GetRolesAsync(_mapper.Map<ApplicationUser>(userModel));
-        var token = _securityTokenService.CreateToken(userModel, roles);
-        var authUserModel = _mapper.Map<AuthorizedUserModel>(userModel);
-        authUserModel.Token = token;
-        return authUserModel;
+        var result = await AddAsync(userModel, model.Password!);
+        var authResult = await result.MapAsync(async user =>
+        {
+            var roles = await _userManager.GetRolesAsync(_mapper.Map<ApplicationUser>(user));
+            var token = _securityTokenService.CreateToken(user, roles);
+            var authUserModel = _mapper.Map<AuthorizedUserModel>(user);
+            authUserModel.Token = token;
+            return authUserModel;
+        });
+
+        return authResult.Match(au => au,
+            e => new Result<AuthorizedUserModel>(e));
     }
 
     public async Task<UserModel?> IsCustomerTokenValidAsync(string token)
@@ -303,23 +395,38 @@ public class UserService : IUserService
         }
     }
 
-    public async Task<bool> IsUserNameTaken(string userName)
+    public async Task<Result<bool>> IsUserNameTaken(string userName)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(userName, "Username is null");
+        if (userName is null)
+        {
+            var exception = new ValidationException("The passed user name is null");
+            return new Result<bool>(exception);
+        }
+
         var user = await _userManager.FindByNameAsync(userName);
         return user is not null;
     }
 
-    public async Task<bool> IsEmailTaken(string email)
+    public async Task<Result<bool>> IsEmailTaken(string email)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(email, "Email is null");
+        if (email is null)
+        {
+            var exception = new ValidationException("The passed email is null");
+            return new Result<bool>(exception);
+        }
+
         var user = await _userManager.FindByEmailAsync(email);
         return user is not null;
     }
 
-    public async Task<bool> IsPhoneNumberTaken(string phoneNumber)
+    public async Task<Result<bool>> IsPhoneNumberTaken(string phoneNumber)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(phoneNumber, "Phone number is null");
+        if (phoneNumber is null)
+        {
+            var exception = new ValidationException("The passed phone number is null");
+            return new Result<bool>(exception);
+        }
+
         var isTaken = await _userManager.Users.AnyAsync(u => u.PhoneNumber == phoneNumber);
         return isTaken;
     }

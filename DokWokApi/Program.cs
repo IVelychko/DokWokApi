@@ -40,6 +40,7 @@ builder.Services.AddSingleton(mapper);
 
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddValidators();
 builder.Services.AddCustomRepositories();
 builder.Services.AddCustomServices();
 

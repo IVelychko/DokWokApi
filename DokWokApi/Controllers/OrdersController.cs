@@ -2,20 +2,19 @@
 using DokWokApi.BLL;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
-using DokWokApi.Exceptions;
+using DokWokApi.Extensions;
+using DokWokApi.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DokWokApi.Controllers;
 
 [ApiController]
-[Route("api/orders")]
+[Route(ApiRoutes.Orders.Controller)]
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
-
     private readonly IOrderLineService _orderLineService;
-
     private readonly ILogger<OrdersController> _logger;
 
     public OrdersController(IOrderService orderService, IOrderLineService orderLineService, ILogger<OrdersController> logger)
@@ -27,300 +26,146 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<OrderModel>>> GetAllOrders(string? userId)
+    public async Task<IActionResult> GetAllOrders(string? userId)
     {
-        try
-        {
-            var orders = userId is null ? 
-                await _orderService.GetAllAsync() : 
+        var orders = userId is null ?
+                await _orderService.GetAllAsync() :
                 await _orderService.GetAllByUserIdAsync(userId);
 
-            return Ok(orders);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        return Ok(orders);
     }
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
-    [HttpGet("{id}")]
-    public async Task<ActionResult<OrderModel>> GetOrderById(long id)
+    [HttpGet(ApiRoutes.Orders.GetById)]
+    public async Task<IActionResult> GetOrderById(long id)
     {
-        try
+        var order = await _orderService.GetByIdAsync(id);
+        if (order is null)
         {
-            var order = await _orderService.GetByIdAsync(id);
-            if (order is null)
-            {
-                _logger.LogInformation("The order was not found.");
-                return NotFound();
-            }
-
-            return Ok(order);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-    }
-
-    [HttpPost("delivery")]
-    public async Task<ActionResult<OrderModel>> AddDeliveryOrder(DeliveryOrderForm form, [FromServices] IMapper mapper)
-    {
-        try
-        {
-            var model = mapper.Map<OrderModel>(form);
-            var addedModel = await _orderService.AddOrderFromCartAsync(model);
-            return CreatedAtAction(nameof(GetOrderById), new { id = addedModel.Id }, addedModel);
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest("The passed data is null");
-        }
-        catch (OrderException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest(ex.Message);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
+            _logger.LogInformation("The order was not found.");
             return NotFound();
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+
+        return Ok(order);
     }
 
-    [HttpPost("takeaway")]
-    public async Task<ActionResult<OrderModel>> AddTakeawayOrder(TakeawayOrderForm form, [FromServices] IMapper mapper)
+    [HttpPost(ApiRoutes.Orders.AddDelivery)]
+    public async Task<IActionResult> AddDeliveryOrder(DeliveryOrderForm form, [FromServices] IMapper mapper)
     {
-        try
-        {
-            var model = mapper.Map<OrderModel>(form);
-            var addedModel = await _orderService.AddOrderFromCartAsync(model);
-            return CreatedAtAction(nameof(GetOrderById), new { id = addedModel.Id }, addedModel);
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest("The passed data is null");
-        }
-        catch (OrderException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest(ex.Message);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        var model = mapper.Map<OrderModel>(form);
+        var result = await _orderService.AddOrderFromCartAsync(model);
+        return result.ToCreatedAtActionOrder(_logger, nameof(GetOrderById), nameof(OrdersController));
+    }
+
+    [HttpPost(ApiRoutes.Orders.AddTakeaway)]
+    public async Task<IActionResult> AddTakeawayOrder(TakeawayOrderForm form, [FromServices] IMapper mapper)
+    {
+        var model = mapper.Map<OrderModel>(form);
+        var result = await _orderService.AddOrderFromCartAsync(model);
+        return result.ToCreatedAtActionOrder(_logger, nameof(GetOrderById), nameof(OrdersController));
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut]
-    public async Task<ActionResult<OrderModel>> UpdateOrder(OrderPutModel putModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> UpdateOrder(OrderPutModel putModel, [FromServices] IMapper mapper)
     {
-        try
-        {
-            var model = mapper.Map<OrderModel>(putModel);
-            var updatedModel = await _orderService.UpdateAsync(model);
-            return Ok(updatedModel);
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest("The passed data is null");
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        var model = mapper.Map<OrderModel>(putModel);
+        var result = await _orderService.UpdateAsync(model);
+        return result.ToOk(_logger);
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
-    [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteOrder(long id)
+    [HttpDelete(ApiRoutes.Orders.DeleteById)]
+    public async Task<IActionResult> DeleteOrder(long id)
     {
-        try
+        var result = await _orderService.DeleteAsync(id);
+        if (result is null)
         {
-            await _orderService.DeleteAsync(id);
-            return Ok();
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
+            _logger.LogInformation("Not found");
             return NotFound();
         }
-        catch (Exception ex)
+        else if (result.Value)
         {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            return Ok();
         }
+
+        _logger.LogError("Server error");
+        return StatusCode(StatusCodes.Status500InternalServerError);
     }
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
-    [HttpGet("lines")]
-    public async Task<ActionResult<IEnumerable<OrderLineModel>>> GetAllOrderLines(long? orderId)
+    [HttpGet(ApiRoutes.OrderLines.GetAll)]
+    public async Task<IActionResult> GetAllOrderLines(long? orderId)
     {
-        try
-        {
-            var orderLines = orderId.HasValue ?
+        var orderLines = orderId.HasValue ?
                 await _orderLineService.GetAllByOrderIdAsync(orderId.Value) :
                 await _orderLineService.GetAllAsync();
 
-            return Ok(orderLines);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        return Ok(orderLines);
     }
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
-    [HttpGet("lines/{id}")]
-    public async Task<ActionResult<OrderLineModel>> GetOrderLineById(long id)
+    [HttpGet(ApiRoutes.OrderLines.GetById)]
+    public async Task<IActionResult> GetOrderLineById(long id)
     {
-        try
+        var orderLine = await _orderLineService.GetByIdAsync(id);
+        if (orderLine is null)
         {
-            var orderLine = await _orderLineService.GetByIdAsync(id);
-            if (orderLine is null)
-            {
-                _logger.LogInformation("The order line was not found.");
-                return NotFound();
-            }
+            _logger.LogInformation("The order line was not found.");
+            return NotFound();
+        }
 
-            return Ok(orderLine);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        return Ok(orderLine);
     }
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
-    [HttpGet("lines/{orderId}/{productId}")]
-    public async Task<ActionResult<OrderLineModel>> GetOrderLineByOrderAndProductIds(long orderId, long productId)
+    [HttpGet(ApiRoutes.OrderLines.GetByOrderAndProductIds)]
+    public async Task<IActionResult> GetOrderLineByOrderAndProductIds(long orderId, long productId)
     {
-        try
+        var orderLine = await _orderLineService.GetByOrderAndProductIdsAsync(orderId, productId);
+        if (orderLine is null)
         {
-            var orderLine = await _orderLineService.GetByOrderAndProductIdsAsync(orderId, productId);
-            if (orderLine is null)
-            {
-                _logger.LogInformation("The order line was not found.");
-                return NotFound();
-            }
-
-            return Ok(orderLine);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-    }
-
-    [Authorize(Roles = $"{UserRoles.Admin}")]
-    [HttpPost("lines")]
-    public async Task<ActionResult<OrderLineModel>> AddOrderLine(OrderLinePostModel postModel, [FromServices] IMapper mapper)
-    {
-        try
-        {
-            var model = mapper.Map<OrderLineModel>(postModel);
-            var addedModel = await _orderLineService.AddAsync(model);
-            return CreatedAtAction(nameof(GetOrderLineById), new { id = addedModel.Id }, addedModel);
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest("The passed data is null");
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest(ex.Message);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
+            _logger.LogInformation("The order line was not found.");
             return NotFound();
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+
+        return Ok(orderLine);
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
-    [HttpPut("lines")]
-    public async Task<ActionResult<OrderLineModel>> UpdateOrderLine(OrderLinePutModel putModel, [FromServices] IMapper mapper)
+    [HttpPost(ApiRoutes.OrderLines.Add)]
+    public async Task<IActionResult> AddOrderLine(OrderLinePostModel postModel, [FromServices] IMapper mapper)
     {
-        try
+        var model = mapper.Map<OrderLineModel>(postModel);
+        var result = await _orderLineService.AddAsync(model);
+        return result.ToCreatedAtAction(_logger, nameof(GetOrderLineById), nameof(OrdersController));
+    }
+
+    [Authorize(Roles = $"{UserRoles.Admin}")]
+    [HttpPut(ApiRoutes.OrderLines.Update)]
+    public async Task<IActionResult> UpdateOrderLine(OrderLinePutModel putModel, [FromServices] IMapper mapper)
+    {
+        var model = mapper.Map<OrderLineModel>(putModel);
+        var result = await _orderLineService.UpdateAsync(model);
+        return result.ToOk(_logger);
+    }
+
+    [Authorize(Roles = $"{UserRoles.Admin}")]
+    [HttpDelete(ApiRoutes.OrderLines.DeleteById)]
+    public async Task<IActionResult> DeleteOrderLine(long id)
+    {
+        var result = await _orderLineService.DeleteAsync(id);
+        if (result is null)
         {
-            var model = mapper.Map<OrderLineModel>(putModel);
-            var updatedModel = await _orderLineService.UpdateAsync(model);
-            return Ok(updatedModel);
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest("The passed data is null");
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest(ex.Message);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
+            _logger.LogInformation("Not found");
             return NotFound();
         }
-        catch (Exception ex)
+        else if (result.Value)
         {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-    }
-
-    [Authorize(Roles = $"{UserRoles.Admin}")]
-    [HttpDelete("lines/{id}")]
-    public async Task<ActionResult> DeleteOrderLine(long id)
-    {
-        try
-        {
-            await _orderLineService.DeleteAsync(id);
             return Ok();
         }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+
+        _logger.LogError("Server error");
+        return StatusCode(StatusCodes.Status500InternalServerError);
     }
 }

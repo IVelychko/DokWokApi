@@ -1,8 +1,11 @@
 ﻿using AutoMapper;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
+using DokWokApi.BLL.Models.Product;
 using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
+using DokWokApi.Exceptions;
+using LanguageExt.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace DokWokApi.BLL.Services;
@@ -10,7 +13,6 @@ namespace DokWokApi.BLL.Services;
 public class OrderLineService : IOrderLineService
 {
     private readonly IOrderLineRepository _orderLineRepository;
-
     private readonly IMapper _mapper;
 
     public OrderLineService(IOrderLineRepository orderLineRepository, IMapper mapper)
@@ -19,19 +21,24 @@ public class OrderLineService : IOrderLineService
         _mapper = mapper;
     }
 
-    public async Task<OrderLineModel> AddAsync(OrderLineModel model)
+    public async Task<Result<OrderLineModel>> AddAsync(OrderLineModel model)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
-        var entity = _mapper.Map<OrderLine>(model);
+        if (model is null)
+        {
+            var exception = new ValidationException("The passed model is null.");
+            return new Result<OrderLineModel>(exception);
+        }
 
-        var addedEntity = await _orderLineRepository.AddAsync(entity);
-        var addedEntityWithDetails = await _orderLineRepository.GetByIdWithDetailsAsync(addedEntity.Id);
-        return _mapper.Map<OrderLineModel>(addedEntityWithDetails);
+        var entity = _mapper.Map<OrderLine>(model);
+        var result = await _orderLineRepository.AddAsync(entity);
+
+        return result.Match(ol => _mapper.Map<OrderLineModel>(ol),
+            e => new Result<OrderLineModel>(e));
     }
 
-    public async Task DeleteAsync(long id)
+    public async Task<bool?> DeleteAsync(long id)
     {
-        await _orderLineRepository.DeleteByIdAsync(id);
+        return await _orderLineRepository.DeleteByIdAsync(id);
     }
 
     public async Task<IEnumerable<OrderLineModel>> GetAllAsync()
@@ -74,13 +81,18 @@ public class OrderLineService : IOrderLineService
         return model;
     }
 
-    public async Task<OrderLineModel> UpdateAsync(OrderLineModel model)
+    public async Task<Result<OrderLineModel>> UpdateAsync(OrderLineModel model)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
+        if (model is null)
+        {
+            var exception = new ValidationException("The passed model is null.");
+            return new Result<OrderLineModel>(exception);
+        }
 
         var entity = _mapper.Map<OrderLine>(model);
-        var updatedEntity = await _orderLineRepository.UpdateAsync(entity);
-        var updatedEntityWithDetails = await _orderLineRepository.GetByIdWithDetailsAsync(updatedEntity.Id);
-        return _mapper.Map<OrderLineModel>(updatedEntityWithDetails);
+        var result = await _orderLineRepository.UpdateAsync(entity);
+
+        return result.Match(ol => _mapper.Map<OrderLineModel>(ol),
+            e => new Result<OrderLineModel>(e));
     }
 }

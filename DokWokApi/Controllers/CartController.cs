@@ -1,16 +1,15 @@
 ﻿using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models.ShoppingCart;
-using DokWokApi.Exceptions;
+using DokWokApi.Extensions;
+using DokWokApi.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DokWokApi.Controllers;
 
 [ApiController]
-[Route("api/cart")]
+[Route(ApiRoutes.Cart.Controller)]
 public class CartController : ControllerBase
 {
     private readonly ICartService _cartService;
-
     private readonly ILogger<CartController> _logger;
 
     public CartController(ICartService cartService, ILogger<CartController> logger)
@@ -20,27 +19,20 @@ public class CartController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<Cart>> GetCart()
+    public async Task<IActionResult> GetCart()
     {
-        try
+        var cart = await _cartService.GetCart();
+        if (cart is null)
         {
-            var cart = await _cartService.GetCart();
-            return Ok(cart);
-        }
-        catch (CartException ex)
-        {
-            _logger.LogError(ex, "Cart error.");
+            _logger.LogError("Cart error.");
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+
+        return Ok(cart);
     }
 
-    [HttpPost("item")]
-    public async Task<ActionResult<Cart>> AddProductToCart(long productId, int quantity)
+    [HttpPost(ApiRoutes.Cart.AddProduct)]
+    public async Task<IActionResult> AddProductToCart(long productId, int quantity)
     {
         if (quantity <= 0)
         {
@@ -48,30 +40,12 @@ public class CartController : ControllerBase
             return BadRequest("The quantity value must be greater than 0");
         }
 
-        try
-        {
-            var modifiedCart = await _cartService.AddItem(productId, quantity);
-            return Ok(modifiedCart);
-        }
-        catch (CartException ex)
-        {
-            _logger.LogError(ex, "Cart error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        var result = await _cartService.AddItem(productId, quantity);
+        return result.ToOkCart(_logger);
     }
 
-    [HttpDelete("item")]
-    public async Task<ActionResult<Cart>> RemoveProductFromCart(long productId, int quantity)
+    [HttpDelete(ApiRoutes.Cart.RemoveProduct)]
+    public async Task<IActionResult> RemoveProductFromCart(long productId, int quantity)
     {
         if (quantity <= 0)
         {
@@ -79,80 +53,27 @@ public class CartController : ControllerBase
             return BadRequest("The quantity value must be greater than 0");
         }
 
-        try
-        {
-            var modifiedCart = await _cartService.RemoveItem(productId, quantity);
-            return Ok(modifiedCart);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
-            return NotFound();
-        }
-        catch (CartNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
-            return NotFound();
-        }
-        catch (CartException ex)
-        {
-            _logger.LogError(ex, "Cart error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        var result = await _cartService.RemoveItem(productId, quantity);
+        return result.ToOkCart(_logger);
     }
 
-    [HttpDelete("line")]
-    public async Task<ActionResult<Cart>> RemoveLineFromCart(long productId)
+    [HttpDelete(ApiRoutes.Cart.RemoveLine)]
+    public async Task<IActionResult> RemoveLineFromCart(long productId)
     {
-        try
-        {
-            var modifiedCart = await _cartService.RemoveLine(productId);
-            return Ok(modifiedCart);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
-            return NotFound();
-        }
-        catch (CartNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
-            return NotFound();
-        }
-        catch (CartException ex)
-        {
-            _logger.LogError(ex, "Cart error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        var result = await _cartService.RemoveLine(productId);
+        return result.ToOkCart(_logger);
     }
 
     [HttpDelete]
-    public async Task<ActionResult> ClearCart()
+    public async Task<IActionResult> ClearCart()
     {
-        try
+        var result = await _cartService.ClearCart();
+        if (!result)
         {
-            await _cartService.ClearCart();
-            return Ok();
-        }
-        catch (CartException ex)
-        {
-            _logger.LogError(ex, "Cart error.");
+            _logger.LogError("Cart error.");
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+
+        return Ok();
     }
 }

@@ -1,5 +1,8 @@
 ﻿using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
+using DokWokApi.Exceptions;
+using DokWokApi.Validation;
+using LanguageExt.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace DokWokApi.DAL.Repositories;
@@ -7,40 +10,51 @@ namespace DokWokApi.DAL.Repositories;
 public class ProductCategoryRepository : IProductCategoryRepository
 {
     private readonly StoreDbContext _context;
+    private readonly IValidator<ProductCategory> _validator;
 
-    public ProductCategoryRepository(StoreDbContext context)
+    public ProductCategoryRepository(StoreDbContext context, IValidator<ProductCategory> validator)
     {
         _context = context;
+        _validator = validator;
     }
 
-    public async Task<ProductCategory> AddAsync(ProductCategory entity)
+    public async Task<Result<ProductCategory>> AddAsync(ProductCategory entity)
     {
-        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
-        RepositoryHelper.ThrowArgumentExceptionIfTrue(await _context.ProductCategories.AnyAsync(c => c.Name == entity.Name),
-            "The entity with the same Name value is already present in the database.");
+        var validationResult = await _validator.ValidateAddAsync(entity);
+        if (!validationResult.IsValid)
+        {
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
+
+            return new Result<ProductCategory>(exception);
+        }
 
         await _context.AddAsync(entity);
-        await _context.SaveChangesAsync();
-        return entity;
+        var result = await _context.SaveChangesAsync();
+        if (result > 0)
+        {
+            var addedEntity = await GetByIdAsync(entity.Id);
+            return addedEntity is not null ? addedEntity
+                : new Result<ProductCategory>(new DbException("There was the database error"));
+        }
+        else
+        {
+            var exception = new DbException("There was the database error");
+            return new Result<ProductCategory>(exception);
+        }
     }
 
-    public async Task DeleteAsync(ProductCategory entity)
-    {
-        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
-        var entityToDelete = await _context.FindAsync<ProductCategory>(entity.Id);
-        RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entityToDelete, "There is no entity with this ID in the database.");
-
-        _context.Remove(entity);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task DeleteByIdAsync(long id)
+    public async Task<bool?> DeleteByIdAsync(long id)
     {
         var entity = await _context.FindAsync<ProductCategory>(id);
-        entity = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entity, "There is no entity with this ID in the database.");
+        if (entity is null)
+        {
+            return null;
+        }
 
         _context.Remove(entity);
-        await _context.SaveChangesAsync();
+        var result = await _context.SaveChangesAsync();
+        return result > 0;
     }
 
     public IQueryable<ProductCategory> GetAll()
@@ -53,19 +67,29 @@ public class ProductCategoryRepository : IProductCategoryRepository
         return await _context.ProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
     }
 
-    public async Task<ProductCategory> UpdateAsync(ProductCategory entity)
+    public async Task<Result<ProductCategory>> UpdateAsync(ProductCategory entity)
     {
-        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
-        var entityToUpdate = await _context.ProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == entity.Id);
-        entityToUpdate = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entityToUpdate, "There is no entity with this ID in the database.");
-        if (entity.Name != entityToUpdate.Name)
+        var validationResult = await _validator.ValidateUpdateAsync(entity);
+        if (!validationResult.IsValid)
         {
-            RepositoryHelper.ThrowArgumentExceptionIfTrue(await _context.ProductCategories.AnyAsync(c => c.Name == entity.Name),
-                "The entity with the same Name value is already present in the database.");
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
+
+            return new Result<ProductCategory>(exception);
         }
 
         _context.Update(entity);
-        await _context.SaveChangesAsync();
-        return entity;
+        var result = await _context.SaveChangesAsync();
+        if (result > 0)
+        {
+            var updatedEntity = await GetByIdAsync(entity.Id);
+            return updatedEntity is not null ? updatedEntity
+                : new Result<ProductCategory>(new DbException("There was the database error"));
+        }
+        else
+        {
+            var exception = new DbException("There was the database error");
+            return new Result<ProductCategory>(exception);
+        }
     }
 }

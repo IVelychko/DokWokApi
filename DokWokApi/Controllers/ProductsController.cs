@@ -3,20 +3,19 @@ using DokWokApi.BLL;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Product;
 using DokWokApi.BLL.Models.ProductCategory;
-using DokWokApi.Exceptions;
+using DokWokApi.Extensions;
+using DokWokApi.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DokWokApi.Controllers;
 
 [ApiController]
-[Route("api/products")]
+[Route(ApiRoutes.Products.Controller)]
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
-
     private readonly IProductCategoryService _categoryService;
-
     private readonly ILogger<ProductsController> _logger;
 
     public ProductsController(IProductService productService, IProductCategoryService categoryService, ILogger<ProductsController> logger)
@@ -27,278 +26,134 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ProductModel>>> GetAllProducts(long? categoryId)
+    public async Task<IActionResult> GetAllProducts(long? categoryId)
     {
-        try
-        {
-            var products = categoryId.HasValue ? 
-                await _productService.GetAllByCategoryIdAsync(categoryId.Value) : 
+        var products = categoryId.HasValue ?
+                await _productService.GetAllByCategoryIdAsync(categoryId.Value) :
                 await _productService.GetAllAsync();
 
-            return Ok(products);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        return Ok(products);
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<ProductModel>> GetProductById(long id)
+    [HttpGet(ApiRoutes.Products.GetById)]
+    public async Task<IActionResult> GetProductById(long id)
     {
-        try
+        var product = await _productService.GetByIdAsync(id);
+        if (product is null)
         {
-            var product = await _productService.GetByIdAsync(id);
-            if (product is null)
-            {
-                _logger.LogInformation("The product was not found.");
-                return NotFound();
-            }
+            _logger.LogInformation("The product was not found.");
+            return NotFound();
+        }
 
-            return Ok(product);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        return Ok(product);
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost]
-    public async Task<ActionResult<ProductModel>> AddProduct(ProductPostModel postModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> AddProduct(ProductPostModel postModel, [FromServices] IMapper mapper)
     {
-        try
-        {
-            var model = mapper.Map<ProductModel>(postModel);
-            var addedModel = await _productService.AddAsync(model);
-            return CreatedAtAction(nameof(GetProductById), new { id = addedModel.Id }, addedModel);
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest("The passed data is null");
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        var model = mapper.Map<ProductModel>(postModel);
+        var result = await _productService.AddAsync(model);
+        return result.ToCreatedAtAction(_logger, nameof(GetProductById), nameof(ProductsController));
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut]
-    public async Task<ActionResult<ProductModel>> UpdateProduct(ProductPutModel putModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> UpdateProduct(ProductPutModel putModel, [FromServices] IMapper mapper)
     {
-        try
-        {
-            var model = mapper.Map<ProductModel>(putModel);
-            var updatedModel = await _productService.UpdateAsync(model);
-            return Ok(updatedModel);
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest("The passed data is null");
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
-            return NotFound();
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        var model = mapper.Map<ProductModel>(putModel);
+        var result = await _productService.UpdateAsync(model);
+        return result.ToOk(_logger);
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
-    [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteProduct(long id)
+    [HttpDelete(ApiRoutes.Products.DeleteById)]
+    public async Task<IActionResult> DeleteProduct(long id)
     {
-        try
+        var result = await _productService.DeleteAsync(id);
+        if (result is null)
         {
-            await _productService.DeleteAsync(id);
+            _logger.LogInformation("Not found");
+            return NotFound();
+        }
+        else if (result.Value)
+        {
             return Ok();
         }
-        catch (EntityNotFoundException ex)
+
+        _logger.LogError("Server error");
+        return StatusCode(StatusCodes.Status500InternalServerError);
+    }
+
+
+    [HttpGet(ApiRoutes.Products.IsNameTaken)]
+    public async Task<IActionResult> IsProductNameTaken(string name)
+    {
+        var result = await _productService.IsNameTaken(name);
+        return result.ToOkIsTaken(_logger);
+    }
+
+    [HttpGet(ApiRoutes.ProductCategories.GetAll)]
+    public async Task<IActionResult> GetAllCategories()
+    {
+        var categories = await _categoryService.GetAllAsync();
+        return Ok(categories);
+    }
+
+    [HttpGet(ApiRoutes.ProductCategories.GetById)]
+    public async Task<IActionResult> GetCategoryById(long id)
+    {
+        var category = await _categoryService.GetByIdAsync(id);
+        if (category is null)
         {
-            _logger.LogInformation(ex, "Not found.");
+            _logger.LogInformation("The product category was not found.");
             return NotFound();
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-    }
 
-
-    [HttpGet("isNameTaken/{name}")]
-    public async Task<ActionResult> IsProductNameTaken(string name)
-    {
-        try
-        {
-            var isTaken = await _productService.IsNameTaken(name);
-            return new JsonResult(new { isTaken }) { StatusCode = StatusCodes.Status200OK };
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest("The passed data is null");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-    }
-
-    [HttpGet("categories")]
-    public async Task<ActionResult<IEnumerable<ProductCategoryModel>>> GetAllCategories()
-    {
-        try
-        {
-            var categories = await _categoryService.GetAllAsync();
-            return Ok(categories);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-    }
-
-    [HttpGet("categories/{id}")]
-    public async Task<ActionResult<ProductCategoryModel>> GetCategoryById(long id)
-    {
-        try
-        {
-            var category = await _categoryService.GetByIdAsync(id);
-            if (category is null)
-            {
-                _logger.LogInformation("The product category was not found.");
-                return NotFound();
-            }
-
-            return Ok(category);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        return Ok(category);
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
-    [HttpPost("categories")]
-    public async Task<ActionResult<ProductCategoryModel>> AddCategory(ProductCategoryPostModel postModel, [FromServices] IMapper mapper)
+    [HttpPost(ApiRoutes.ProductCategories.Add)]
+    public async Task<IActionResult> AddCategory(ProductCategoryPostModel postModel, [FromServices] IMapper mapper)
     {
-        try
-        {
-            var model = mapper.Map<ProductCategoryModel>(postModel);
-            var addedModel = await _categoryService.AddAsync(model);
-            return CreatedAtAction(nameof(GetCategoryById), new { id = addedModel.Id }, addedModel);
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest("The passed data is null");
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        var model = mapper.Map<ProductCategoryModel>(postModel);
+        var result = await _categoryService.AddAsync(model);
+        return result.ToCreatedAtAction(_logger, nameof(GetCategoryById), nameof(ProductsController));
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
-    [HttpPut("categories")]
-    public async Task<ActionResult<ProductCategoryModel>> UpdateCategory(ProductCategoryPutModel putModel, [FromServices] IMapper mapper)
+    [HttpPut(ApiRoutes.ProductCategories.Update)]
+    public async Task<IActionResult> UpdateCategory(ProductCategoryPutModel putModel, [FromServices] IMapper mapper)
     {
-        try
+        var model = mapper.Map<ProductCategoryModel>(putModel);
+        var result = await _categoryService.UpdateAsync(model);
+        return result.ToOk(_logger);
+    }
+
+    [Authorize(Roles = $"{UserRoles.Admin}")]
+    [HttpDelete(ApiRoutes.ProductCategories.DeleteById)]
+    public async Task<IActionResult> DeleteCategory(long id)
+    {
+        var result = await _categoryService.DeleteAsync(id);
+        if (result is null)
         {
-            var model = mapper.Map<ProductCategoryModel>(putModel);
-            var updatedModel = await _categoryService.UpdateAsync(model);
-            return Ok(updatedModel);
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest("The passed data is null");
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
+            _logger.LogInformation("Not found");
             return NotFound();
         }
-        catch (ArgumentException ex)
+        else if (result.Value)
         {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
-    }
-
-    [Authorize(Roles = $"{UserRoles.Admin}")]
-    [HttpDelete("categories/{id}")]
-    public async Task<ActionResult> DeleteCategory(long id)
-    {
-        try
-        {
-            await _categoryService.DeleteAsync(id);
             return Ok();
         }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogInformation(ex, "Not found.");
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+
+        _logger.LogError("Server error");
+        return StatusCode(StatusCodes.Status500InternalServerError);
     }
 
-    [HttpGet("categories/isNameTaken/{name}")]
-    public async Task<ActionResult> IsCategoryNameTaken(string name)
+    [HttpGet(ApiRoutes.ProductCategories.IsNameTaken)]
+    public async Task<IActionResult> IsCategoryNameTaken(string name)
     {
-        try
-        {
-            var isTaken = await _categoryService.IsNameTaken(name);
-            return new JsonResult(new { isTaken }) { StatusCode = StatusCodes.Status200OK };
-        }
-        catch (ArgumentNullException ex)
-        {
-            _logger.LogInformation(ex, "Bad request.");
-            return BadRequest("The passed data is null");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Server error.");
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        var result = await _categoryService.IsNameTaken(name);
+        return result.ToOkIsTaken(_logger);
     }
 }

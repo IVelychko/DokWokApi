@@ -1,4 +1,5 @@
 ﻿using DokWokApi.BLL.Models.Order;
+using LanguageExt.Common;
 
 namespace DokWokApi.BLL.Interfaces;
 
@@ -6,9 +7,5 @@ public interface IOrderService : ICrud<OrderModel>
 {
     Task<IEnumerable<OrderModel>> GetAllByUserIdAsync(string userId);
 
-    Task<OrderModel> AddOrderFromCartAsync(OrderModel model);
-
-    Task CompleteOrder(long id);
-
-    Task CancelOrder(long id);
+    Task<Result<OrderModel>> AddOrderFromCartAsync(OrderModel model);
 }

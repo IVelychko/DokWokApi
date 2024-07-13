@@ -1,4 +1,5 @@
 ﻿using DokWokApi.BLL.Models.User;
+using LanguageExt.Common;
 
 namespace DokWokApi.BLL.Interfaces;
 
@@ -14,33 +15,33 @@ public interface IUserService
 
     Task<UserModel?> GetCustomerByIdAsync(string id);
 
-    Task<UserModel> AddAsync(UserModel model, string password);
+    Task<Result<UserModel>> AddAsync(UserModel model, string password);
 
-    Task<UserModel> UpdateAsync(UserModel model);
+    Task<Result<UserModel>> UpdateAsync(UserModel model);
 
-    Task UpdateCustomerPasswordAsync(UserPasswordChangeModel model);
+    Task<Result<bool>> UpdateCustomerPasswordAsync(UserPasswordChangeModel model);
 
-    Task UpdateCustomerPasswordAsAdminAsync(UserPasswordChangeAsAdminModel model);
+    Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(UserPasswordChangeAsAdminModel model);
 
-    Task DeleteAsync(string id);
+    Task<bool?> DeleteAsync(string id);
 
-    Task<IEnumerable<string>> GetUserRolesAsync(string userId);
+    Task<Result<IEnumerable<string>>> GetUserRolesAsync(string userId);
 
-    Task<AuthorizedUserModel> AuthenticateCustomerLoginAsync(UserLoginModel model);
+    Task<Result<AuthorizedUserModel>> AuthenticateCustomerLoginAsync(UserLoginModel model);
 
-    Task<AuthorizedUserModel> AuthenticateAdminLoginAsync(UserLoginModel model);
+    Task<Result<AuthorizedUserModel>> AuthenticateAdminLoginAsync(UserLoginModel model);
 
-    Task<AuthorizedUserModel> AuthenticateRegisterAsync(UserRegisterModel model);
+    Task<Result<AuthorizedUserModel>> AuthenticateRegisterAsync(UserRegisterModel model);
 
     Task<UserModel?> IsCustomerTokenValidAsync(string token);
 
     Task<UserModel?> IsAdminTokenValidAsync(string token);
 
-    Task<bool> IsUserNameTaken(string userName);
+    Task<Result<bool>> IsUserNameTaken(string userName);
 
-    Task<bool> IsEmailTaken(string email);
+    Task<Result<bool>> IsEmailTaken(string email);
 
-    Task<bool> IsPhoneNumberTaken(string phoneNumber);
+    Task<Result<bool>> IsPhoneNumberTaken(string phoneNumber);
 
     Task<UserModel?> GetUserFromToken(string token);
 }

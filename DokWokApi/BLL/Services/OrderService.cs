@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
-using DokWokApi.DAL;
 using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
+using DokWokApi.Exceptions;
+using LanguageExt;
+using LanguageExt.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace DokWokApi.BLL.Services;
@@ -11,9 +13,7 @@ namespace DokWokApi.BLL.Services;
 public class OrderService : IOrderService
 {
     private readonly IOrderRepository _orderRepository;
-
     private readonly ICartService _cartService;
-
     private readonly IMapper _mapper;
 
     public OrderService(IOrderRepository orderRepository, ICartService cartService, IMapper mapper)
@@ -23,23 +23,44 @@ public class OrderService : IOrderService
         _mapper = mapper;
     }
 
-    public async Task<OrderModel> AddAsync(OrderModel model)
+    public async Task<Result<OrderModel>> AddAsync(OrderModel model)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
-        var entity = _mapper.Map<Order>(model);
+        if (model is null)
+        {
+            var exception = new ValidationException("The passed model is null.");
+            return new Result<OrderModel>(exception);
+        }
 
-        var addedEntity = await _orderRepository.AddAsync(entity);
-        var addedEntityWithDetails = await _orderRepository.GetByIdWithDetailsAsync(addedEntity.Id);
-        return _mapper.Map<OrderModel>(addedEntityWithDetails);
+        var entity = _mapper.Map<Order>(model);
+        var result = await _orderRepository.AddAsync(entity);
+
+        return result.Match(o => _mapper.Map<OrderModel>(o),
+            e => new Result<OrderModel>(e));
     }
 
-    public async Task<OrderModel> AddOrderFromCartAsync(OrderModel model)
+    public async Task<Result<OrderModel>> AddOrderFromCartAsync(OrderModel model)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
+        if (model is null)
+        {
+            var exception = new ValidationException("The passed model is null.");
+            return new Result<OrderModel>(exception);
+        }
+
         var cart = await _cartService.GetCart();
-        ServiceHelper.ThrowOrderExceptionIfTrue(cart.Lines.Count < 1, "There are no products in the cart");
+        if (cart is null)
+        {
+            var exception = new CartException("There was an error while getting the cart.");
+            return new Result<OrderModel>(exception);
+        }
+
+        if (cart.Lines.Count < 1)
+        {
+            var exception = new CartException("There are no products in the cart");
+            return new Result<OrderModel>(exception);
+        }
+        
         var orderLines = _mapper.Map<List<OrderLineModel>>(cart.Lines);
-        model.CreationDate = DateTime.Now;
+        model.CreationDate = DateTime.UtcNow;
         model.OrderLines = orderLines;
         model.TotalOrderPrice = cart.TotalCartPrice;
         model.Status = OrderStatuses.BeingProcessed;
@@ -49,9 +70,9 @@ public class OrderService : IOrderService
         return addedModel;
     }
 
-    public async Task DeleteAsync(long id)
+    public async Task<bool?> DeleteAsync(long id)
     {
-        await _orderRepository.DeleteByIdAsync(id);
+        return await _orderRepository.DeleteByIdAsync(id);
     }
 
     public async Task<IEnumerable<OrderModel>> GetAllAsync()
@@ -83,29 +104,18 @@ public class OrderService : IOrderService
         return model;
     }
 
-    public async Task<OrderModel> UpdateAsync(OrderModel model)
+    public async Task<Result<OrderModel>> UpdateAsync(OrderModel model)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
+        if (model is null)
+        {
+            var exception = new ValidationException("The passed model is null.");
+            return new Result<OrderModel>(exception);
+        }
 
         var entity = _mapper.Map<Order>(model);
-        var updatedEntity = await _orderRepository.UpdateAsync(entity);
-        var updatedEntityWithDetails = await _orderRepository.GetByIdWithDetailsAsync(updatedEntity.Id);
-        return _mapper.Map<OrderModel>(updatedEntityWithDetails);
-    }
+        var result = await _orderRepository.UpdateAsync(entity);
 
-    public async Task CompleteOrder(long id)
-    {
-        var entity = await _orderRepository.GetByIdAsync(id);
-        entity = RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "There is no entity with the passed ID in the database.");
-        entity.Status = OrderStatuses.Completed;
-        await _orderRepository.UpdateAsync(entity);
-    }
-
-    public async Task CancelOrder(long id)
-    {
-        var entity = await _orderRepository.GetByIdAsync(id);
-        entity = RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "There is no entity with the passed ID in the database.");
-        entity.Status = OrderStatuses.Cancelled;
-        await _orderRepository.UpdateAsync(entity);
+        return result.Match(o => _mapper.Map<OrderModel>(o),
+            e => new Result<OrderModel>(e));
     }
 }

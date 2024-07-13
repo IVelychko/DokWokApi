@@ -1,5 +1,9 @@
 ﻿using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
+using DokWokApi.Exceptions;
+using DokWokApi.Validation;
+using LanguageExt.ClassInstances;
+using LanguageExt.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace DokWokApi.DAL.Repositories;
@@ -7,24 +11,26 @@ namespace DokWokApi.DAL.Repositories;
 public class OrderLineRepository : IOrderLineRepository
 {
     private readonly StoreDbContext _context;
+    private readonly IValidator<OrderLine> _validator;
 
-    public OrderLineRepository(StoreDbContext context)
+    public OrderLineRepository(StoreDbContext context, IValidator<OrderLine> validator)
     {
         _context = context;
+        _validator = validator;
     }
 
-    public async Task<OrderLine> AddAsync(OrderLine entity)
+    public async Task<Result<OrderLine>> AddAsync(OrderLine entity)
     {
-        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
-        RepositoryHelper.ThrowArgumentExceptionIfTrue(entity.Quantity < 1, "The quantity must be greater than zero.");
+        var validationResult = await _validator.ValidateAddAsync(entity);
+        if (!validationResult.IsValid)
+        {
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
 
-        var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == entity.OrderId);
-        RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(order, "There is no order with the ID specified in the OrderId property of the OrderLine entity.");
-        var product = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == entity.ProductId);
-        product = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(product, "There is no product with the ID specified in the ProductId property of the OrderLine entity.");
-        var isExisting = await _context.OrderLines.AnyAsync(ol => ol.OrderId == entity.OrderId && ol.ProductId == entity.ProductId);
-        RepositoryHelper.ThrowArgumentExceptionIfTrue(isExisting, "The order line with the same orderID and productID already exists");
+            return new Result<OrderLine>(exception);
+        }
 
+        var product = await _context.Products.AsNoTracking().FirstAsync(p => p.Id == entity.ProductId);
         if (entity.TotalLinePrice == 0)
         {
             var totalPrice = product.Price * entity.Quantity;
@@ -32,27 +38,31 @@ public class OrderLineRepository : IOrderLineRepository
         }
 
         await _context.AddAsync(entity);
-        await _context.SaveChangesAsync();
-        return entity;
+        var result = await _context.SaveChangesAsync();
+        if (result > 0)
+        {
+            var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
+            return addedEntity is not null ? addedEntity
+                : new Result<OrderLine>(new DbException("There was the database error"));
+        }
+        else
+        {
+            var exception = new DbException("There was the database error");
+            return new Result<OrderLine>(exception);
+        }
     }
 
-    public async Task DeleteAsync(OrderLine entity)
-    {
-        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
-        var entityToDelete = await _context.FindAsync<OrderLine>(entity.Id);
-        RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entityToDelete, "There is no entity with this ID in the database.");
-
-        _context.Remove(entity);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task DeleteByIdAsync(long id)
+    public async Task<bool?> DeleteByIdAsync(long id)
     {
         var entity = await _context.FindAsync<OrderLine>(id);
-        entity = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entity, "There is no entity with this ID in the database.");
+        if (entity is null)
+        {
+            return null;
+        }
 
         _context.Remove(entity);
-        await _context.SaveChangesAsync();
+        var result = await _context.SaveChangesAsync();
+        return result > 0;
     }
 
     public IQueryable<OrderLine> GetAll()
@@ -99,23 +109,18 @@ public class OrderLineRepository : IOrderLineRepository
             .FirstOrDefaultAsync(ol => ol.OrderId == orderId && ol.ProductId == productId);
     }
 
-    public async Task<OrderLine> UpdateAsync(OrderLine entity)
+    public async Task<Result<OrderLine>> UpdateAsync(OrderLine entity)
     {
-        RepositoryHelper.ThrowArgumentNullExceptionIfNull(entity, "The passed entity is null.");
-        RepositoryHelper.ThrowArgumentExceptionIfTrue(entity.Quantity < 1, "The quantity must be greater than zero.");
-
-        var entityToUpdate = await _context.OrderLines.AsNoTracking().FirstOrDefaultAsync(ol => ol.Id == entity.Id);
-        entityToUpdate = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(entityToUpdate, "There is no entity with this ID in the database.");
-        var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == entity.OrderId);
-        RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(order, "There is no order with the ID specified in the OrderId property of the OrderLine entity.");
-        var product = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == entity.ProductId);
-        product = RepositoryHelper.ThrowEntityNotFoundExceptionIfNull(product, "There is no product with the ID specified in the ProductId property of the OrderLine entity.");
-        if (entity.OrderId != entityToUpdate.OrderId || entity.ProductId != entityToUpdate.ProductId)
+        var validationResult = await _validator.ValidateUpdateAsync(entity);
+        if (!validationResult.IsValid)
         {
-            var isExisting = await _context.OrderLines.AnyAsync(ol => ol.OrderId == entity.OrderId && ol.ProductId == entity.ProductId);
-            RepositoryHelper.ThrowArgumentExceptionIfTrue(isExisting, "The order line with the same orderID and productID already exists");
+            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+                : new ValidationException(validationResult.Error);
+
+            return new Result<OrderLine>(exception);
         }
 
+        var product = await _context.Products.AsNoTracking().FirstAsync(p => p.Id == entity.ProductId);
         if (entity.TotalLinePrice == 0)
         {
             var totalPrice = product.Price * entity.Quantity;
@@ -123,7 +128,17 @@ public class OrderLineRepository : IOrderLineRepository
         }
 
         _context.Update(entity);
-        await _context.SaveChangesAsync();
-        return entity;
+        var result = await _context.SaveChangesAsync();
+        if (result > 0)
+        {
+            var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
+            return updatedEntity is not null ? updatedEntity 
+                : new Result<OrderLine>(new DbException("There was the database error"));
+        }
+        else
+        {
+            var exception = new DbException("There was the database error");
+            return new Result<OrderLine>(exception);
+        }
     }
 }

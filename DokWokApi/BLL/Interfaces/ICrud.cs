@@ -1,4 +1,6 @@
-﻿namespace DokWokApi.BLL.Interfaces;
+﻿using LanguageExt.Common;
+
+namespace DokWokApi.BLL.Interfaces;
 
 public interface ICrud<TModel> where TModel : class
 {
@@ -6,9 +8,9 @@ public interface ICrud<TModel> where TModel : class
 
     Task<TModel?> GetByIdAsync(long id);
 
-    Task<TModel> AddAsync(TModel model);
+    Task<Result<TModel>> AddAsync(TModel model);
 
-    Task<TModel> UpdateAsync(TModel model);
+    Task<Result<TModel>> UpdateAsync(TModel model);
 
-    Task DeleteAsync(long id);
+    Task<bool?> DeleteAsync(long id);
 }

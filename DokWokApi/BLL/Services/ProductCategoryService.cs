@@ -3,6 +3,8 @@ using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.ProductCategory;
 using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Interfaces;
+using DokWokApi.Exceptions;
+using LanguageExt.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace DokWokApi.BLL.Services;
@@ -10,7 +12,6 @@ namespace DokWokApi.BLL.Services;
 public class ProductCategoryService : IProductCategoryService
 {
     private readonly IProductCategoryRepository _repository;
-
     private readonly IMapper _mapper;
 
     public ProductCategoryService(IProductCategoryRepository repository, IMapper mapper)
@@ -19,17 +20,24 @@ public class ProductCategoryService : IProductCategoryService
         _mapper = mapper;
     }
 
-    public async Task<ProductCategoryModel> AddAsync(ProductCategoryModel model)
+    public async Task<Result<ProductCategoryModel>> AddAsync(ProductCategoryModel model)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
+        if (model is null)
+        {
+            var exception = new ValidationException("The passed model is null.");
+            return new Result<ProductCategoryModel>(exception);
+        }
+
         var entity = _mapper.Map<ProductCategory>(model);
-        var addedEntity = await _repository.AddAsync(entity);
-        return _mapper.Map<ProductCategoryModel>(addedEntity);
+        var result = await _repository.AddAsync(entity);
+
+        return result.Match(c => _mapper.Map<ProductCategoryModel>(c),
+            e => new Result<ProductCategoryModel>(e));
     }
 
-    public async Task DeleteAsync(long id)
+    public async Task<bool?> DeleteAsync(long id)
     {
-        await _repository.DeleteByIdAsync(id);
+        return await _repository.DeleteByIdAsync(id);
     }
 
     public async Task<IEnumerable<ProductCategoryModel>> GetAllAsync()
@@ -51,18 +59,29 @@ public class ProductCategoryService : IProductCategoryService
         return model;
     }
 
-    public async Task<ProductCategoryModel> UpdateAsync(ProductCategoryModel model)
+    public async Task<Result<ProductCategoryModel>> UpdateAsync(ProductCategoryModel model)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(model, "The passed model is null.");
+        if (model is null)
+        {
+            var exception = new ValidationException("The passed model is null.");
+            return new Result<ProductCategoryModel>(exception);
+        }
 
         var entity = _mapper.Map<ProductCategory>(model);
-        var updatedEntity = await _repository.UpdateAsync(entity);
-        return _mapper.Map<ProductCategoryModel>(updatedEntity);
+        var result = await _repository.UpdateAsync(entity);
+
+        return result.Match(c => _mapper.Map<ProductCategoryModel>(c),
+            e => new Result<ProductCategoryModel>(e));
     }
 
-    public async Task<bool> IsNameTaken(string name)
+    public async Task<Result<bool>> IsNameTaken(string name)
     {
-        ServiceHelper.ThrowArgumentNullExceptionIfNull(name, "Name is null");
+        if (name is null)
+        {
+            var exception = new ValidationException("The passed name is null");
+            return new Result<bool>(exception);
+        }
+
         var category = await _repository.GetAll().FirstOrDefaultAsync(c => c.Name == name);
         return category is not null;
     }
