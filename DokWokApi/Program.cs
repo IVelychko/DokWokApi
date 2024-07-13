@@ -2,6 +2,7 @@ using AutoMapper;
 using DokWokApi.BLL;
 using DokWokApi.DAL;
 using DokWokApi.Extensions;
+using DokWokApi.Middlewares;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -49,6 +50,8 @@ builder.Services.AddSwaggerSetup();
 builder.Services.AddJwtBearerAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
+builder.Services.AddTransient<GlobalExceptionHandlingMiddleware>();
+
 var app = builder.Build();
 
 app.UseCors(policyName);
@@ -59,6 +62,8 @@ app.UseSession();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 app.MapControllers();
 
