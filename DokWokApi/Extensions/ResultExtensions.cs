@@ -1,142 +1,126 @@
 ﻿using DokWokApi.BLL.Models;
 using DokWokApi.BLL.Models.Order;
-using DokWokApi.BLL.Models.ShoppingCart;
+using DokWokApi.Models.ShoppingCart;
 using DokWokApi.BLL.Models.User;
-using DokWokApi.Exceptions;
-using LanguageExt.Common;
+using DokWokApi.DAL.Exceptions;
+using DokWokApi.DAL.ResultType;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DokWokApi.Extensions;
 
 public static class ResultExtensions
 {
-    public static IActionResult ToOkCart(this Result<Cart?> result, ILogger logger)
+    public static IActionResult ToOkCartResult(this Result<Cart?> result)
     {
         return result.Match(cart =>
         {
             if (cart is null)
             {
-                logger.LogError("Cart error");
                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
 
             return new OkObjectResult(cart);
-        }, e => GetResultFromErrorCart(e, logger));
+        }, e => GetResultFromErrorCart(e));
     }
 
-    public static IActionResult ToOkPasswordUpdate(this Result<bool> result, ILogger logger)
+    public static IActionResult ToOkPasswordUpdateResult(this Result<bool> result)
     {
         return result.Match(isUpdated => new OkResult(), 
-            e => GetResultFromError(e, logger));
+            e => GetResultFromError(e));
     }
 
-    public static IActionResult ToOkIsTaken(this Result<bool> result, ILogger logger)
+    public static IActionResult ToOkIsTakenResult(this Result<bool> result)
     {
         return result.Match<IActionResult>(isTaken => new OkObjectResult(new { isTaken }), e =>
         {
             if (e is ValidationException validationException)
             {
-                logger.LogInformation(validationException, "Validation problem");
                 return new BadRequestObjectResult(new ErrorResultModel { Error = validationException.Message });
             }
 
-            logger.LogError(e, "Server error");
             return new StatusCodeResult(StatusCodes.Status500InternalServerError);
         });
     }
 
-    public static IActionResult ToOk<TModel>(this Result<TModel> result, ILogger logger)
+    public static IActionResult ToOkResult<TModel>(this Result<TModel> result)
     {
         return result.Match(model => new OkObjectResult(model), 
-            e => GetResultFromError(e, logger));
+            e => GetResultFromError(e));
     }
 
-    public static IActionResult ToCreatedAtActionOrder(this Result<OrderModel> result, ILogger logger, string actionName, string controllerName)
+    public static IActionResult ToCreatedAtActionOrderResult(this Result<OrderModel> result, string actionName, string controllerName)
     {
         return result.Match(order => new CreatedAtActionResult(actionName, controllerName, new { id = order.Id }, order), 
-            e => GetResultFromErrorOrder(e, logger));
+            e => GetResultFromErrorOrder(e));
     }
 
-    public static IActionResult ToCreatedAtActionUser(this Result<UserModel> result, ILogger logger, string actionName, string controllerName)
+    public static IActionResult ToCreatedAtActionUserResult(this Result<UserModel> result, string actionName, string controllerName)
     {
         return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model), 
-            e => GetResultFromError(e, logger));
+            e => GetResultFromError(e));
     }
 
-    public static IActionResult ToCreatedAtAction<TModel>(this Result<TModel> result, ILogger logger, string actionName, string controllerName) where TModel : BaseModel
+    public static IActionResult ToCreatedAtActionResult<TModel>(this Result<TModel> result, string actionName, string controllerName) where TModel : BaseModel
     {
         return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model), 
-            e => GetResultFromError(e, logger));
+            e => GetResultFromError(e));
     }
 
-    private static IActionResult GetResultFromError(Exception e, ILogger logger)
+    private static IActionResult GetResultFromError(Exception e)
     {
         if (e is ValidationException validationException)
         {
-            logger.LogInformation(validationException, "Validation problem");
             return new BadRequestObjectResult(new ErrorResultModel { Error = validationException.Message });
         }
-        else if (e is EntityNotFoundException notFoundException)
+        else if (e is EntityNotFoundException)
         {
-            logger.LogInformation(notFoundException, "Not found");
             return new NotFoundResult();
         }
-        else if (e is DbException dbException)
+        else if (e is DbException)
         {
-            logger.LogError(dbException, "Database error");
             return new StatusCodeResult(StatusCodes.Status500InternalServerError);
         }
 
-        logger.LogError(e, "Server error");
         return new StatusCodeResult(StatusCodes.Status500InternalServerError);
     }
 
-    private static IActionResult GetResultFromErrorOrder(Exception e, ILogger logger)
+    private static IActionResult GetResultFromErrorOrder(Exception e)
     {
         if (e is ValidationException validationException)
         {
-            logger.LogInformation(validationException, "Validation problem");
             return new BadRequestObjectResult(new ErrorResultModel { Error = validationException.Message });
         }
-        else if (e is EntityNotFoundException notFoundException)
+        else if (e is EntityNotFoundException)
         {
-            logger.LogInformation(notFoundException, "Not found");
             return new NotFoundResult();
         }
-        else if (e is CartException cartException)
+        else if (e is CartException)
         {
-            logger.LogError(cartException, "Cart error");
             return new StatusCodeResult(StatusCodes.Status500InternalServerError);
         }
-        else if (e is DbException dbException)
+        else if (e is DbException)
         {
-            logger.LogError(dbException, "Database error");
             return new StatusCodeResult(StatusCodes.Status500InternalServerError);
         }
 
-        logger.LogError(e, "Server error");
         return new StatusCodeResult(StatusCodes.Status500InternalServerError);
     }
 
-    private static IActionResult GetResultFromErrorCart(Exception e, ILogger logger)
+    private static IActionResult GetResultFromErrorCart(Exception e)
     {
         if (e is ValidationException validationException)
         {
-            logger.LogInformation(validationException, "Validation problem");
             return new BadRequestObjectResult(new ErrorResultModel { Error = validationException.Message });
         }
-        else if (e is EntityNotFoundException notFoundException)
+        else if (e is EntityNotFoundException)
         {
-            logger.LogInformation(notFoundException, "Not found");
             return new NotFoundResult();
         }
-        else if (e is CartNotFoundException cartNotFoundException)
+        else if (e is CartNotFoundException)
         {
-            logger.LogInformation(cartNotFoundException, "Not found");
             return new NotFoundResult();
         }
 
-        logger.LogError(e, "Server error");
         return new StatusCodeResult(StatusCodes.Status500InternalServerError);
     }
 }

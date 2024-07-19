@@ -1,6 +1,6 @@
-﻿using DokWokApi.BLL.Interfaces;
-using DokWokApi.Extensions;
+﻿using DokWokApi.Extensions;
 using DokWokApi.Infrastructure;
+using DokWokApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DokWokApi.Controllers;
@@ -10,12 +10,10 @@ namespace DokWokApi.Controllers;
 public class CartController : ControllerBase
 {
     private readonly ICartService _cartService;
-    private readonly ILogger<CartController> _logger;
 
-    public CartController(ICartService cartService, ILogger<CartController> logger)
+    public CartController(ICartService cartService)
     {
         _cartService = cartService;
-        _logger = logger;
     }
 
     [HttpGet]
@@ -24,7 +22,6 @@ public class CartController : ControllerBase
         var cart = await _cartService.GetCart();
         if (cart is null)
         {
-            _logger.LogError("Cart error.");
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
 
@@ -36,12 +33,11 @@ public class CartController : ControllerBase
     {
         if (quantity <= 0)
         {
-            _logger.LogInformation("Bad request: Wrong product quantity.");
             return BadRequest("The quantity value must be greater than 0");
         }
 
         var result = await _cartService.AddItem(productId, quantity);
-        return result.ToOkCart(_logger);
+        return result.ToOkCartResult();
     }
 
     [HttpDelete(ApiRoutes.Cart.RemoveProduct)]
@@ -49,19 +45,18 @@ public class CartController : ControllerBase
     {
         if (quantity <= 0)
         {
-            _logger.LogInformation("Bad request: Wrong product quantity.");
             return BadRequest("The quantity value must be greater than 0");
         }
 
         var result = await _cartService.RemoveItem(productId, quantity);
-        return result.ToOkCart(_logger);
+        return result.ToOkCartResult();
     }
 
     [HttpDelete(ApiRoutes.Cart.RemoveLine)]
     public async Task<IActionResult> RemoveLineFromCart(long productId)
     {
         var result = await _cartService.RemoveLine(productId);
-        return result.ToOkCart(_logger);
+        return result.ToOkCartResult();
     }
 
     [HttpDelete]
@@ -70,7 +65,6 @@ public class CartController : ControllerBase
         var result = await _cartService.ClearCart();
         if (!result)
         {
-            _logger.LogError("Cart error.");
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
 

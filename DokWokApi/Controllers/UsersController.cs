@@ -1,12 +1,12 @@
-﻿using AutoMapper;
-using DokWokApi.BLL.Interfaces;
-using DokWokApi.Exceptions;
+﻿using DokWokApi.BLL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using DokWokApi.BLL.Models.User;
 using DokWokApi.BLL;
 using Microsoft.AspNetCore.Authorization;
 using DokWokApi.Extensions;
 using DokWokApi.Infrastructure;
+using DokWokApi.DAL.Exceptions;
+using DokWokApi.BLL.Extensions;
 
 namespace DokWokApi.Controllers;
 
@@ -15,12 +15,10 @@ namespace DokWokApi.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
-    private readonly ILogger<UsersController> _logger;
 
-    public UsersController(IUserService userService, ILogger<UsersController> logger)
+    public UsersController(IUserService userService)
     {
         _userService = userService;
-        _logger = logger;
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -41,7 +39,7 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet(ApiRoutes.Users.GetUserByUserName)]
-    public async Task<IActionResult> GetUserByUserName(string userName, [FromServices] IUserService userService)
+    public async Task<IActionResult> GetUserByUserName(string userName)
     {
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
         if (userId is null)
@@ -49,13 +47,13 @@ public class UsersController : ControllerBase
             return Unauthorized();
         }
 
-        var authorizedUser = await userService.GetByIdAsync(userId);
+        var authorizedUser = await _userService.GetByIdAsync(userId);
         if (authorizedUser is null)
         {
             return Unauthorized();
         }
 
-        var rolesResult = await userService.GetUserRolesAsync(authorizedUser.Id!);
+        var rolesResult = await _userService.GetUserRolesAsync(authorizedUser.Id!);
         var isAdmin = rolesResult.Match(roles => roles.Contains(UserRoles.Admin),
             e => false);
         if (!isAdmin && authorizedUser.UserName != userName)
@@ -74,7 +72,7 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet(ApiRoutes.Users.GetUserById)]
-    public async Task<IActionResult> GetUserById(string id, [FromServices] IUserService userService)
+    public async Task<IActionResult> GetUserById(string id)
     {
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
         if (userId is null)
@@ -82,13 +80,13 @@ public class UsersController : ControllerBase
             return Unauthorized();
         }
 
-        var authorizedUser = await userService.GetByIdAsync(userId);
+        var authorizedUser = await _userService.GetByIdAsync(userId);
         if (authorizedUser is null)
         {
             return Unauthorized();
         }
 
-        var rolesResult = await userService.GetUserRolesAsync(authorizedUser.Id!);
+        var rolesResult = await _userService.GetUserRolesAsync(authorizedUser.Id!);
         var isAdmin = rolesResult.Match(roles => roles.Contains(UserRoles.Admin),
             e => false);
         if (!isAdmin && authorizedUser.Id != id)
@@ -107,7 +105,7 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpGet(ApiRoutes.Users.GetCustomerById)]
-    public async Task<IActionResult> GetCustomerById(string id, [FromServices] IUserService userService)
+    public async Task<IActionResult> GetCustomerById(string id)
     {
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
         if (userId is null)
@@ -115,13 +113,13 @@ public class UsersController : ControllerBase
             return Unauthorized();
         }
 
-        var authorizedUser = await userService.GetByIdAsync(userId);
+        var authorizedUser = await _userService.GetByIdAsync(userId);
         if (authorizedUser is null)
         {
             return Unauthorized();
         }
 
-        var rolesResult = await userService.GetUserRolesAsync(authorizedUser.Id!);
+        var rolesResult = await _userService.GetUserRolesAsync(authorizedUser.Id!);
         var isAdmin = rolesResult.Match(roles => roles.Contains(UserRoles.Admin),
             e => false);
         if (!isAdmin && authorizedUser.Id != id)
@@ -140,17 +138,16 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost]
-    public async Task<IActionResult> AddUser(UserRegisterModel postModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> AddUser(UserRegisterModel postModel)
     {
-        var model = mapper.Map<UserModel>(postModel);
+        var model = postModel.ToModel();
         var result = await _userService.AddAsync(model, postModel.Password!);
-        return result.ToCreatedAtActionUser(_logger, nameof(GetCustomerById), nameof(UsersController));
+        return result.ToCreatedAtActionUserResult(nameof(GetCustomerById), nameof(UsersController));
     }
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
     [HttpPut]
-    public async Task<IActionResult> UpdateUser(
-        UserPutModel putModel, [FromServices] IUserService userService, [FromServices] IMapper mapper)
+    public async Task<IActionResult> UpdateUser(UserPutModel putModel)
     {
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
         if (userId is null)
@@ -158,13 +155,13 @@ public class UsersController : ControllerBase
             return Unauthorized();
         }
 
-        var authorizedUser = await userService.GetByIdAsync(userId);
+        var authorizedUser = await _userService.GetByIdAsync(userId);
         if (authorizedUser is null)
         {
             return Unauthorized();
         }
 
-        var rolesResult = await userService.GetUserRolesAsync(authorizedUser.Id!);
+        var rolesResult = await _userService.GetUserRolesAsync(authorizedUser.Id!);
         var isAdmin = rolesResult.Match(roles => roles.Contains(UserRoles.Admin),
             e => false);
         if (!isAdmin && authorizedUser.Id != putModel.Id)
@@ -172,14 +169,14 @@ public class UsersController : ControllerBase
             return new ForbidResult();
         }
 
-        var model = mapper.Map<UserModel>(putModel);
+        var model = putModel.ToModel();
         var result = await _userService.UpdateAsync(model);
-        return result.ToOk(_logger);
+        return result.ToOkResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Customer}")]
     [HttpPut(ApiRoutes.Users.UpdateCustomerPassword)]
-    public async Task<IActionResult> UpdateCustomerPassword(UserPasswordChangeModel model, [FromServices] IUserService userService)
+    public async Task<IActionResult> UpdateCustomerPassword(UserPasswordChangeModel model)
     {
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
         if (userId is null)
@@ -187,7 +184,7 @@ public class UsersController : ControllerBase
             return Unauthorized();
         }
 
-        var authorizedUser = await userService.GetByIdAsync(userId);
+        var authorizedUser = await _userService.GetByIdAsync(userId);
         if (authorizedUser is null)
         {
             return Unauthorized();
@@ -198,7 +195,7 @@ public class UsersController : ControllerBase
         }
 
         var result = await _userService.UpdateCustomerPasswordAsync(model);
-        return result.ToOkPasswordUpdate(_logger);
+        return result.ToOkPasswordUpdateResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -206,7 +203,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> UpdateCustomerPasswordAsAdmin(UserPasswordChangeAsAdminModel model)
     {
         var result = await _userService.UpdateCustomerPasswordAsAdminAsync(model);
-        return result.ToOkPasswordUpdate(_logger);
+        return result.ToOkPasswordUpdateResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -216,7 +213,6 @@ public class UsersController : ControllerBase
         var result = await _userService.DeleteAsync(id);
         if (result is null)
         {
-            _logger.LogInformation("Not found");
             return NotFound();
         }
         else if (result.Value)
@@ -224,7 +220,6 @@ public class UsersController : ControllerBase
             return Ok();
         }
 
-        _logger.LogError("Server error");
         return StatusCode(StatusCodes.Status500InternalServerError);
     }
 
@@ -232,35 +227,35 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> LoginCustomer(UserLoginModel loginModel)
     {
         var result = await _userService.AuthenticateCustomerLoginAsync(loginModel);
-        return result.ToOk(_logger);
+        return result.ToOkResult();
     }
 
     [HttpPost(ApiRoutes.Users.LoginAdmin)]
     public async Task<IActionResult> LoginAdmin(UserLoginModel loginModel)
     {
         var result = await _userService.AuthenticateAdminLoginAsync(loginModel);
-        return result.ToOk(_logger);
+        return result.ToOkResult();
     }
 
     [HttpPost(ApiRoutes.Users.RegisterUser)]
     public async Task<IActionResult> RegisterUser(UserRegisterModel registerModel)
     {
         var result = await _userService.AuthenticateRegisterAsync(registerModel);
-        return result.ToOk(_logger);
+        return result.ToOkResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Customer},{UserRoles.Admin}")]
     [HttpGet(ApiRoutes.Users.IsCustomerTokenValid)]
-    public async Task<IActionResult> IsCustomerTokenValid([FromServices] IUserService userService)
+    public async Task<IActionResult> IsCustomerTokenValid()
     {
-        return await ValidateToken(HttpContext, userService);
+        return await ValidateToken(HttpContext);
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpGet(ApiRoutes.Users.IsAdminTokenValid)]
-    public async Task<IActionResult> IsAdminTokenValid([FromServices] IUserService userService)
+    public async Task<IActionResult> IsAdminTokenValid()
     {
-        return await ValidateToken(HttpContext, userService);
+        return await ValidateToken(HttpContext);
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -270,13 +265,11 @@ public class UsersController : ControllerBase
         var result = await _userService.GetUserRolesAsync(userId);
         return result.Match<IActionResult>(roles => new OkObjectResult(roles), e =>
         {
-            if (e is EntityNotFoundException notFoundException)
+            if (e is EntityNotFoundException)
             {
-                _logger.LogInformation(notFoundException, "Not found");
                 return new NotFoundResult();
             }
 
-            _logger.LogError(e, "Server error");
             return new StatusCodeResult(StatusCodes.Status500InternalServerError);
         });
     }
@@ -285,24 +278,24 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> IsUserNameTaken(string userName)
     {
         var result = await _userService.IsUserNameTaken(userName);
-        return result.ToOkIsTaken(_logger);
+        return result.ToOkIsTakenResult();
     }
 
     [HttpGet(ApiRoutes.Users.IsCustomerEmailTaken)]
     public async Task<IActionResult> IsEmailTaken(string email)
     {
         var result = await _userService.IsEmailTaken(email);
-        return result.ToOkIsTaken(_logger);
+        return result.ToOkIsTakenResult();
     }
 
     [HttpGet(ApiRoutes.Users.IsCustomerPhoneNumberTaken)]
     public async Task<IActionResult> IsPhoneNumberTaken(string phoneNumber)
     {
         var result = await _userService.IsPhoneNumberTaken(phoneNumber);
-        return result.ToOkIsTaken(_logger);
+        return result.ToOkIsTakenResult();
     }
 
-    private async Task<IActionResult> ValidateToken(HttpContext context, IUserService userService)
+    private async Task<IActionResult> ValidateToken(HttpContext context)
     {
         var userId = context.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
         if (userId is null)
@@ -310,7 +303,7 @@ public class UsersController : ControllerBase
             return Unauthorized();
         }
 
-        var authorizedUser = await userService.GetByIdAsync(userId);
+        var authorizedUser = await _userService.GetByIdAsync(userId);
         if (authorizedUser is null)
         {
             return Unauthorized();

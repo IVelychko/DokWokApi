@@ -1,9 +1,10 @@
-﻿using AutoMapper;
-using DokWokApi.BLL;
+﻿using DokWokApi.BLL;
+using DokWokApi.BLL.Extensions;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
 using DokWokApi.Extensions;
 using DokWokApi.Infrastructure;
+using DokWokApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,13 +16,11 @@ public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
     private readonly IOrderLineService _orderLineService;
-    private readonly ILogger<OrdersController> _logger;
 
-    public OrdersController(IOrderService orderService, IOrderLineService orderLineService, ILogger<OrdersController> logger)
+    public OrdersController(IOrderService orderService, IOrderLineService orderLineService)
     {
         _orderService = orderService;
         _orderLineService = orderLineService;
-        _logger = logger;
     }
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
@@ -42,7 +41,6 @@ public class OrdersController : ControllerBase
         var order = await _orderService.GetByIdAsync(id);
         if (order is null)
         {
-            _logger.LogInformation("The order was not found.");
             return NotFound();
         }
 
@@ -50,28 +48,28 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost(ApiRoutes.Orders.AddDelivery)]
-    public async Task<IActionResult> AddDeliveryOrder(DeliveryOrderForm form, [FromServices] IMapper mapper)
+    public async Task<IActionResult> AddDeliveryOrder(DeliveryOrderForm form, [FromServices] ICartService cartService)
     {
-        var model = mapper.Map<OrderModel>(form);
-        var result = await _orderService.AddOrderFromCartAsync(model);
-        return result.ToCreatedAtActionOrder(_logger, nameof(GetOrderById), nameof(OrdersController));
+        var model = form.ToModel();
+        var result = await _orderService.AddOrderFromCartAsync(model, cartService);
+        return result.ToCreatedAtActionOrderResult(nameof(GetOrderById), nameof(OrdersController));
     }
 
     [HttpPost(ApiRoutes.Orders.AddTakeaway)]
-    public async Task<IActionResult> AddTakeawayOrder(TakeawayOrderForm form, [FromServices] IMapper mapper)
+    public async Task<IActionResult> AddTakeawayOrder(TakeawayOrderForm form, [FromServices] ICartService cartService)
     {
-        var model = mapper.Map<OrderModel>(form);
-        var result = await _orderService.AddOrderFromCartAsync(model);
-        return result.ToCreatedAtActionOrder(_logger, nameof(GetOrderById), nameof(OrdersController));
+        var model = form.ToModel();
+        var result = await _orderService.AddOrderFromCartAsync(model, cartService);
+        return result.ToCreatedAtActionOrderResult(nameof(GetOrderById), nameof(OrdersController));
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut]
-    public async Task<IActionResult> UpdateOrder(OrderPutModel putModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> UpdateOrder(OrderPutModel putModel)
     {
-        var model = mapper.Map<OrderModel>(putModel);
+        var model = putModel.ToModel();
         var result = await _orderService.UpdateAsync(model);
-        return result.ToOk(_logger);
+        return result.ToOkResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -81,7 +79,6 @@ public class OrdersController : ControllerBase
         var result = await _orderService.DeleteAsync(id);
         if (result is null)
         {
-            _logger.LogInformation("Not found");
             return NotFound();
         }
         else if (result.Value)
@@ -89,7 +86,6 @@ public class OrdersController : ControllerBase
             return Ok();
         }
 
-        _logger.LogError("Server error");
         return StatusCode(StatusCodes.Status500InternalServerError);
     }
 
@@ -111,7 +107,6 @@ public class OrdersController : ControllerBase
         var orderLine = await _orderLineService.GetByIdAsync(id);
         if (orderLine is null)
         {
-            _logger.LogInformation("The order line was not found.");
             return NotFound();
         }
 
@@ -125,7 +120,6 @@ public class OrdersController : ControllerBase
         var orderLine = await _orderLineService.GetByOrderAndProductIdsAsync(orderId, productId);
         if (orderLine is null)
         {
-            _logger.LogInformation("The order line was not found.");
             return NotFound();
         }
 
@@ -134,20 +128,20 @@ public class OrdersController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost(ApiRoutes.OrderLines.Add)]
-    public async Task<IActionResult> AddOrderLine(OrderLinePostModel postModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> AddOrderLine(OrderLinePostModel postModel)
     {
-        var model = mapper.Map<OrderLineModel>(postModel);
+        var model = postModel.ToModel();
         var result = await _orderLineService.AddAsync(model);
-        return result.ToCreatedAtAction(_logger, nameof(GetOrderLineById), nameof(OrdersController));
+        return result.ToCreatedAtActionResult(nameof(GetOrderLineById), nameof(OrdersController));
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut(ApiRoutes.OrderLines.Update)]
-    public async Task<IActionResult> UpdateOrderLine(OrderLinePutModel putModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> UpdateOrderLine(OrderLinePutModel putModel)
     {
-        var model = mapper.Map<OrderLineModel>(putModel);
+        var model = putModel.ToModel();
         var result = await _orderLineService.UpdateAsync(model);
-        return result.ToOk(_logger);
+        return result.ToOkResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -157,7 +151,6 @@ public class OrdersController : ControllerBase
         var result = await _orderLineService.DeleteAsync(id);
         if (result is null)
         {
-            _logger.LogInformation("Not found");
             return NotFound();
         }
         else if (result.Value)
@@ -165,7 +158,6 @@ public class OrdersController : ControllerBase
             return Ok();
         }
 
-        _logger.LogError("Server error");
         return StatusCode(StatusCodes.Status500InternalServerError);
     }
 }

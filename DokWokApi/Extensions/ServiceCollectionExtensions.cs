@@ -7,11 +7,12 @@ using DokWokApi.DAL.Interfaces;
 using DokWokApi.DAL.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
-using System.Text;
-using DokWokApi.Validation;
+using DokWokApi.DAL.Validation;
+using DokWokApi.BLL.Validation;
+using DokWokApi.BLL.Infrastructure;
+using DokWokApi.Services;
 
 namespace DokWokApi.Extensions;
 
@@ -42,6 +43,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IValidator<OrderLine>, OrderLineRepositoryValidator>();
         services.AddScoped<IValidator<Shop>, ShopRepositoryValidator>();
         services.AddScoped<IUserServiceValidator, UserServiceValidator>();
+        services.AddScoped<IValidator<RefreshToken>, RefreshTokenRepositoryValidator>();
 
         return services;
     }
@@ -53,6 +55,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IOrderLineRepository, OrderLineRepository>();
         services.AddScoped<IShopRepository, ShopRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
         return services;
     }
@@ -88,6 +91,9 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddJwtBearerAuthentication(this IServiceCollection services, ConfigurationManager configuration)
     {
+        var tokenValidationParametersAccessor = new TokenValidationParametersAccessor(configuration);
+        var tokenValidationParameters = tokenValidationParametersAccessor.Regular;
+
         services.AddAuthentication(opts =>
         {
             opts.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -95,17 +101,7 @@ public static class ServiceCollectionExtensions
             opts.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
         }).AddJwtBearer(opts =>
         {
-            opts.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = configuration["Jwt:Issuer"],
-                ValidAudience = configuration["Jwt:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!)),
-                ClockSkew = TimeSpan.Zero,
-            };
+            opts.TokenValidationParameters = tokenValidationParameters;
         });
 
         return services;

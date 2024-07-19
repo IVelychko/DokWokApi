@@ -1,5 +1,5 @@
-﻿using AutoMapper;
-using DokWokApi.BLL;
+﻿using DokWokApi.BLL;
+using DokWokApi.BLL.Extensions;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Shop;
 using DokWokApi.Extensions;
@@ -14,12 +14,10 @@ namespace DokWokApi.Controllers;
 public class ShopsController : ControllerBase
 {
     private readonly IShopService _shopService;
-    private readonly ILogger<ShopsController> _logger;
 
-    public ShopsController(IShopService shopService, ILogger<ShopsController> logger)
+    public ShopsController(IShopService shopService)
     {
         _shopService = shopService;
-        _logger = logger;
     }
 
     [HttpGet]
@@ -35,7 +33,6 @@ public class ShopsController : ControllerBase
         var shop = await _shopService.GetByIdAsync(id);
         if (shop is null)
         {
-            _logger.LogInformation("The shop was not found.");
             return NotFound();
         }
 
@@ -48,7 +45,6 @@ public class ShopsController : ControllerBase
         var shop = await _shopService.GetByAddressAsync(street, building);
         if (shop is null)
         {
-            _logger.LogInformation("The shop was not found.");
             return NotFound();
         }
 
@@ -57,20 +53,20 @@ public class ShopsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost]
-    public async Task<IActionResult> AddShop(ShopPostModel postModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> AddShop(ShopPostModel postModel)
     {
-        var model = mapper.Map<ShopModel>(postModel);
+        var model = postModel.ToModel();
         var result = await _shopService.AddAsync(model);
-        return result.ToCreatedAtAction(_logger, nameof(GetShopById), nameof(ShopsController));
+        return result.ToCreatedAtActionResult(nameof(GetShopById), nameof(ShopsController));
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut]
-    public async Task<IActionResult> UpdateShop(ShopPutModel putModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> UpdateShop(ShopPutModel putModel)
     {
-        var model = mapper.Map<ShopModel>(putModel);
+        var model = putModel.ToModel();
         var result = await _shopService.UpdateAsync(model);
-        return result.ToOk(_logger);
+        return result.ToOkResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -80,7 +76,6 @@ public class ShopsController : ControllerBase
         var result = await _shopService.DeleteAsync(id);
         if (result is null)
         {
-            _logger.LogInformation("Not found");
             return NotFound();
         }
         else if (result.Value)
@@ -88,7 +83,6 @@ public class ShopsController : ControllerBase
             return Ok();
         }
 
-        _logger.LogError("Server error");
         return StatusCode(StatusCodes.Status500InternalServerError);
     }
 
@@ -96,6 +90,6 @@ public class ShopsController : ControllerBase
     public async Task<IActionResult> IsShopAddressTaken(string street, string building)
     {
         var result = await _shopService.IsAddressTaken(street, building);
-        return result.ToOkIsTaken(_logger);
+        return result.ToOkIsTakenResult();
     }
 }

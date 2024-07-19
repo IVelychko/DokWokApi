@@ -1,5 +1,5 @@
-﻿using AutoMapper;
-using DokWokApi.BLL;
+﻿using DokWokApi.BLL;
+using DokWokApi.BLL.Extensions;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Product;
 using DokWokApi.BLL.Models.ProductCategory;
@@ -16,13 +16,11 @@ public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
     private readonly IProductCategoryService _categoryService;
-    private readonly ILogger<ProductsController> _logger;
 
-    public ProductsController(IProductService productService, IProductCategoryService categoryService, ILogger<ProductsController> logger)
+    public ProductsController(IProductService productService, IProductCategoryService categoryService)
     {
         _productService = productService;
         _categoryService = categoryService;
-        _logger = logger;
     }
 
     [HttpGet]
@@ -41,7 +39,6 @@ public class ProductsController : ControllerBase
         var product = await _productService.GetByIdAsync(id);
         if (product is null)
         {
-            _logger.LogInformation("The product was not found.");
             return NotFound();
         }
 
@@ -50,20 +47,20 @@ public class ProductsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost]
-    public async Task<IActionResult> AddProduct(ProductPostModel postModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> AddProduct(ProductPostModel postModel)
     {
-        var model = mapper.Map<ProductModel>(postModel);
+        var model = postModel.ToModel();
         var result = await _productService.AddAsync(model);
-        return result.ToCreatedAtAction(_logger, nameof(GetProductById), nameof(ProductsController));
+        return result.ToCreatedAtActionResult(nameof(GetProductById), nameof(ProductsController));
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut]
-    public async Task<IActionResult> UpdateProduct(ProductPutModel putModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> UpdateProduct(ProductPutModel putModel)
     {
-        var model = mapper.Map<ProductModel>(putModel);
+        var model = putModel.ToModel();
         var result = await _productService.UpdateAsync(model);
-        return result.ToOk(_logger);
+        return result.ToOkResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -73,7 +70,6 @@ public class ProductsController : ControllerBase
         var result = await _productService.DeleteAsync(id);
         if (result is null)
         {
-            _logger.LogInformation("Not found");
             return NotFound();
         }
         else if (result.Value)
@@ -81,7 +77,6 @@ public class ProductsController : ControllerBase
             return Ok();
         }
 
-        _logger.LogError("Server error");
         return StatusCode(StatusCodes.Status500InternalServerError);
     }
 
@@ -90,7 +85,7 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> IsProductNameTaken(string name)
     {
         var result = await _productService.IsNameTaken(name);
-        return result.ToOkIsTaken(_logger);
+        return result.ToOkIsTakenResult();
     }
 
     [HttpGet(ApiRoutes.ProductCategories.GetAll)]
@@ -106,7 +101,6 @@ public class ProductsController : ControllerBase
         var category = await _categoryService.GetByIdAsync(id);
         if (category is null)
         {
-            _logger.LogInformation("The product category was not found.");
             return NotFound();
         }
 
@@ -115,20 +109,20 @@ public class ProductsController : ControllerBase
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPost(ApiRoutes.ProductCategories.Add)]
-    public async Task<IActionResult> AddCategory(ProductCategoryPostModel postModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> AddCategory(ProductCategoryPostModel postModel)
     {
-        var model = mapper.Map<ProductCategoryModel>(postModel);
+        var model = postModel.ToModel();
         var result = await _categoryService.AddAsync(model);
-        return result.ToCreatedAtAction(_logger, nameof(GetCategoryById), nameof(ProductsController));
+        return result.ToCreatedAtActionResult(nameof(GetCategoryById), nameof(ProductsController));
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
     [HttpPut(ApiRoutes.ProductCategories.Update)]
-    public async Task<IActionResult> UpdateCategory(ProductCategoryPutModel putModel, [FromServices] IMapper mapper)
+    public async Task<IActionResult> UpdateCategory(ProductCategoryPutModel putModel)
     {
-        var model = mapper.Map<ProductCategoryModel>(putModel);
+        var model = putModel.ToModel();
         var result = await _categoryService.UpdateAsync(model);
-        return result.ToOk(_logger);
+        return result.ToOkResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -138,7 +132,6 @@ public class ProductsController : ControllerBase
         var result = await _categoryService.DeleteAsync(id);
         if (result is null)
         {
-            _logger.LogInformation("Not found");
             return NotFound();
         }
         else if (result.Value)
@@ -146,7 +139,6 @@ public class ProductsController : ControllerBase
             return Ok();
         }
 
-        _logger.LogError("Server error");
         return StatusCode(StatusCodes.Status500InternalServerError);
     }
 
@@ -154,6 +146,6 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> IsCategoryNameTaken(string name)
     {
         var result = await _categoryService.IsNameTaken(name);
-        return result.ToOkIsTaken(_logger);
+        return result.ToOkIsTakenResult();
     }
 }

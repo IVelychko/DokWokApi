@@ -1,7 +1,7 @@
-using AutoMapper;
-using DokWokApi.BLL;
+using DokWokApi.BLL.Infrastructure;
 using DokWokApi.DAL;
 using DokWokApi.Extensions;
+using DokWokApi.Infrastructure;
 using DokWokApi.Middlewares;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -35,11 +35,9 @@ builder.Services.AddDbContext<StoreDbContext>(opts =>
 
 builder.Services.AddIdentityConfiguration();
 
-var mapperConfig = new MapperConfiguration(mc => mc.AddProfile(new AutomapperProfile()));
-IMapper mapper = mapperConfig.CreateMapper();
-builder.Services.AddSingleton(mapper);
-
 builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddSingleton<TokenValidationParametersAccessor>();
 
 builder.Services.AddValidators();
 builder.Services.AddCustomRepositories();
