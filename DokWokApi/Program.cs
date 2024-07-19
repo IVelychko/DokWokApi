@@ -30,7 +30,11 @@ builder.Services.AddSession(opts =>
 
 builder.Services.AddDbContext<StoreDbContext>(opts =>
 {
-    opts.UseSqlServer(builder.Configuration["ConnectionStrings:FoodStoreConnection"]);
+    var connectionString = builder.Configuration["ConnectionStrings:FoodStoreConnection"];
+    opts.UseSqlServer(connectionString, opts =>
+    {
+        opts.MigrationsAssembly("DokWokApi");
+    });
 });
 
 builder.Services.AddIdentityConfiguration();
