@@ -14,19 +14,14 @@ public static class ResultExtensions
     {
         return result.Match(cart =>
         {
-            if (cart is null)
-            {
-                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
-            }
-
-            return new OkObjectResult(cart);
-        }, e => GetResultFromErrorCart(e));
+            return cart is not null ? new OkObjectResult(cart) 
+                : new StatusCodeResult(StatusCodes.Status500InternalServerError);
+        }, GetResultFromErrorCart);
     }
 
     public static IActionResult ToOkPasswordUpdateResult(this Result<bool> result)
     {
-        return result.Match(isUpdated => new OkResult(), 
-            e => GetResultFromError(e));
+        return result.Match(isUpdated => new OkResult(), GetResultFromError);
     }
 
     public static IActionResult ToOkIsTakenResult(this Result<bool> result)
@@ -44,26 +39,25 @@ public static class ResultExtensions
 
     public static IActionResult ToOkResult<TModel>(this Result<TModel> result)
     {
-        return result.Match(model => new OkObjectResult(model), 
-            e => GetResultFromError(e));
+        return result.Match(model => new OkObjectResult(model), GetResultFromError);
     }
 
     public static IActionResult ToCreatedAtActionOrderResult(this Result<OrderModel> result, string actionName, string controllerName)
     {
         return result.Match(order => new CreatedAtActionResult(actionName, controllerName, new { id = order.Id }, order), 
-            e => GetResultFromErrorOrder(e));
+            GetResultFromError);
     }
 
     public static IActionResult ToCreatedAtActionUserResult(this Result<UserModel> result, string actionName, string controllerName)
     {
         return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model), 
-            e => GetResultFromError(e));
+            GetResultFromError);
     }
 
     public static IActionResult ToCreatedAtActionResult<TModel>(this Result<TModel> result, string actionName, string controllerName) where TModel : BaseModel
     {
-        return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model), 
-            e => GetResultFromError(e));
+        return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model),
+            GetResultFromError);
     }
 
     private static IActionResult GetResultFromError(Exception e)
@@ -75,32 +69,6 @@ public static class ResultExtensions
         else if (e is EntityNotFoundException)
         {
             return new NotFoundResult();
-        }
-        else if (e is DbException)
-        {
-            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
-        }
-
-        return new StatusCodeResult(StatusCodes.Status500InternalServerError);
-    }
-
-    private static IActionResult GetResultFromErrorOrder(Exception e)
-    {
-        if (e is ValidationException validationException)
-        {
-            return new BadRequestObjectResult(new ErrorResultModel { Error = validationException.Message });
-        }
-        else if (e is EntityNotFoundException)
-        {
-            return new NotFoundResult();
-        }
-        else if (e is CartException)
-        {
-            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
-        }
-        else if (e is DbException)
-        {
-            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
         }
 
         return new StatusCodeResult(StatusCodes.Status500InternalServerError);
