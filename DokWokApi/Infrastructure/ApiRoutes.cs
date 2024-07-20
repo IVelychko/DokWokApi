@@ -73,6 +73,7 @@
             public const string LoginCustomer = "customers/login";
             public const string LoginAdmin = "admins/login";
             public const string RegisterUser = "register";
+            public const string RefreshToken = "refreshToken";
             public const string IsCustomerTokenValid = "customers/isTokenValid";
             public const string IsAdminTokenValid = "admins/isTokenValid";
             public const string GetUserRoles = "roles";

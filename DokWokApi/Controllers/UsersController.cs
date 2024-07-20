@@ -142,7 +142,7 @@ public class UsersController : ControllerBase
     {
         var model = postModel.ToModel();
         var result = await _userService.AddAsync(model, postModel.Password!);
-        return result.ToCreatedAtActionUserResult(nameof(GetCustomerById), nameof(UsersController));
+        return result.ToCreatedAtActionUserResult(nameof(GetCustomerById), "Users");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
@@ -241,6 +241,13 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> RegisterUser(UserRegisterModel registerModel)
     {
         var result = await _userService.AuthenticateRegisterAsync(registerModel);
+        return result.ToCreatedAtActionAuthorizedUserResult(nameof(GetCustomerById), "Users");
+    }
+
+    [HttpPost(ApiRoutes.Users.RefreshToken)]
+    public async Task<IActionResult> RefreshToken(RefreshTokenModel model)
+    {
+        var result = await _userService.RefreshTokenAsync(model);
         return result.ToOkResult();
     }
 
@@ -265,7 +272,7 @@ public class UsersController : ControllerBase
         var result = await _userService.GetUserRolesAsync(userId);
         return result.Match<IActionResult>(roles => new OkObjectResult(roles), e =>
         {
-            if (e is EntityNotFoundException)
+            if (e is NotFoundException)
             {
                 return new NotFoundResult();
             }

@@ -51,7 +51,7 @@ public class ProductsController : ControllerBase
     {
         var model = postModel.ToModel();
         var result = await _productService.AddAsync(model);
-        return result.ToCreatedAtActionResult(nameof(GetProductById), nameof(ProductsController));
+        return result.ToCreatedAtActionResult(nameof(GetProductById), "Products");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -113,7 +113,7 @@ public class ProductsController : ControllerBase
     {
         var model = postModel.ToModel();
         var result = await _categoryService.AddAsync(model);
-        return result.ToCreatedAtActionResult(nameof(GetCategoryById), nameof(ProductsController));
+        return result.ToCreatedAtActionResult(nameof(GetCategoryById), "Products");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]

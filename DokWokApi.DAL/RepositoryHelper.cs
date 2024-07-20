@@ -18,7 +18,7 @@ public static class RepositoryHelper
     {
         if (entity is null)
         {
-            throw new EntityNotFoundException(errorMessage);
+            throw new NotFoundException(errorMessage);
         }
 
         return entity;

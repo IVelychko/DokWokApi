@@ -1,5 +1,4 @@
 ﻿using DokWokApi.BLL.Models;
-using DokWokApi.BLL.Models.Order;
 using DokWokApi.Models.ShoppingCart;
 using DokWokApi.BLL.Models.User;
 using DokWokApi.DAL.Exceptions;
@@ -16,7 +15,7 @@ public static class ResultExtensions
         {
             return cart is not null ? new OkObjectResult(cart) 
                 : new StatusCodeResult(StatusCodes.Status500InternalServerError);
-        }, GetResultFromErrorCart);
+        }, GetResultFromError);
     }
 
     public static IActionResult ToOkPasswordUpdateResult(this Result<bool> result)
@@ -42,15 +41,15 @@ public static class ResultExtensions
         return result.Match(model => new OkObjectResult(model), GetResultFromError);
     }
 
-    public static IActionResult ToCreatedAtActionOrderResult(this Result<OrderModel> result, string actionName, string controllerName)
-    {
-        return result.Match(order => new CreatedAtActionResult(actionName, controllerName, new { id = order.Id }, order), 
-            GetResultFromError);
-    }
-
     public static IActionResult ToCreatedAtActionUserResult(this Result<UserModel> result, string actionName, string controllerName)
     {
         return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model), 
+            GetResultFromError);
+    }
+
+    public static IActionResult ToCreatedAtActionAuthorizedUserResult(this Result<AuthorizedUserModel> result, string actionName, string controllerName)
+    {
+        return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model),
             GetResultFromError);
     }
 
@@ -66,25 +65,7 @@ public static class ResultExtensions
         {
             return new BadRequestObjectResult(new ErrorResultModel { Error = validationException.Message });
         }
-        else if (e is EntityNotFoundException)
-        {
-            return new NotFoundResult();
-        }
-
-        return new StatusCodeResult(StatusCodes.Status500InternalServerError);
-    }
-
-    private static IActionResult GetResultFromErrorCart(Exception e)
-    {
-        if (e is ValidationException validationException)
-        {
-            return new BadRequestObjectResult(new ErrorResultModel { Error = validationException.Message });
-        }
-        else if (e is EntityNotFoundException)
-        {
-            return new NotFoundResult();
-        }
-        else if (e is CartNotFoundException)
+        else if (e is NotFoundException)
         {
             return new NotFoundResult();
         }

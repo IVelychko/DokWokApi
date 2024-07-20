@@ -22,7 +22,7 @@ public class ShopRepository : IShopRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
                 : new ValidationException(validationResult.Error);
 
             return new Result<Shop>(exception);
@@ -30,6 +30,7 @@ public class ShopRepository : IShopRepository
 
         await _context.AddAsync(entity);
         var result = await _context.SaveChangesAsync();
+        _context.Entry(entity).State = EntityState.Detached;
         if (result > 0)
         {
             var addedEntity = await GetByIdAsync(entity.Id);
@@ -76,7 +77,7 @@ public class ShopRepository : IShopRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
                 : new ValidationException(validationResult.Error);
 
             return new Result<Shop>(exception);
@@ -84,6 +85,7 @@ public class ShopRepository : IShopRepository
 
         _context.Update(entity);
         var result = await _context.SaveChangesAsync();
+        _context.Entry(entity).State = EntityState.Detached;
         if (result > 0)
         {
             var updatedEntity = await GetByIdAsync(entity.Id);

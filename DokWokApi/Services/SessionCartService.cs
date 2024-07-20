@@ -43,7 +43,7 @@ public class SessionCartService : ICartService
         var product = await _productService.GetByIdAsync(productId);
         if (product is null)
         {
-            var exception = new EntityNotFoundException("There is no entity with this ID in the database.");
+            var exception = new NotFoundException("There is no entity with this ID in the database.");
             return new Result<Cart?>(exception);
         }
 
@@ -87,21 +87,21 @@ public class SessionCartService : ICartService
         var product = await _productService.GetByIdAsync(productId);
         if (product is null)
         {
-            var exception = new EntityNotFoundException("There is no entity with this ID in the database.");
+            var exception = new NotFoundException("There is no entity with this ID in the database.");
             return new Result<Cart?>(exception);
         }
 
         var cart = await _session.GetJsonAsync<Cart>("Cart");
         if (cart is null)
         {
-            var exception = new CartNotFoundException("There is no existing cart object to remove the line from.");
+            var exception = new NotFoundException("There is no existing cart object to remove the line from.");
             return new Result<Cart?>(exception);
         }
 
         var cartLine = cart.Lines.Find(cl => cl.Product.Id == productId);
         if (cartLine is null)
         {
-            var exception = new CartNotFoundException(nameof(cartLine), "There is no cart line object to remove items from.");
+            var exception = new NotFoundException(nameof(cartLine), "There is no cart line object to remove items from.");
             return new Result<Cart?>(exception);
         }
 
@@ -124,14 +124,14 @@ public class SessionCartService : ICartService
         var product = await _productService.GetByIdAsync(productId);
         if (product is null)
         {
-            var exception = new EntityNotFoundException("There is no entity with this ID in the database.");
+            var exception = new NotFoundException("There is no entity with this ID in the database.");
             return new Result<Cart?>(exception);
         }
 
         var cart = await _session.GetJsonAsync<Cart>("Cart");
         if (cart is null)
         {
-            var exception = new CartNotFoundException("There is no existing cart object to remove the line from.");
+            var exception = new NotFoundException("There is no existing cart object to remove the line from.");
             return new Result<Cart?>(exception);
         }
 

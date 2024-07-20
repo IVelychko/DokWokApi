@@ -39,7 +39,7 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateAddAsync(model);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
                 : new ValidationException(validationResult.Error);
 
             return new Result<UserModel>(exception);
@@ -152,7 +152,7 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateUpdateAsync(model);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
                 : new ValidationException(validationResult.Error);
 
             return new Result<UserModel>(exception);
@@ -188,7 +188,7 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateUpdateCustomerPasswordAsync(model);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
                 : new ValidationException(validationResult.Error);
 
             return new Result<bool>(exception);
@@ -219,7 +219,7 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateUpdateCustomerPasswordAsAdminAsync(model);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
                 : new ValidationException(validationResult.Error);
 
             return new Result<bool>(exception);
@@ -250,7 +250,7 @@ public class UserService : IUserService
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            var exception = new EntityNotFoundException("There is no user with this id.");
+            var exception = new NotFoundException("There is no user with this id.");
             return new Result<IEnumerable<string>>(exception);
         }
 
@@ -263,7 +263,7 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateCustomerLoginAsync(model);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
                 : new ValidationException(validationResult.Error);
 
             return new Result<AuthorizedUserModel>(exception);
@@ -280,7 +280,7 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateAdminLoginAsync(model);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new EntityNotFoundException(validationResult.Error)
+            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
                 : new ValidationException(validationResult.Error);
 
             return new Result<AuthorizedUserModel>(exception);

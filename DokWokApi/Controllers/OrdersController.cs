@@ -52,7 +52,7 @@ public class OrdersController : ControllerBase
     {
         var model = form.ToModel();
         var result = await _orderService.AddOrderFromCartAsync(model, cartService);
-        return result.ToCreatedAtActionOrderResult(nameof(GetOrderById), nameof(OrdersController));
+        return result.ToCreatedAtActionResult(nameof(GetOrderById), "Orders");
     }
 
     [HttpPost(ApiRoutes.Orders.AddTakeaway)]
@@ -60,7 +60,7 @@ public class OrdersController : ControllerBase
     {
         var model = form.ToModel();
         var result = await _orderService.AddOrderFromCartAsync(model, cartService);
-        return result.ToCreatedAtActionOrderResult(nameof(GetOrderById), nameof(OrdersController));
+        return result.ToCreatedAtActionResult(nameof(GetOrderById), "Orders");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -132,7 +132,7 @@ public class OrdersController : ControllerBase
     {
         var model = postModel.ToModel();
         var result = await _orderLineService.AddAsync(model);
-        return result.ToCreatedAtActionResult(nameof(GetOrderLineById), nameof(OrdersController));
+        return result.ToCreatedAtActionResult(nameof(GetOrderLineById), "Orders");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
