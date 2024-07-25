@@ -30,7 +30,7 @@ public class OrderRepositoryValidator : IValidator<Order>
             return result;
         }
 
-        if (model.UserId is not null && await _userManager.FindByIdAsync(model.UserId) is null)
+        if (model.UserId is not null && !await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId))
         {
             result.IsValid = false;
             result.IsFound = false;
@@ -38,7 +38,7 @@ public class OrderRepositoryValidator : IValidator<Order>
             return result;
         }
 
-        if (model.ShopId is not null && await _context.Shops.AsNoTracking().FirstOrDefaultAsync(s => s.Id == model.ShopId) is null)
+        if (model.ShopId is not null && !await _context.Shops.AsNoTracking().AnyAsync(s => s.Id == model.ShopId))
         {
             result.IsValid = false;
             result.IsFound = false;
@@ -72,7 +72,7 @@ public class OrderRepositoryValidator : IValidator<Order>
             return result;
         }
 
-        if (model.UserId is not null && await _userManager.FindByIdAsync(model.UserId) is null)
+        if (model.UserId is not null && !await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId))
         {
             result.IsValid = false;
             result.IsFound = false;
@@ -80,7 +80,7 @@ public class OrderRepositoryValidator : IValidator<Order>
             return result;
         }
 
-        if (model.ShopId is not null && await _context.Shops.AsNoTracking().FirstOrDefaultAsync(s => s.Id == model.ShopId) is null)
+        if (model.ShopId is not null && !await _context.Shops.AsNoTracking().AnyAsync(s => s.Id == model.ShopId))
         {
             result.IsValid = false;
             result.IsFound = false;

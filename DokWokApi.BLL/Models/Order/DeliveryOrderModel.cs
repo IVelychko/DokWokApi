@@ -1,9 +1,10 @@
 ﻿using DokWokApi.BLL.Attributes;
+using DokWokApi.BLL.Infrastructure;
 using System.ComponentModel.DataAnnotations;
 
 namespace DokWokApi.BLL.Models.Order;
 
-public class TakeawayOrderForm
+public class DeliveryOrderModel
 {
     [Required]
     [RegularExpression(RegularExpressions.FirstName)]
@@ -18,11 +19,13 @@ public class TakeawayOrderForm
     public string? Email { get; set; }
 
     [Required]
+    [RegularExpression(RegularExpressions.Address)]
+    public string? DeliveryAddress { get; set; }
+
+    [Required]
     [RegularExpression(RegularExpressions.PaymentType)]
     public string? PaymentType { get; set; }
 
     [GuidOrNull]
     public string? UserId { get; set; }
-
-    public long? ShopId { get; set; }
 }

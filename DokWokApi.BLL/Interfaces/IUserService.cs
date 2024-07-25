@@ -27,11 +27,11 @@ public interface IUserService
 
     Task<Result<IEnumerable<string>>> GetUserRolesAsync(string userId);
 
-    Task<Result<AuthorizedUserModel>> AuthenticateCustomerLoginAsync(UserLoginModel model);
+    Task<Result<AuthorizedUserModel>> CustomerLoginAsync(UserLoginModel model);
 
-    Task<Result<AuthorizedUserModel>> AuthenticateAdminLoginAsync(UserLoginModel model);
+    Task<Result<AuthorizedUserModel>> AdminLoginAsync(UserLoginModel model);
 
-    Task<Result<AuthorizedUserModel>> AuthenticateRegisterAsync(UserRegisterModel model);
+    Task<Result<AuthorizedUserModel>> RegisterAsync(UserRegisterModel model);
 
     Task<UserModel?> IsCustomerTokenValidAsync(string token);
 

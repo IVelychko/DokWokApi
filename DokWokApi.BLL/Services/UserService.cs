@@ -46,6 +46,7 @@ public class UserService : IUserService
         }
 
         var user = model.ToEntity();
+        user.Id = Guid.NewGuid().ToString();
         var result = await _userManager.CreateAsync(user, password);
         if (!result.Succeeded)
         {
@@ -158,7 +159,13 @@ public class UserService : IUserService
             return new Result<UserModel>(exception);
         }
 
-        var user = (await _userManager.FindByIdAsync(model.Id))!;
+        var user = await _userManager.FindByIdAsync(model.Id);
+        if (user is null)
+        {
+            var exception = new NotFoundException("The user was not found");
+            return new Result<UserModel>(exception);
+        }
+
         user.FirstName = model.FirstName;
         user.UserName = model.UserName;
         user.Email = model.Email;
@@ -194,7 +201,13 @@ public class UserService : IUserService
             return new Result<bool>(exception);
         }
 
-        var user = (await _userManager.FindByIdAsync(model.UserId!))!;
+        var user = await _userManager.FindByIdAsync(model.UserId!);
+        if (user is null)
+        {
+            var exception = new NotFoundException("The user was not found");
+            return new Result<bool>(exception);
+        }
+
         var oldPasswordResult = await _userManager.RemovePasswordAsync(user);
         if (!oldPasswordResult.Succeeded)
         {
@@ -225,7 +238,13 @@ public class UserService : IUserService
             return new Result<bool>(exception);
         }
 
-        var user = (await _userManager.FindByIdAsync(model.UserId!))!;
+        var user = await _userManager.FindByIdAsync(model.UserId!);
+        if (user is null)
+        {
+            var exception = new NotFoundException("The user was not found");
+            return new Result<bool>(exception);
+        }
+
         var oldPasswordResult = await _userManager.RemovePasswordAsync(user);
         if (!oldPasswordResult.Succeeded)
         {
@@ -258,7 +277,7 @@ public class UserService : IUserService
         return new Result<IEnumerable<string>>(roles);
     }
 
-    public async Task<Result<AuthorizedUserModel>> AuthenticateCustomerLoginAsync(UserLoginModel model)
+    public async Task<Result<AuthorizedUserModel>> CustomerLoginAsync(UserLoginModel model)
     {
         var validationResult = await _validator.ValidateCustomerLoginAsync(model);
         if (!validationResult.IsValid)
@@ -269,13 +288,19 @@ public class UserService : IUserService
             return new Result<AuthorizedUserModel>(exception);
         }
 
-        var user = (await _userManager.FindByNameAsync(model.UserName))!;
+        var user = await _userManager.FindByNameAsync(model.UserName);
+        if (user is null)
+        {
+            var exception = new NotFoundException("The user was not found");
+            return new Result<AuthorizedUserModel>(exception);
+        }
+
         var userModel = user.ToModel();
         var authorizedUserResult = await CreateAuthorizedUserModel(userModel);
         return authorizedUserResult;
     }
 
-    public async Task<Result<AuthorizedUserModel>> AuthenticateAdminLoginAsync(UserLoginModel model)
+    public async Task<Result<AuthorizedUserModel>> AdminLoginAsync(UserLoginModel model)
     {
         var validationResult = await _validator.ValidateAdminLoginAsync(model);
         if (!validationResult.IsValid)
@@ -286,13 +311,19 @@ public class UserService : IUserService
             return new Result<AuthorizedUserModel>(exception);
         }
 
-        var user = (await _userManager.FindByNameAsync(model.UserName))!;
+        var user = await _userManager.FindByNameAsync(model.UserName);
+        if (user is null)
+        {
+            var exception = new NotFoundException("The user was not found");
+            return new Result<AuthorizedUserModel>(exception);
+        }
+
         var userModel = user.ToModel();
         var authorizedUserResult = await CreateAuthorizedUserModel(userModel);
         return authorizedUserResult;
     }
 
-    public async Task<Result<AuthorizedUserModel>> AuthenticateRegisterAsync(UserRegisterModel model)
+    public async Task<Result<AuthorizedUserModel>> RegisterAsync(UserRegisterModel model)
     {
         if (model is null)
         {
@@ -329,7 +360,7 @@ public class UserService : IUserService
             var jwtValidationResult = _validator.ValidateExpiredJwt(jwtSecurityToken, isAlgorithmValid);
             if (!jwtValidationResult.IsValid)
             {
-                var exception = new ValidationException(validationResult.Error);
+                var exception = new ValidationException(jwtValidationResult.Error);
                 return new Result<AuthorizedUserModel>(exception);
             }
 
@@ -357,7 +388,7 @@ public class UserService : IUserService
                 var exception = new ValidationException("The user does not exist");
                 return new Result<AuthorizedUserModel>(exception);
             }
-
+            
             var userModel = user.ToModel();
             var authorizedUserResult = await CreateAuthorizedUserModel(userModel);
             return authorizedUserResult;
@@ -452,8 +483,8 @@ public class UserService : IUserService
             return new Result<bool>(exception);
         }
 
-        var user = await _userManager.FindByNameAsync(userName);
-        return user is not null;
+        var isTaken = await _userManager.Users.AsNoTracking().AnyAsync(u => u.UserName == userName);
+        return isTaken;
     }
 
     public async Task<Result<bool>> IsEmailTaken(string email)
@@ -464,8 +495,8 @@ public class UserService : IUserService
             return new Result<bool>(exception);
         }
 
-        var user = await _userManager.FindByEmailAsync(email);
-        return user is not null;
+        var isTaken = await _userManager.Users.AsNoTracking().AnyAsync(u => u.Email == email);
+        return isTaken;
     }
 
     public async Task<Result<bool>> IsPhoneNumberTaken(string phoneNumber)
@@ -476,7 +507,7 @@ public class UserService : IUserService
             return new Result<bool>(exception);
         }
 
-        var isTaken = await _userManager.Users.AnyAsync(u => u.PhoneNumber == phoneNumber);
+        var isTaken = await _userManager.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == phoneNumber);
         return isTaken;
     }
 
@@ -503,7 +534,7 @@ public class UserService : IUserService
             return new Result<AuthorizedUserModel>(exception);
         }
 
-        var authorizedUser = userModel.ToAuthorizedModel(serializedJwtToken, refreshToken.Token);
+        var authorizedUser = userModel.ToAuthorizedModel(serializedJwtToken, refreshToken);
         return authorizedUser;
     }
 

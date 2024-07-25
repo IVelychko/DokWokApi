@@ -1,4 +1,4 @@
-﻿using DokWokApi.BLL;
+﻿using DokWokApi.BLL.Infrastructure;
 using DokWokApi.DAL;
 using DokWokApi.DAL.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -47,12 +47,12 @@ public static class SeedData
         return products;
     }
 
-    private static IdentityRole[] roles = [
+    private readonly static IdentityRole[] roles = [
             new() { Name = UserRoles.Admin },
             new() { Name = UserRoles.Customer }
         ];
 
-    private static Shop[] shops = [
+    private readonly static Shop[] shops = [
             new() { Street = "Олександра Поля", Building = "36", OpeningTime = "10:00", ClosingTime = "22:00" },
             new() { Street = "Незалежності", Building = "42", OpeningTime = "09:00", ClosingTime = "21:00" },
             new() { Street = "Дмитра Яворницького", Building = "12", OpeningTime = "10:00", ClosingTime = "21:00" },
@@ -64,9 +64,9 @@ public static class SeedData
         var context = app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<StoreDbContext>();
         var roleManager = app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = app.ApplicationServices.CreateScope().ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        context.Database.Migrate();
+        await context.Database.MigrateAsync();
 
-        if (!roleManager.Roles.Any())
+        if (!await roleManager.Roles.AnyAsync())
         {
             foreach (var role in roles)
             {
@@ -88,16 +88,16 @@ public static class SeedData
             await userManager.AddToRoleAsync(admin!, UserRoles.Admin);
         }
 
-        if (!context.ProductCategories.Any() && !context.Products.Any())
+        if (!await context.ProductCategories.AnyAsync() && !await context.Products.AnyAsync())
         {
             context.Products.AddRange(GetProductsToAdd());
-            context.SaveChanges();
+            await context.SaveChangesAsync();
         }
 
-        if (!context.Shops.Any())
+        if (!await context.Shops.AnyAsync())
         {
             context.Shops.AddRange(shops);
-            context.SaveChanges();
+            await context.SaveChangesAsync();
         }
     }
 }

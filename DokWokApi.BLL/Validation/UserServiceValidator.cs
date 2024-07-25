@@ -1,4 +1,5 @@
-﻿using DokWokApi.BLL.Models.User;
+﻿using DokWokApi.BLL.Infrastructure;
+using DokWokApi.BLL.Models.User;
 using DokWokApi.DAL.Entities;
 using DokWokApi.DAL.Validation;
 using Microsoft.AspNetCore.Identity;
@@ -37,7 +38,7 @@ public class UserServiceValidator : IUserServiceValidator
             return result;
         }
 
-        bool isPhoneNumberTaken = await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber);
+        bool isPhoneNumberTaken = await _userManager.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == model.PhoneNumber);
         if (isPhoneNumberTaken)
         {
             result.IsValid = false;
@@ -62,7 +63,7 @@ public class UserServiceValidator : IUserServiceValidator
             return result;
         }
 
-        var user = await _userManager.FindByIdAsync(model.Id!);
+        var user = await _userManager.FindByIdAsync(model.Id);
         if (user is null)
         {
             result.IsValid = false;
@@ -78,7 +79,7 @@ public class UserServiceValidator : IUserServiceValidator
             return result;
         }
 
-        if (model.PhoneNumber != user.PhoneNumber && await _userManager.Users.AnyAsync(u => u.PhoneNumber == model.PhoneNumber))
+        if (model.PhoneNumber != user.PhoneNumber && await _userManager.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == model.PhoneNumber))
         {
             result.IsValid = false;
             result.Error = "The phone number is already taken";

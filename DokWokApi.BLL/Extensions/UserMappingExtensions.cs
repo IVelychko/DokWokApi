@@ -40,7 +40,7 @@ public static class UserMappingExtensions
         };
     }
 
-    public static AuthorizedUserModel ToAuthorizedModel(this UserModel model, string token, string refreshToken)
+    public static AuthorizedUserModel ToAuthorizedModel(this UserModel model, string token, RefreshToken refreshToken)
     {
         return new()
         {
@@ -54,7 +54,7 @@ public static class UserMappingExtensions
         };
     }
 
-    public static AuthorizedUserModel ToAuthorizedModel(this ApplicationUser entity, string token, string refreshToken)
+    public static AuthorizedUserModel ToAuthorizedModel(this ApplicationUser entity, string token, RefreshToken refreshToken)
     {
         return new()
         {
@@ -65,6 +65,19 @@ public static class UserMappingExtensions
             UserName = entity.UserName,
             Token = token,
             RefreshToken = refreshToken
+        };
+    }
+
+    public static AuthorizedUserResponseModel ToAuthorizedResponseModel(this AuthorizedUserModel model)
+    {
+        return new()
+        {
+            Email = model.Email,
+            FirstName = model.FirstName,
+            PhoneNumber = model.PhoneNumber,
+            Id = model.Id,
+            UserName = model.UserName,
+            Token = model.Token
         };
     }
 

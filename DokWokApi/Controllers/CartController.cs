@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace DokWokApi.Controllers;
 
 [ApiController]
-[Route(ApiRoutes.Cart.Controller)]
+[Route(ApiRoutes.Cart.Group)]
 public class CartController : ControllerBase
 {
     private readonly ICartService _cartService;
@@ -37,7 +37,7 @@ public class CartController : ControllerBase
         }
 
         var result = await _cartService.AddItem(productId, quantity);
-        return result.ToOkCartResult();
+        return result.ToOkActionResult();
     }
 
     [HttpDelete(ApiRoutes.Cart.RemoveProduct)]
@@ -49,14 +49,14 @@ public class CartController : ControllerBase
         }
 
         var result = await _cartService.RemoveItem(productId, quantity);
-        return result.ToOkCartResult();
+        return result.ToOkActionResult();
     }
 
     [HttpDelete(ApiRoutes.Cart.RemoveLine)]
     public async Task<IActionResult> RemoveLineFromCart(long productId)
     {
         var result = await _cartService.RemoveLine(productId);
-        return result.ToOkCartResult();
+        return result.ToOkActionResult();
     }
 
     [HttpDelete]

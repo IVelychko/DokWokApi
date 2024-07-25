@@ -30,8 +30,8 @@ public class RefreshTokenRepositoryValidator : IValidator<RefreshToken>
             return result;
         }
 
-        var user = await _userManager.FindByIdAsync(model.UserId);
-        if (user is null)
+        var userExists = await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId);
+        if (!userExists)
         {
             result.IsValid = false;
             result.IsFound = false;
@@ -65,8 +65,8 @@ public class RefreshTokenRepositoryValidator : IValidator<RefreshToken>
             return result;
         }
 
-        var user = await _userManager.FindByIdAsync(model.UserId);
-        if (user is null)
+        var userExists = await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId);
+        if (!userExists)
         {
             result.IsValid = false;
             result.IsFound = false;

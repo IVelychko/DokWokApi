@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using DokWokApi.BLL.Infrastructure;
 
 namespace DokWokApi.BLL.Models.ProductCategory;
 

@@ -1,4 +1,5 @@
-﻿using DokWokApi.BLL.Interfaces;
+﻿using DokWokApi.BLL.Exceptions;
+using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.User;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -6,15 +7,12 @@ using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
 
 namespace DokWokApi.BLL.Services
 {
     public class JwtService : ISecurityTokenService<UserModel, JwtSecurityToken>
     {
         private readonly IConfiguration _configuration;
-
-        private const int ExpirationMinutes = 1;
 
         public JwtService(IConfiguration configuration)
         {
@@ -43,26 +41,42 @@ namespace DokWokApi.BLL.Services
             return tokenHandler.WriteToken(token);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "The secret is not visible")]
         public JwtSecurityToken CreateToken(UserModel user, IEnumerable<string> roles)
         {
-            DateTime expiration = DateTime.UtcNow.AddMinutes(ExpirationMinutes);
+            var errorMessage = "Unable to get data from configuration";
+            var tokenLifeTime = _configuration["Jwt:TokenLifeTime"]?.Split(':') 
+                ?? throw new ConfigurationException(errorMessage);
+            var hours = int.Parse(tokenLifeTime[0]);
+            var minutes = int.Parse(tokenLifeTime[1]);
+            var seconds = int.Parse(tokenLifeTime[2]);
+            DateTime expiration = DateTime.UtcNow
+                .AddHours(hours)
+                .AddMinutes(minutes)
+                .AddSeconds(seconds);
 
-            var encodedKey = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
+            var key = _configuration["Jwt:Key"] ?? throw new ConfigurationException(errorMessage);
+            var encodedKey = Encoding.UTF8.GetBytes(key);
             SymmetricSecurityKey securityKey = new(encodedKey);
             SigningCredentials tokenSigningCredentials = new(securityKey, SecurityAlgorithms.HmacSha256);
 
-            Claim[] claims = [
-                new(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]!),
+            var subject = _configuration["Jwt:Subject"] ?? throw new ConfigurationException(errorMessage);
+            List<Claim> claims = [
+                new(JwtRegisteredClaimNames.Sub, subject),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(DateTime.UtcNow).ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64),
-                new("id", user.Id),
-                new("username", user.UserName ?? string.Empty),
-                new("role", JsonSerializer.Serialize(roles), JsonClaimValueTypes.JsonArray),
+                new("id", user.Id)
             ];
+            foreach (var role in roles)
+            {
+                claims.Add(new(ClaimTypes.Role, role));
+            }
 
+            var issuer = _configuration["Jwt:Issuer"] ?? throw new ConfigurationException(errorMessage);
+            var audience = _configuration["Jwt:Audience"] ?? throw new ConfigurationException(errorMessage);
             var token = new JwtSecurityToken(
-                _configuration["Jwt:Issuer"]!,
-                _configuration["Jwt:Audience"]!,
+                issuer,
+                audience,
                 claims,
                 expires: expiration,
                 signingCredentials: tokenSigningCredentials);

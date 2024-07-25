@@ -1,4 +1,4 @@
-﻿using DokWokApi.BLL;
+﻿using DokWokApi.BLL.Infrastructure;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
 using DokWokApi.DAL.Exceptions;
@@ -27,7 +27,7 @@ public static class OrderServiceExtensions
         
         if (cart.Lines.Count < 1)
         {
-            var exception = new CartException("There are no products in the cart");
+            var exception = new NotFoundException("There are no products in the cart");
             return new Result<OrderModel>(exception);
         }
 

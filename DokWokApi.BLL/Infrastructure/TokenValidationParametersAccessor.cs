@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using DokWokApi.BLL.Exceptions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -10,6 +11,8 @@ public class TokenValidationParametersAccessor
 
     private readonly object _locker = new();
 
+    private const string ErrorMessage = "Unable to get data from configuration";
+
     private TokenValidationParameters? _regular;
 
     private TokenValidationParameters? _refresh;
@@ -19,6 +22,7 @@ public class TokenValidationParametersAccessor
         _configuration = configuration;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "<Pending>")]
     public TokenValidationParameters Regular
     {
         get
@@ -33,9 +37,10 @@ public class TokenValidationParametersAccessor
                         ValidateAudience = true,
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
-                        ValidIssuer = _configuration["Jwt:Issuer"],
-                        ValidAudience = _configuration["Jwt:Audience"],
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!)),
+                        ValidIssuer = _configuration["Jwt:Issuer"] ?? throw new ConfigurationException(ErrorMessage),
+                        ValidAudience = _configuration["Jwt:Audience"] ?? throw new ConfigurationException(ErrorMessage),
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] 
+                            ?? throw new ConfigurationException(ErrorMessage))),
                         ClockSkew = TimeSpan.Zero,
                     };
                 }
@@ -45,6 +50,7 @@ public class TokenValidationParametersAccessor
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "<Pending>")]
     public TokenValidationParameters Refresh
     {
         get
@@ -59,9 +65,10 @@ public class TokenValidationParametersAccessor
                         ValidateAudience = true,
                         ValidateLifetime = false,
                         ValidateIssuerSigningKey = true,
-                        ValidIssuer = _configuration["Jwt:Issuer"],
-                        ValidAudience = _configuration["Jwt:Audience"],
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!)),
+                        ValidIssuer = _configuration["Jwt:Issuer"] ?? throw new ConfigurationException(ErrorMessage),
+                        ValidAudience = _configuration["Jwt:Audience"] ?? throw new ConfigurationException(ErrorMessage),
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]
+                            ?? throw new ConfigurationException(ErrorMessage))),
                         ClockSkew = TimeSpan.Zero,
                     };
                 }

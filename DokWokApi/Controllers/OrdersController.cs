@@ -1,5 +1,5 @@
-﻿using DokWokApi.BLL;
-using DokWokApi.BLL.Extensions;
+﻿using DokWokApi.BLL.Extensions;
+using DokWokApi.BLL.Infrastructure;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
 using DokWokApi.Extensions;
@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace DokWokApi.Controllers;
 
 [ApiController]
-[Route(ApiRoutes.Orders.Controller)]
+[Route(ApiRoutes.Orders.Group)]
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
@@ -48,19 +48,19 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost(ApiRoutes.Orders.AddDelivery)]
-    public async Task<IActionResult> AddDeliveryOrder(DeliveryOrderForm form, [FromServices] ICartService cartService)
+    public async Task<IActionResult> AddDeliveryOrder(DeliveryOrderModel form, [FromServices] ICartService cartService)
     {
         var model = form.ToModel();
         var result = await _orderService.AddOrderFromCartAsync(model, cartService);
-        return result.ToCreatedAtActionResult(nameof(GetOrderById), "Orders");
+        return result.ToCreatedAtActionActionResult(nameof(GetOrderById), "Orders");
     }
 
     [HttpPost(ApiRoutes.Orders.AddTakeaway)]
-    public async Task<IActionResult> AddTakeawayOrder(TakeawayOrderForm form, [FromServices] ICartService cartService)
+    public async Task<IActionResult> AddTakeawayOrder(TakeawayOrderModel form, [FromServices] ICartService cartService)
     {
         var model = form.ToModel();
         var result = await _orderService.AddOrderFromCartAsync(model, cartService);
-        return result.ToCreatedAtActionResult(nameof(GetOrderById), "Orders");
+        return result.ToCreatedAtActionActionResult(nameof(GetOrderById), "Orders");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -69,7 +69,7 @@ public class OrdersController : ControllerBase
     {
         var model = putModel.ToModel();
         var result = await _orderService.UpdateAsync(model);
-        return result.ToOkResult();
+        return result.ToOkActionResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -132,7 +132,7 @@ public class OrdersController : ControllerBase
     {
         var model = postModel.ToModel();
         var result = await _orderLineService.AddAsync(model);
-        return result.ToCreatedAtActionResult(nameof(GetOrderLineById), "Orders");
+        return result.ToCreatedAtActionActionResult(nameof(GetOrderLineById), "Orders");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -141,7 +141,7 @@ public class OrdersController : ControllerBase
     {
         var model = putModel.ToModel();
         var result = await _orderLineService.UpdateAsync(model);
-        return result.ToOkResult();
+        return result.ToOkActionResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]

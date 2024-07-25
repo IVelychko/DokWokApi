@@ -1,5 +1,5 @@
-﻿using DokWokApi.BLL;
-using DokWokApi.BLL.Extensions;
+﻿using DokWokApi.BLL.Extensions;
+using DokWokApi.BLL.Infrastructure;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Shop;
 using DokWokApi.Extensions;
@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace DokWokApi.Controllers;
 
 [ApiController]
-[Route(ApiRoutes.Shops.Controller)]
+[Route(ApiRoutes.Shops.Group)]
 public class ShopsController : ControllerBase
 {
     private readonly IShopService _shopService;
@@ -57,7 +57,7 @@ public class ShopsController : ControllerBase
     {
         var model = postModel.ToModel();
         var result = await _shopService.AddAsync(model);
-        return result.ToCreatedAtActionResult(nameof(GetShopById), "Shops");
+        return result.ToCreatedAtActionActionResult(nameof(GetShopById), "Shops");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -66,7 +66,7 @@ public class ShopsController : ControllerBase
     {
         var model = putModel.ToModel();
         var result = await _shopService.UpdateAsync(model);
-        return result.ToOkResult();
+        return result.ToOkActionResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -90,6 +90,6 @@ public class ShopsController : ControllerBase
     public async Task<IActionResult> IsShopAddressTaken(string street, string building)
     {
         var result = await _shopService.IsAddressTaken(street, building);
-        return result.ToOkIsTakenResult();
+        return result.ToOkIsTakenActionResult();
     }
 }

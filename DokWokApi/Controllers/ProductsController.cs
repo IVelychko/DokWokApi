@@ -1,5 +1,5 @@
-﻿using DokWokApi.BLL;
-using DokWokApi.BLL.Extensions;
+﻿using DokWokApi.BLL.Extensions;
+using DokWokApi.BLL.Infrastructure;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Product;
 using DokWokApi.BLL.Models.ProductCategory;
@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace DokWokApi.Controllers;
 
 [ApiController]
-[Route(ApiRoutes.Products.Controller)]
+[Route(ApiRoutes.Products.Group)]
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
@@ -51,7 +51,7 @@ public class ProductsController : ControllerBase
     {
         var model = postModel.ToModel();
         var result = await _productService.AddAsync(model);
-        return result.ToCreatedAtActionResult(nameof(GetProductById), "Products");
+        return result.ToCreatedAtActionActionResult(nameof(GetProductById), "Products");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -60,7 +60,7 @@ public class ProductsController : ControllerBase
     {
         var model = putModel.ToModel();
         var result = await _productService.UpdateAsync(model);
-        return result.ToOkResult();
+        return result.ToOkActionResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -85,7 +85,7 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> IsProductNameTaken(string name)
     {
         var result = await _productService.IsNameTaken(name);
-        return result.ToOkIsTakenResult();
+        return result.ToOkIsTakenActionResult();
     }
 
     [HttpGet(ApiRoutes.ProductCategories.GetAll)]
@@ -113,7 +113,7 @@ public class ProductsController : ControllerBase
     {
         var model = postModel.ToModel();
         var result = await _categoryService.AddAsync(model);
-        return result.ToCreatedAtActionResult(nameof(GetCategoryById), "Products");
+        return result.ToCreatedAtActionActionResult(nameof(GetCategoryById), "Products");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -122,7 +122,7 @@ public class ProductsController : ControllerBase
     {
         var model = putModel.ToModel();
         var result = await _categoryService.UpdateAsync(model);
-        return result.ToOkResult();
+        return result.ToOkActionResult();
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -146,6 +146,6 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> IsCategoryNameTaken(string name)
     {
         var result = await _categoryService.IsNameTaken(name);
-        return result.ToOkIsTakenResult();
+        return result.ToOkIsTakenActionResult();
     }
 }

@@ -1,8 +1,6 @@
-﻿using DokWokApi.DAL.Entities;
+﻿namespace DokWokApi.BLL.Models.User;
 
-namespace DokWokApi.BLL.Models.User;
-
-public class AuthorizedUserModel
+public class AuthorizedUserResponseModel
 {
     public string Id { get; set; } = string.Empty;
 
@@ -15,6 +13,4 @@ public class AuthorizedUserModel
     public string? PhoneNumber { get; set; }
 
     public string Token { get; set; } = string.Empty;
-
-    public required RefreshToken RefreshToken { get; set; }
 }

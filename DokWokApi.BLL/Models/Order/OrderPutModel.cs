@@ -1,4 +1,5 @@
 ﻿using DokWokApi.BLL.Attributes;
+using DokWokApi.BLL.Infrastructure;
 using System.ComponentModel.DataAnnotations;
 
 namespace DokWokApi.BLL.Models.Order;

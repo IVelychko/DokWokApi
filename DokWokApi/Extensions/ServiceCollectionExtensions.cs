@@ -13,19 +13,23 @@ using DokWokApi.DAL.Validation;
 using DokWokApi.BLL.Validation;
 using DokWokApi.BLL.Infrastructure;
 using DokWokApi.Services;
+using DokWokApi.BLL.Exceptions;
+using DokWokApi.Infrastructure;
 
 namespace DokWokApi.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    private const string ErrorMessage = "Unable to get data from configuration";
+
     public static IServiceCollection AddCorsConfiguration(this IServiceCollection services, string policyName, ConfigurationManager configuration)
     {
         services.AddCors(opts =>
         {
             opts.AddPolicy(policyName, policy =>
             {
-                policy.WithOrigins(configuration["AllowedCorsUrls:ReactHttpProject"]!,
-                    configuration["AllowedCorsUrls:ReactHttpsProject"]!)
+                policy.WithOrigins(configuration["AllowedCorsUrls:ReactHttpProject"] ?? throw new ConfigurationException(ErrorMessage),
+                    configuration["AllowedCorsUrls:ReactHttpsProject"] ?? throw new ConfigurationException(ErrorMessage))
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
@@ -102,6 +106,18 @@ public static class ServiceCollectionExtensions
         }).AddJwtBearer(opts =>
         {
             opts.TokenValidationParameters = tokenValidationParameters;
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddAuthorizationServicesAndPolicies(this IServiceCollection services)
+    {
+        services.AddAuthorization(opts =>
+        {
+            opts.AddPolicy(AuthorizationPolicyNames.Admin, opts => opts.RequireRole(UserRoles.Admin));
+            opts.AddPolicy(AuthorizationPolicyNames.Customer, opts => opts.RequireRole(UserRoles.Customer));
+            opts.AddPolicy(AuthorizationPolicyNames.AdminAndCustomer, opts => opts.RequireRole(UserRoles.Admin, UserRoles.Customer));
         });
 
         return services;

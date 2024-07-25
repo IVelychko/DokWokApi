@@ -24,7 +24,7 @@ public static class OrderMappingExtensions
         };
     }
 
-    public static OrderModel ToModel(this DeliveryOrderForm model)
+    public static OrderModel ToModel(this DeliveryOrderModel model)
     {
         return new()
         {
@@ -37,7 +37,7 @@ public static class OrderMappingExtensions
         };
     }
 
-    public static OrderModel ToModel(this TakeawayOrderForm model)
+    public static OrderModel ToModel(this TakeawayOrderModel model)
     {
         return new()
         {

@@ -2,13 +2,13 @@ using DokWokApi.BLL.Infrastructure;
 using DokWokApi.DAL;
 using DokWokApi.Extensions;
 using DokWokApi.Infrastructure;
-using DokWokApi.Middlewares;
+using DokWokApi.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+// builder.Services.AddControllers();
 
 const string policyName = "ReactProjectCorsPolicy";
 
@@ -50,11 +50,13 @@ builder.Services.AddCustomServices();
 builder.Services.AddSwaggerSetup();
 
 builder.Services.AddJwtBearerAuthentication(builder.Configuration);
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationServicesAndPolicies();
 
-builder.Services.AddTransient<GlobalExceptionHandlingMiddleware>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var app = builder.Build();
+
+app.UseExceptionHandler(x => { });
 
 app.UseCors(policyName);
 
@@ -65,9 +67,8 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
-
-app.MapControllers();
+app.MapEndpoints();
+//app.MapControllers();
 
 app.UseSwagger();
 app.UseSwaggerUI(options => {
@@ -76,4 +77,4 @@ app.UseSwaggerUI(options => {
 
 await SeedData.SeedDatabaseAsync(app);
 
-app.Run();
+await app.RunAsync();

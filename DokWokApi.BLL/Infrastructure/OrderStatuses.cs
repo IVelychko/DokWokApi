@@ -1,4 +1,4 @@
-﻿namespace DokWokApi.BLL;
+﻿namespace DokWokApi.BLL.Infrastructure;
 
 public static class OrderStatuses
 {
