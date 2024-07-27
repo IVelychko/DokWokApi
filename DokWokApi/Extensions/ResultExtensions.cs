@@ -63,13 +63,13 @@ public static class ResultExtensions
         });
     }
 
-    public static IActionResult ToCreatedAtActionActionResult(this Result<UserModel> result, string actionName, string controllerName)
+    public static IActionResult ToCreatedAtActionResult(this Result<UserModel> result, string actionName, string controllerName)
     {
         return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model), 
             GetActionResultFromError);
     }
 
-    public static IActionResult ToCreatedAtActionActionResult(this Result<AuthorizedUserModel> result, HttpContext context, string actionName, string controllerName)
+    public static IActionResult ToCreatedAtActionResult(this Result<AuthorizedUserModel> result, HttpContext context, string actionName, string controllerName)
     {
         if (result.IsFaulted)
         {
@@ -88,7 +88,7 @@ public static class ResultExtensions
         return new CreatedAtActionResult(actionName, controllerName, new { id = user.Id }, user.ToAuthorizedResponseModel());
     }
 
-    public static IActionResult ToCreatedAtActionActionResult<TModel>(this Result<TModel> result, string actionName, string controllerName) where TModel : BaseModel
+    public static IActionResult ToCreatedAtActionResult<TModel>(this Result<TModel> result, string actionName, string controllerName) where TModel : BaseModel
     {
         return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model),
             GetActionResultFromError);

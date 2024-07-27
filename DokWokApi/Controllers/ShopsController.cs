@@ -57,7 +57,7 @@ public class ShopsController : ControllerBase
     {
         var model = postModel.ToModel();
         var result = await _shopService.AddAsync(model);
-        return result.ToCreatedAtActionActionResult(nameof(GetShopById), "Shops");
+        return result.ToCreatedAtActionResult(nameof(GetShopById), "Shops");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]

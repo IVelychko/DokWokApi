@@ -2,9 +2,9 @@
 
 public static class AuthorizationPolicyNames
 {
-    public const string AdminAndCustomer = "AdminAndCustomerPolicy";
+    public const string AdminAndCustomer = "AdminAndCustomerAuthorizationPolicy";
 
-    public const string Admin = "AdminPolicy";
+    public const string Admin = "AdminAuthorizationPolicy";
 
-    public const string Customer = "CustomerPolicy";
+    public const string Customer = "CustomerAuthorizationPolicy";
 }

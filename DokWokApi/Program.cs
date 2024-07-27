@@ -70,10 +70,13 @@ app.UseAuthorization();
 app.MapEndpoints();
 //app.MapControllers();
 
-app.UseSwagger();
-app.UseSwaggerUI(options => {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "WebApp");
-});
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options => {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "WebApp");
+    });
+}
 
 await SeedData.SeedDatabaseAsync(app);
 

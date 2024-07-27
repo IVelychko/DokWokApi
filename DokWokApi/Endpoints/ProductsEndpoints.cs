@@ -15,9 +15,12 @@ public static class ProductsEndpoints
         var group = app.MapGroup(ApiRoutes.Products.Group);
         group.MapGet("/", GetAllProducts);
         group.MapGet(ApiRoutes.Products.GetById, GetProductById).WithName(GetByIdRouteName);
-        group.MapPost("/", AddProduct).RequireAuthorization(AuthorizationPolicyNames.Admin);
-        group.MapPut("/", UpdateProduct).RequireAuthorization(AuthorizationPolicyNames.Admin);
-        group.MapDelete(ApiRoutes.Products.DeleteById, DeleteProduct).RequireAuthorization(AuthorizationPolicyNames.Admin);
+        group.MapPost("/", AddProduct)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+        group.MapPut("/", UpdateProduct)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+        group.MapDelete(ApiRoutes.Products.DeleteById, DeleteProduct)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin);
         group.MapGet(ApiRoutes.Products.IsNameTaken, IsProductNameTaken);
     }
 

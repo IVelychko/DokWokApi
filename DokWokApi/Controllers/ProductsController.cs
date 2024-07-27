@@ -2,7 +2,6 @@
 using DokWokApi.BLL.Infrastructure;
 using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Product;
-using DokWokApi.BLL.Models.ProductCategory;
 using DokWokApi.Extensions;
 using DokWokApi.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
@@ -15,12 +14,10 @@ namespace DokWokApi.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
-    private readonly IProductCategoryService _categoryService;
 
-    public ProductsController(IProductService productService, IProductCategoryService categoryService)
+    public ProductsController(IProductService productService)
     {
         _productService = productService;
-        _categoryService = categoryService;
     }
 
     [HttpGet]
@@ -51,7 +48,7 @@ public class ProductsController : ControllerBase
     {
         var model = postModel.ToModel();
         var result = await _productService.AddAsync(model);
-        return result.ToCreatedAtActionActionResult(nameof(GetProductById), "Products");
+        return result.ToCreatedAtActionResult(nameof(GetProductById), "Products");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin}")]
@@ -85,67 +82,6 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> IsProductNameTaken(string name)
     {
         var result = await _productService.IsNameTaken(name);
-        return result.ToOkIsTakenActionResult();
-    }
-
-    [HttpGet(ApiRoutes.ProductCategories.GetAll)]
-    public async Task<IActionResult> GetAllCategories()
-    {
-        var categories = await _categoryService.GetAllAsync();
-        return Ok(categories);
-    }
-
-    [HttpGet(ApiRoutes.ProductCategories.GetById)]
-    public async Task<IActionResult> GetCategoryById(long id)
-    {
-        var category = await _categoryService.GetByIdAsync(id);
-        if (category is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(category);
-    }
-
-    [Authorize(Roles = $"{UserRoles.Admin}")]
-    [HttpPost(ApiRoutes.ProductCategories.Add)]
-    public async Task<IActionResult> AddCategory(ProductCategoryPostModel postModel)
-    {
-        var model = postModel.ToModel();
-        var result = await _categoryService.AddAsync(model);
-        return result.ToCreatedAtActionActionResult(nameof(GetCategoryById), "Products");
-    }
-
-    [Authorize(Roles = $"{UserRoles.Admin}")]
-    [HttpPut(ApiRoutes.ProductCategories.Update)]
-    public async Task<IActionResult> UpdateCategory(ProductCategoryPutModel putModel)
-    {
-        var model = putModel.ToModel();
-        var result = await _categoryService.UpdateAsync(model);
-        return result.ToOkActionResult();
-    }
-
-    [Authorize(Roles = $"{UserRoles.Admin}")]
-    [HttpDelete(ApiRoutes.ProductCategories.DeleteById)]
-    public async Task<IActionResult> DeleteCategory(long id)
-    {
-        var result = await _categoryService.DeleteAsync(id);
-        if (result is null)
-        {
-            return NotFound();
-        }
-        else if (result.Value)
-        {
-            return Ok();
-        }
-
-        return StatusCode(StatusCodes.Status500InternalServerError);
-    }
-
-    [HttpGet(ApiRoutes.ProductCategories.IsNameTaken)]
-    public async Task<IActionResult> IsCategoryNameTaken(string name)
-    {
-        var result = await _categoryService.IsNameTaken(name);
         return result.ToOkIsTakenActionResult();
     }
 }

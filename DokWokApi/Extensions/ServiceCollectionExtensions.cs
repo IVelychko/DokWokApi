@@ -46,8 +46,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IValidator<Order>, OrderRepositoryValidator>();
         services.AddScoped<IValidator<OrderLine>, OrderLineRepositoryValidator>();
         services.AddScoped<IValidator<Shop>, ShopRepositoryValidator>();
-        services.AddScoped<IUserServiceValidator, UserServiceValidator>();
         services.AddScoped<IValidator<RefreshToken>, RefreshTokenRepositoryValidator>();
+        services.AddScoped<IUserServiceValidator, UserServiceValidator>();
 
         return services;
     }
@@ -125,6 +125,7 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddSwaggerSetup(this IServiceCollection services)
     {
+        services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(opts => {
             opts.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
             {

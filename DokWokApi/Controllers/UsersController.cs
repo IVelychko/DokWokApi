@@ -69,7 +69,7 @@ public class UsersController : ControllerBase
     {
         var model = postModel.ToModel();
         var result = await _userService.AddAsync(model, postModel.Password!);
-        return result.ToCreatedAtActionActionResult(nameof(GetCustomerById), "Users");
+        return result.ToCreatedAtActionResult(nameof(GetCustomerById), "Users");
     }
 
     [Authorize(Roles = $"{UserRoles.Admin},{UserRoles.Customer}")]
@@ -154,7 +154,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> RegisterUser(UserRegisterModel registerModel)
     {
         var result = await _userService.RegisterAsync(registerModel);
-        return result.ToCreatedAtActionActionResult(HttpContext, nameof(GetCustomerById), "Users");
+        return result.ToCreatedAtActionResult(HttpContext, nameof(GetCustomerById), "Users");
     }
 
     [HttpPost(ApiRoutes.Users.RefreshToken)]
