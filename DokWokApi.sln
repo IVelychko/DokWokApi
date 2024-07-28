@@ -9,7 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DokWokApiTests", "DokWokApi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DokWokApi.DAL", "DokWokApi.DAL\DokWokApi.DAL.csproj", "{F4877972-BF81-4D86-9B15-E0C7ECD14DA7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DokWokApi.BLL", "DokWokApi.BLL\DokWokApi.BLL.csproj", "{D3C6E432-0002-49C5-A6EA-2A8FCB9D3CDF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DokWokApi.BLL", "DokWokApi.BLL\DokWokApi.BLL.csproj", "{D3C6E432-0002-49C5-A6EA-2A8FCB9D3CDF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "Domain\Domain.csproj", "{49D15138-8C58-46FB-89C6-6DD203617776}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Application", "Application\Application.csproj", "{FC472A1A-84DC-410F-A8F7-A2D93244EFC8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "Infrastructure\Infrastructure.csproj", "{B26ECF51-6426-4768-894A-BF557F203F4D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +39,18 @@ Global
 		{D3C6E432-0002-49C5-A6EA-2A8FCB9D3CDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3C6E432-0002-49C5-A6EA-2A8FCB9D3CDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3C6E432-0002-49C5-A6EA-2A8FCB9D3CDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49D15138-8C58-46FB-89C6-6DD203617776}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49D15138-8C58-46FB-89C6-6DD203617776}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49D15138-8C58-46FB-89C6-6DD203617776}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49D15138-8C58-46FB-89C6-6DD203617776}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC472A1A-84DC-410F-A8F7-A2D93244EFC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC472A1A-84DC-410F-A8F7-A2D93244EFC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC472A1A-84DC-410F-A8F7-A2D93244EFC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC472A1A-84DC-410F-A8F7-A2D93244EFC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B26ECF51-6426-4768-894A-BF557F203F4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B26ECF51-6426-4768-894A-BF557F203F4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B26ECF51-6426-4768-894A-BF557F203F4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B26ECF51-6426-4768-894A-BF557F203F4D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
