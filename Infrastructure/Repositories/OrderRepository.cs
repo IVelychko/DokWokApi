@@ -1,11 +1,10 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Validation;
 using Domain.Entities;
-using Domain.Exceptions;
-using Domain.Exceptions.Base;
+using Domain.Errors;
+using Domain.Errors.Base;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
-using System.Collections;
 
 namespace Infrastructure.Repositories;
 
@@ -25,10 +24,8 @@ public class OrderRepository : IOrderRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
-                : new ValidationException(validationResult.Error);
-
-            return new Result<Order>(exception);
+            var error = new ValidationError(validationResult.Errors);
+            return Result<Order>.Failure(error);
         }
 
         await _context.AddAsync(entity);
@@ -38,12 +35,12 @@ public class OrderRepository : IOrderRepository
         {
             var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
             return addedEntity is not null ? addedEntity
-                : new Result<Order>(new DbException("There was the database error"));
+                : Result<Order>.Failure(new DbError("There was the database error"));
         }
         else
         {
-            var exception = new DbException("There was the database error");
-            return new Result<Order>(exception);
+            var error = new DbError("There was the database error");
+            return Result<Order>.Failure(error);
         }
     }
 
@@ -114,10 +111,8 @@ public class OrderRepository : IOrderRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
-                : new ValidationException(validationResult.Error);
-
-            return new Result<Order>(exception);
+            var error = new ValidationError(validationResult.Errors);
+            return Result<Order>.Failure(error);
         }
 
         _context.Update(entity);
@@ -127,12 +122,12 @@ public class OrderRepository : IOrderRepository
         {
             var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
             return updatedEntity is not null ? updatedEntity
-                : new Result<Order>(new DbException("There was the database error"));
+                : Result<Order>.Failure(new DbError("There was the database error"));
         }
         else
         {
-            var exception = new DbException("There was the database error");
-            return new Result<Order>(exception);
+            var error = new DbError("There was the database error");
+            return Result<Order>.Failure(error);
         }
     }
 }

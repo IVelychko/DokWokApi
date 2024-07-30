@@ -19,15 +19,11 @@ public class RefreshTokenRepositoryValidator : IValidator<RefreshToken>
 
     public async Task<ValidationResult> ValidateAddAsync(RefreshToken? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed product is null";
+            result.Errors.Add("The passed product is null");
             return result;
         }
 
@@ -35,9 +31,7 @@ public class RefreshTokenRepositoryValidator : IValidator<RefreshToken>
         if (!userExists)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no user with the ID specified in the UserId property of the RefreshToken entity";
-            return result;
+            result.Errors.Add("There is no user with the ID specified in the UserId property of the RefreshToken entity");
         }
 
         return result;
@@ -45,15 +39,11 @@ public class RefreshTokenRepositoryValidator : IValidator<RefreshToken>
 
     public async Task<ValidationResult> ValidateUpdateAsync(RefreshToken? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed product is null";
+            result.Errors.Add("The passed product is null");
             return result;
         }
 
@@ -61,18 +51,14 @@ public class RefreshTokenRepositoryValidator : IValidator<RefreshToken>
         if (entityToUpdate is null)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no refresh token with this ID in the database";
-            return result;
+            result.Errors.Add("There is no refresh token with this ID in the database");
         }
 
         var userExists = await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId);
         if (!userExists)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no user with the ID specified in the UserId property of the RefreshToken entity";
-            return result;
+            result.Errors.Add("There is no user with the ID specified in the UserId property of the RefreshToken entity");
         }
 
         return result;

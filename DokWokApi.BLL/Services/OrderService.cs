@@ -1,10 +1,10 @@
-﻿using DokWokApi.BLL.Interfaces;
+﻿using DokWokApi.BLL.Extensions;
+using DokWokApi.BLL.Interfaces;
 using DokWokApi.BLL.Models.Order;
-using DokWokApi.DAL.Interfaces;
 using DokWokApi.DAL.Exceptions;
+using DokWokApi.DAL.Interfaces;
 using DokWokApi.DAL.ResultType;
 using Microsoft.EntityFrameworkCore;
-using DokWokApi.BLL.Extensions;
 
 namespace DokWokApi.BLL.Services;
 

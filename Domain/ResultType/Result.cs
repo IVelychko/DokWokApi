@@ -1,4 +1,6 @@
-﻿namespace Domain.ResultType;
+﻿using Domain.Errors.Base;
+
+namespace Domain.ResultType;
 
 public readonly struct Result<TValue>
 {
@@ -6,19 +8,19 @@ public readonly struct Result<TValue>
 
     private readonly TValue? _value;
 
-    private readonly Exception? _exception;
+    private readonly Error? _error;
 
     public Result(TValue value)
     {
         _state = ResultState.Success;
         _value = value;
-        _exception = null;
+        _error = null;
     }
 
-    public Result(Exception exception)
+    public Result(Error error)
     {
         _state = ResultState.Faulted;
-        _exception = exception;
+        _error = error;
         _value = default;
     }
 
@@ -26,14 +28,16 @@ public readonly struct Result<TValue>
 
     public bool IsFaulted => !IsSuccess;
 
-    public TValue Value => IsSuccess ? _value! 
+    public TValue Value => IsSuccess ? _value!
         : throw new InvalidOperationException("It is not possible to access the value if the result state is faulted");
 
-    public Exception Exception => IsFaulted ? _exception!
-        : throw new InvalidOperationException("It is not possible to access the exception if the result state is success");
+    public Error Error => IsFaulted ? _error!
+        : throw new InvalidOperationException("It is not possible to access the error if the result state is success");
 
     public static implicit operator Result<TValue>(TValue value) => new(value);
 
-    public TResult Match<TResult>(Func<TValue, TResult> success, Func<Exception, TResult> failure) =>
-        IsSuccess ? success(_value!) : failure(_exception!);
+    public static Result<TValue> Failure(Error error) => new(error);
+
+    public TResult Match<TResult>(Func<TValue, TResult> success, Func<Error, TResult> failure) =>
+        IsSuccess ? success(_value!) : failure(_error!);
 }

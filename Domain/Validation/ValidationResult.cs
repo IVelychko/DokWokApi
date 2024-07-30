@@ -1,10 +1,8 @@
 ﻿namespace Domain.Validation;
 
-public class ValidationResult
+public class ValidationResult(bool isValid)
 {
-    public bool IsValid { get; set; }
+    public bool IsValid { get; set; } = isValid;
 
-    public bool IsFound { get; set; }
-
-    public string Error { get; set; } = string.Empty;
+    public List<string> Errors { get; set; } = [];
 }

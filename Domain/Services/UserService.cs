@@ -2,8 +2,7 @@
 using Domain.Abstractions.Services;
 using Domain.Abstractions.Validation;
 using Domain.Entities;
-using Domain.Exceptions;
-using Domain.Exceptions.Base;
+using Domain.Errors;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models.User;
@@ -37,21 +36,30 @@ public class UserService : IUserService
     {
         if (model is null || string.IsNullOrEmpty(password))
         {
-            var exception = new ValidationException("The passed data is null");
-            return new Result<UserModel>(exception);
+            List<string> errors = [];
+            if (model is null)
+            {
+                errors.Add("The passed user is null");
+            }
+
+            if (string.IsNullOrEmpty(password))
+            {
+                errors.Add("The passed password is null or empty");
+            }
+
+            var error = new ValidationError(errors);
+            return Result<UserModel>.Failure(error);
         }
 
         var user = model.ToEntity();
         user.Id = Guid.NewGuid().ToString();
         var result = await _userRepository.AddAsync(user, password);
-        return result.Match(u => u.ToModel(),
-            e => new Result<UserModel>(e));
+        return result.Match(u => u.ToModel(), Result<UserModel>.Failure);
     }
 
     public async Task<bool?> DeleteAsync(string id)
     {
-        var result = await _userRepository.DeleteAsync(id);
-        return result;
+        return await _userRepository.DeleteAsync(id);
     }
 
     public async Task<IEnumerable<UserModel>> GetAllUsersAsync()
@@ -71,59 +79,56 @@ public class UserService : IUserService
     public async Task<UserModel?> GetUserByUserNameAsync(string userName)
     {
         var entity = await _userRepository.GetUserByUserNameAsync(userName);
-        if (entity is null)
-        {
-            return null;
-        }
-
-        var model = entity.ToModel();
-        return model;
+        return entity?.ToModel();
     }
 
     public async Task<UserModel?> GetUserByIdAsync(string id)
     {
         var entity = await _userRepository.GetUserByIdAsync(id);
-        if (entity is null)
-        {
-            return null;
-        }
-
-        var model = entity.ToModel();
-        return model;
+        return entity?.ToModel();
     }
 
     public async Task<UserModel?> GetCustomerByIdAsync(string id)
     {
         var entity = await _userRepository.GetCustomerByIdAsync(id);
-        if (entity is null)
-        {
-            return null;
-        }
-
-        var model = entity.ToModel();
-        return model;
+        return entity?.ToModel();
     }
 
     public async Task<Result<UserModel>> UpdateAsync(UserModel model)
     {
         if (model is null)
         {
-            var exception = new ValidationException("The passed model is null");
-            return new Result<UserModel>(exception);
+            var error = new ValidationError("The passed model is null");
+            return Result<UserModel>.Failure(error);
         }
 
         var entity = model.ToEntity();
         var result = await _userRepository.UpdateAsync(entity);
-        return result.Match(u => u.ToModel(),
-            e => new Result<UserModel>(e));
+        return result.Match(u => u.ToModel(), Result<UserModel>.Failure);
     }
 
     public async Task<Result<bool>> UpdateCustomerPasswordAsync(string userId, string oldPassword, string newPassword)
     {
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword))
         {
-            var exception = new ValidationException("The passed data is null");
-            return new Result<bool>(exception);
+            List<string> errors = [];
+            if (string.IsNullOrEmpty(userId))
+            {
+                errors.Add("The passed user id is null or empty");
+            }
+
+            if (string.IsNullOrEmpty(oldPassword))
+            {
+                errors.Add("The passed old password is null or empty");
+            }
+
+            if (string.IsNullOrEmpty(newPassword))
+            {
+                errors.Add("The passed new password is null or empty");
+            }
+
+            var error = new ValidationError(errors);
+            return Result<bool>.Failure(error);
         }
 
         var result = await _userRepository.UpdateCustomerPasswordAsync(userId, oldPassword, newPassword);
@@ -134,8 +139,18 @@ public class UserService : IUserService
     {
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(newPassword))
         {
-            var exception = new ValidationException("The passed data is null");
-            return new Result<bool>(exception);
+            List<string> errors = [];
+            if (string.IsNullOrEmpty(userId))
+            {
+                errors.Add("The passed user id is null or empty");
+            }
+
+            if (string.IsNullOrEmpty(newPassword))
+            {
+                errors.Add("The passed new password is null or empty");
+            }
+            var error = new ValidationError(errors);
+            return Result<bool>.Failure(error);
         }
 
         var result = await _userRepository.UpdateCustomerPasswordAsAdminAsync(userId, newPassword);
@@ -144,10 +159,10 @@ public class UserService : IUserService
 
     public async Task<Result<IEnumerable<string>>> GetUserRolesAsync(string userId)
     {
-        if (userId is null)
+        if (string.IsNullOrEmpty(userId))
         {
-            var exception = new ValidationException("The passed data is null");
-            return new Result<IEnumerable<string>>(exception);
+            var error = new ValidationError("The passed user id is null or empty");
+            return Result<IEnumerable<string>>.Failure(error);
         }
 
         var result = await _userRepository.GetUserRolesAsync(userId);
@@ -159,17 +174,15 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateCustomerLoginAsync(userName, password);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
-                : new ValidationException(validationResult.Error);
-
-            return new Result<AuthorizedUserModel>(exception);
+            var error = new ValidationError(validationResult.Errors);
+            return Result<AuthorizedUserModel>.Failure(error);
         }
 
         var user = await _userRepository.GetUserByUserNameAsync(userName);
         if (user is null)
         {
-            var exception = new NotFoundException("The user was not found");
-            return new Result<AuthorizedUserModel>(exception);
+            var error = new EntityNotFoundError("The user was not found");
+            return Result<AuthorizedUserModel>.Failure(error);
         }
 
         var userModel = user.ToModel();
@@ -182,17 +195,15 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateAdminLoginAsync(userName, password);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
-                : new ValidationException(validationResult.Error);
-
-            return new Result<AuthorizedUserModel>(exception);
+            var error = new ValidationError(validationResult.Errors);
+            return Result<AuthorizedUserModel>.Failure(error);
         }
 
         var user = await _userRepository.GetUserByUserNameAsync(userName);
         if (user is null)
         {
-            var exception = new NotFoundException("The user was not found");
-            return new Result<AuthorizedUserModel>(exception);
+            var error = new EntityNotFoundError("The user was not found");
+            return Result<AuthorizedUserModel>.Failure(error);
         }
 
         var userModel = user.ToModel();
@@ -204,15 +215,25 @@ public class UserService : IUserService
     {
         if (model is null || string.IsNullOrEmpty(password))
         {
-            var exception = new ValidationException("The passed data is null.");
-            return new Result<AuthorizedUserModel>(exception);
+            List<string> errors = [];
+            if (model is null)
+            {
+                errors.Add("The passed model is null");
+            }
+
+            if (string.IsNullOrEmpty(password))
+            {
+                errors.Add("The passed password is null or empty");
+            }
+
+            var error = new ValidationError(errors);
+            return Result<AuthorizedUserModel>.Failure(error);
         }
 
         var result = await AddAsync(model, password);
         if (result.IsFaulted)
         {
-            var exception = result.Exception;
-            return new Result<AuthorizedUserModel>(exception);
+            return Result<AuthorizedUserModel>.Failure(result.Error);
         }
 
         var addedUser = result.Value;
@@ -225,8 +246,8 @@ public class UserService : IUserService
         var validationResult = _validator.ValidateRefreshTokenModel(securityToken, refreshToken);
         if (!validationResult.IsValid)
         {
-            var exception = new ValidationException(validationResult.Error);
-            return new Result<AuthorizedUserModel>(exception);
+            var error = new ValidationError(validationResult.Errors);
+            return Result<AuthorizedUserModel>.Failure(error);
         }
 
         try
@@ -236,8 +257,8 @@ public class UserService : IUserService
             var jwtValidationResult = _validator.ValidateExpiredJwt(jwtSecurityToken, isAlgorithmValid);
             if (!jwtValidationResult.IsValid)
             {
-                var exception = new ValidationException(jwtValidationResult.Error);
-                return new Result<AuthorizedUserModel>(exception);
+                var error = new ValidationError(jwtValidationResult.Errors);
+                return Result<AuthorizedUserModel>.Failure(error);
             }
 
             var storedRefreshToken = await _refreshTokenRepository.GetByTokenWithDetailsAsync(refreshToken);
@@ -245,24 +266,23 @@ public class UserService : IUserService
             var refreshTokenValidationResult = _validator.ValidateRefreshToken(storedRefreshToken, jti);
             if (!refreshTokenValidationResult.IsValid)
             {
-                var exception = new ValidationException(validationResult.Error);
-                return new Result<AuthorizedUserModel>(exception);
+                var error = new ValidationError(refreshTokenValidationResult.Errors);
+                return Result<AuthorizedUserModel>.Failure(error);
             }
 
             storedRefreshToken!.Used = true;
             var refreshTokenUpdateResult = await _refreshTokenRepository.UpdateAsync(storedRefreshToken);
             if (refreshTokenUpdateResult.IsFaulted)
             {
-                var exception = refreshTokenUpdateResult.Exception;
-                return new Result<AuthorizedUserModel>(exception);
+                return Result<AuthorizedUserModel>.Failure(refreshTokenUpdateResult.Error);
             }
 
             var userId = jwtSecurityToken.Claims.First(c => c.Type == "id").Value;
             var user = await _userRepository.GetUserByIdAsync(userId);
             if (user is null)
             {
-                var exception = new ValidationException("The user does not exist");
-                return new Result<AuthorizedUserModel>(exception);
+                var error = new ValidationError("The user does not exist");
+                return Result<AuthorizedUserModel>.Failure(error);
             }
 
             var userModel = user.ToModel();
@@ -271,8 +291,8 @@ public class UserService : IUserService
         }
         catch
         {
-            var exception = new ValidationException("The token is not valid");
-            return new Result<AuthorizedUserModel>(exception);
+            var error = new ValidationError("The token is not valid");
+            return Result<AuthorizedUserModel>.Failure(error);
         }
     }
 
@@ -299,9 +319,19 @@ public class UserService : IUserService
                 return null;
             }
 
-            bool isCustomer = await _userRepository.IsInRoleAsync(user, UserRoles.Customer);
-            bool isAdmin = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
-            if (!isCustomer && !isAdmin)
+            var isCustomerResult = await _userRepository.IsInRoleAsync(user, UserRoles.Customer);
+            if (isCustomerResult.IsFaulted)
+            {
+                return null;
+            }
+
+            var isAdminResult = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
+            if (isAdminResult.IsFaulted)
+            {
+                return null;
+            }
+
+            if (!isCustomerResult.Value && !isAdminResult.Value)
             {
                 return null;
             }
@@ -337,8 +367,13 @@ public class UserService : IUserService
                 return null;
             }
 
-            bool isAdmin = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
-            if (!isAdmin)
+            var isAdminResult = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
+            if (isAdminResult.IsFaulted)
+            {
+                return null;
+            }
+
+            if (!isAdminResult.Value)
             {
                 return null;
             }
@@ -353,38 +388,38 @@ public class UserService : IUserService
 
     public async Task<Result<bool>> IsUserNameTakenAsync(string userName)
     {
-        if (userName is null)
+        if (string.IsNullOrEmpty(userName))
         {
-            var exception = new ValidationException("The passed user name is null");
-            return new Result<bool>(exception);
+            var error = new ValidationError("The passed user name is null or empty");
+            return Result<bool>.Failure(error);
         }
 
-        var isTaken = await _userRepository.IsUserNameTakenAsync(userName);
-        return isTaken;
+        var isTakenResult = await _userRepository.IsUserNameTakenAsync(userName);
+        return isTakenResult;
     }
 
     public async Task<Result<bool>> IsEmailTakenAsync(string email)
     {
-        if (email is null)
+        if (string.IsNullOrEmpty(email))
         {
-            var exception = new ValidationException("The passed email is null");
-            return new Result<bool>(exception);
+            var error = new ValidationError("The passed email is null or empty");
+            return Result<bool>.Failure(error);
         }
 
-        var isTaken = await _userRepository.IsEmailTakenAsync(email);
-        return isTaken;
+        var isTakenResult = await _userRepository.IsEmailTakenAsync(email);
+        return isTakenResult;
     }
 
     public async Task<Result<bool>> IsPhoneNumberTakenAsync(string phoneNumber)
     {
-        if (phoneNumber is null)
+        if (string.IsNullOrEmpty(phoneNumber))
         {
-            var exception = new ValidationException("The passed phone number is null");
-            return new Result<bool>(exception);
+            var error = new ValidationError("The passed phone number is null or empty");
+            return Result<bool>.Failure(error);
         }
 
-        var isTaken = await _userRepository.IsPhoneNumberTakenAsync(phoneNumber);
-        return isTaken;
+        var isTakenResult = await _userRepository.IsPhoneNumberTakenAsync(phoneNumber);
+        return isTakenResult;
     }
 
     public async Task<UserModel?> GetUserFromTokenAsync(string token)
@@ -400,7 +435,7 @@ public class UserService : IUserService
         var rolesResult = await _userRepository.GetUserRolesAsync(userModel.Id);
         if (rolesResult.IsFaulted)
         {
-            return new Result<AuthorizedUserModel>(rolesResult.Exception);
+            return Result<AuthorizedUserModel>.Failure(rolesResult.Error);
         }
 
         var roles = rolesResult.Value;
@@ -412,8 +447,7 @@ public class UserService : IUserService
         var refreshTokenAddResult = await _refreshTokenRepository.AddAsync(refreshToken);
         if (refreshTokenAddResult.IsFaulted)
         {
-            var exception = refreshTokenAddResult.Exception;
-            return new Result<AuthorizedUserModel>(exception);
+            return Result<AuthorizedUserModel>.Failure(refreshTokenAddResult.Error);
         }
 
         var authorizedUser = userModel.ToAuthorizedModel(serializedJwtToken, refreshToken);

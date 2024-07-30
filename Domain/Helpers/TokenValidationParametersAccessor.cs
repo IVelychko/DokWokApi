@@ -1,4 +1,4 @@
-﻿using Domain.Exceptions.Base;
+﻿using Domain.Exceptions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -39,7 +39,7 @@ public class TokenValidationParametersAccessor
                         ValidateIssuerSigningKey = true,
                         ValidIssuer = _configuration["Jwt:Issuer"] ?? throw new ConfigurationException(ErrorMessage),
                         ValidAudience = _configuration["Jwt:Audience"] ?? throw new ConfigurationException(ErrorMessage),
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] 
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]
                             ?? throw new ConfigurationException(ErrorMessage))),
                         ClockSkew = TimeSpan.Zero,
                     };

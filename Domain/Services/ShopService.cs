@@ -1,6 +1,6 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
-using Domain.Exceptions;
+using Domain.Errors;
 using Domain.Mapping.Extensions;
 using Domain.Models;
 using Domain.ResultType;
@@ -20,15 +20,13 @@ public class ShopService : IShopService
     {
         if (model is null)
         {
-            var exception = new ValidationException("The passed model is null.");
-            return new Result<ShopModel>(exception);
+            var error = new ValidationError("The passed model is null.");
+            return Result<ShopModel>.Failure(error);
         }
 
         var entity = model.ToEntity();
         var result = await _shopRepository.AddAsync(entity);
-
-        return result.Match(s => s.ToModel(),
-            e => new Result<ShopModel>(e));
+        return result.Match(s => s.ToModel(), Result<ShopModel>.Failure);
     }
 
     public async Task<bool?> DeleteAsync(long id)
@@ -46,38 +44,32 @@ public class ShopService : IShopService
     public async Task<ShopModel?> GetByIdAsync(long id)
     {
         var entity = await _shopRepository.GetByIdAsync(id);
-        if (entity is null)
-        {
-            return null;
-        }
-
-        var model = entity.ToModel();
-        return model;
+        return entity?.ToModel();
     }
 
     public async Task<ShopModel?> GetByAddressAsync(string street, string building)
     {
         var entity = await _shopRepository.GetByAddressAsync(street, building);
-        if (entity is null)
-        {
-            return null;
-        }
-
-        var model = entity.ToModel();
-        return model;
+        return entity?.ToModel();
     }
 
     public async Task<Result<bool>> IsAddressTakenAsync(string street, string building)
     {
-        if (street is null)
+        if (street is null || building is null)
         {
-            var exception = new ValidationException("The passed street is null");
-            return new Result<bool>(exception);
-        }
-        else if (building is null)
-        {
-            var exception = new ValidationException("The passed building is null");
-            return new Result<bool>(exception);
+            List<string> errors = [];
+            if (street is null)
+            {
+                errors.Add("The passed street is null");
+            }
+
+            if (building is null)
+            {
+                errors.Add("The passed building is null");
+            }
+
+            var error = new ValidationError(errors);
+            return Result<bool>.Failure(error);
         }
 
         var isTakenResult = await _shopRepository.IsAddressTakenAsync(street, building);
@@ -88,14 +80,12 @@ public class ShopService : IShopService
     {
         if (model is null)
         {
-            var exception = new ValidationException("The passed model is null.");
-            return new Result<ShopModel>(exception);
+            var error = new ValidationError("The passed model is null.");
+            return Result<ShopModel>.Failure(error);
         }
 
         var entity = model.ToEntity();
         var result = await _shopRepository.UpdateAsync(entity);
-
-        return result.Match(s => s.ToModel(),
-            e => new Result<ShopModel>(e));
+        return result.Match(s => s.ToModel(), Result<ShopModel>.Failure);
     }
 }

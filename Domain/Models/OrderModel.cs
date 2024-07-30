@@ -23,4 +23,6 @@ public class OrderModel : BaseModel
     public long? ShopId { get; set; }
 
     public List<OrderLineModel> OrderLines { get; set; } = [];
+
+    public void SetTotalOrderPrice() => TotalOrderPrice = OrderLines.Sum(ol => ol.TotalLinePrice);
 }

@@ -16,23 +16,18 @@ public class ProductCategoryRepositoryValidator : IValidator<ProductCategory>
 
     public async Task<ValidationResult> ValidateAddAsync(ProductCategory? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed product category is null.";
+            result.Errors.Add("The passed product category is null");
             return result;
         }
 
         if (await _context.ProductCategories.AnyAsync(c => c.Name == model.Name))
         {
             result.IsValid = false;
-            result.Error = "The product category with the same Name value is already present in the database.";
-            return result;
+            result.Errors.Add("The product category with the same Name value is already present in the database");
         }
 
         return result;
@@ -40,15 +35,11 @@ public class ProductCategoryRepositoryValidator : IValidator<ProductCategory>
 
     public async Task<ValidationResult> ValidateUpdateAsync(ProductCategory? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed product category is null.";
+            result.Errors.Add("The passed product category is null");
             return result;
         }
 
@@ -56,16 +47,14 @@ public class ProductCategoryRepositoryValidator : IValidator<ProductCategory>
         if (entityToUpdate is null)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no entity with this ID in the database.";
+            result.Errors.Add("There is no entity with this ID in the database");
             return result;
         }
 
         if (model.Name != entityToUpdate.Name && await _context.ProductCategories.AnyAsync(c => c.Name == model.Name))
         {
             result.IsValid = false;
-            result.Error = "The product category with the same Name value is already present in the database.";
-            return result;
+            result.Errors.Add("The product category with the same Name value is already present in the database");
         }
 
         return result;

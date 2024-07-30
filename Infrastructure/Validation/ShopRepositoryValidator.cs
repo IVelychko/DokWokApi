@@ -16,23 +16,18 @@ public class ShopRepositoryValidator : IValidator<Shop>
 
     public async Task<ValidationResult> ValidateAddAsync(Shop? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed product category is null.";
+            result.Errors.Add("The passed product category is null");
             return result;
         }
 
         if (await _context.Shops.AnyAsync(s => s.Street == model.Street && s.Building == model.Building))
         {
             result.IsValid = false;
-            result.Error = "The shop with the same Street and Building values is already present in the database.";
-            return result;
+            result.Errors.Add("The shop with the same Street and Building values is already present in the database");
         }
 
         return result;
@@ -40,15 +35,11 @@ public class ShopRepositoryValidator : IValidator<Shop>
 
     public async Task<ValidationResult> ValidateUpdateAsync(Shop? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed product category is null.";
+            result.Errors.Add("The passed product category is null");
             return result;
         }
 
@@ -56,8 +47,7 @@ public class ShopRepositoryValidator : IValidator<Shop>
         if (entityToUpdate is null)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no entity with this ID in the database.";
+            result.Errors.Add("There is no entity with this ID in the database");
             return result;
         }
 
@@ -65,8 +55,7 @@ public class ShopRepositoryValidator : IValidator<Shop>
             await _context.Shops.AnyAsync(s => s.Street == model.Street && s.Building == model.Building))
         {
             result.IsValid = false;
-            result.Error = "The shop with the same Street and Building values is already present in the database.";
-            return result;
+            result.Errors.Add("The shop with the same Street and Building values is already present in the database");
         }
 
         return result;

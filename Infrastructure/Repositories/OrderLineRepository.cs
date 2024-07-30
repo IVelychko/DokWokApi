@@ -1,8 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Validation;
 using Domain.Entities;
-using Domain.Exceptions;
-using Domain.Exceptions.Base;
+using Domain.Errors;
+using Domain.Errors.Base;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,17 +24,8 @@ public class OrderLineRepository : IOrderLineRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
-                : new ValidationException(validationResult.Error);
-
-            return new Result<OrderLine>(exception);
-        }
-
-        var product = await _context.Products.AsNoTracking().FirstAsync(p => p.Id == entity.ProductId);
-        if (entity.TotalLinePrice == 0)
-        {
-            var totalPrice = product.Price * entity.Quantity;
-            entity.TotalLinePrice = totalPrice;
+            var error = new ValidationError(validationResult.Errors);
+            return Result<OrderLine>.Failure(error);
         }
 
         await _context.AddAsync(entity);
@@ -44,12 +35,12 @@ public class OrderLineRepository : IOrderLineRepository
         {
             var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
             return addedEntity is not null ? addedEntity
-                : new Result<OrderLine>(new DbException("There was the database error"));
+                : Result<OrderLine>.Failure(new DbError("There was the database error"));
         }
         else
         {
-            var exception = new DbException("There was the database error");
-            return new Result<OrderLine>(exception);
+            var error = new DbError("There was the database error");
+            return Result<OrderLine>.Failure(error);
         }
     }
 
@@ -125,17 +116,8 @@ public class OrderLineRepository : IOrderLineRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
-                : new ValidationException(validationResult.Error);
-
-            return new Result<OrderLine>(exception);
-        }
-
-        var product = await _context.Products.AsNoTracking().FirstAsync(p => p.Id == entity.ProductId);
-        if (entity.TotalLinePrice == 0)
-        {
-            var totalPrice = product.Price * entity.Quantity;
-            entity.TotalLinePrice = totalPrice;
+            var error = new ValidationError(validationResult.Errors);
+            return Result<OrderLine>.Failure(error);
         }
 
         _context.Update(entity);
@@ -145,12 +127,12 @@ public class OrderLineRepository : IOrderLineRepository
         {
             var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
             return updatedEntity is not null ? updatedEntity
-                : new Result<OrderLine>(new DbException("There was the database error"));
+                : Result<OrderLine>.Failure(new DbError("There was the database error"));
         }
         else
         {
-            var exception = new DbException("There was the database error");
-            return new Result<OrderLine>(exception);
+            var error = new DbError("There was the database error");
+            return Result<OrderLine>.Failure(error);
         }
     }
 }

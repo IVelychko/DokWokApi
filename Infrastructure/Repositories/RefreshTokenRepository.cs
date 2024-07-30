@@ -1,8 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Validation;
 using Domain.Entities;
-using Domain.Exceptions;
-using Domain.Exceptions.Base;
+using Domain.Errors;
+using Domain.Errors.Base;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,10 +24,8 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
-                : new ValidationException(validationResult.Error);
-
-            return new Result<RefreshToken>(exception);
+            var error = new ValidationError(validationResult.Errors);
+            return Result<RefreshToken>.Failure(error);
         }
 
         await _context.AddAsync(entity);
@@ -37,12 +35,12 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         {
             var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
             return addedEntity is not null ? addedEntity
-                : new Result<RefreshToken>(new DbException("There was the database error"));
+                : Result<RefreshToken>.Failure(new DbError("There was the database error"));
         }
         else
         {
-            var exception = new DbException("There was the database error");
-            return new Result<RefreshToken>(exception);
+            var error = new DbError("There was the database error");
+            return Result<RefreshToken>.Failure(error);
         }
     }
 
@@ -122,10 +120,8 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
-                : new ValidationException(validationResult.Error);
-
-            return new Result<RefreshToken>(exception);
+            var error = new ValidationError(validationResult.Errors);
+            return Result<RefreshToken>.Failure(error);
         }
 
         _context.Update(entity);
@@ -135,12 +131,12 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         {
             var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
             return updatedEntity is not null ? updatedEntity
-                : new Result<RefreshToken>(new DbException("There was the database error"));
+                : Result<RefreshToken>.Failure(new DbError("There was the database error"));
         }
         else
         {
-            var exception = new DbException("There was the database error");
-            return new Result<RefreshToken>(exception);
+            var error = new DbError("There was the database error");
+            return Result<RefreshToken>.Failure(error);
         }
     }
 }

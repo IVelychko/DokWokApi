@@ -1,8 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Validation;
 using Domain.Entities;
-using Domain.Exceptions;
-using Domain.Exceptions.Base;
+using Domain.Errors;
+using Domain.Errors.Base;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,10 +24,8 @@ public class ProductCategoryRepository : IProductCategoryRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
-                : new ValidationException(validationResult.Error);
-
-            return new Result<ProductCategory>(exception);
+            var error = new ValidationError(validationResult.Errors);
+            return Result<ProductCategory>.Failure(error);
         }
 
         await _context.AddAsync(entity);
@@ -37,12 +35,12 @@ public class ProductCategoryRepository : IProductCategoryRepository
         {
             var addedEntity = await GetByIdAsync(entity.Id);
             return addedEntity is not null ? addedEntity
-                : new Result<ProductCategory>(new DbException("There was the database error"));
+                : Result<ProductCategory>.Failure(new DbError("There was the database error"));
         }
         else
         {
-            var exception = new DbException("There was the database error");
-            return new Result<ProductCategory>(exception);
+            var error = new DbError("There was the database error");
+            return Result<ProductCategory>.Failure(error);
         }
     }
 
@@ -71,10 +69,10 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public async Task<Result<bool>> IsNameTakenAsync(string name)
     {
-        if (name is null)
+        if (string.IsNullOrEmpty(name))
         {
-            var exception = new ValidationException("The passed name is null");
-            return new Result<bool>(exception);
+            var error = new ValidationError("The passed name is null or empty");
+            return Result<bool>.Failure(error);
         }
 
         var isTaken = await _context.ProductCategories.AnyAsync(c => c.Name == name);
@@ -86,10 +84,8 @@ public class ProductCategoryRepository : IProductCategoryRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Exception exception = !validationResult.IsFound ? new NotFoundException(validationResult.Error)
-                : new ValidationException(validationResult.Error);
-
-            return new Result<ProductCategory>(exception);
+            var error = new ValidationError(validationResult.Errors);
+            return Result<ProductCategory>.Failure(error);
         }
 
         _context.Update(entity);
@@ -99,12 +95,12 @@ public class ProductCategoryRepository : IProductCategoryRepository
         {
             var updatedEntity = await GetByIdAsync(entity.Id);
             return updatedEntity is not null ? updatedEntity
-                : new Result<ProductCategory>(new DbException("There was the database error"));
+                : Result<ProductCategory>.Failure(new DbError("There was the database error"));
         }
         else
         {
-            var exception = new DbException("There was the database error");
-            return new Result<ProductCategory>(exception);
+            var error = new DbError("There was the database error");
+            return Result<ProductCategory>.Failure(error);
         }
     }
 }

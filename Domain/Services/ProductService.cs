@@ -1,9 +1,9 @@
-﻿using Domain.Abstractions.Services;
-using Domain.Abstractions.Repositories;
-using Domain.ResultType;
-using Domain.Models;
-using Domain.Exceptions;
+﻿using Domain.Abstractions.Repositories;
+using Domain.Abstractions.Services;
+using Domain.Errors;
 using Domain.Mapping.Extensions;
+using Domain.Models;
+using Domain.ResultType;
 
 namespace Domain.Services;
 
@@ -20,15 +20,13 @@ public class ProductService : IProductService
     {
         if (model is null)
         {
-            var exception = new ValidationException("The passed model is null.");
-            return new Result<ProductModel>(exception);
+            var error = new ValidationError("The passed model is null.");
+            return Result<ProductModel>.Failure(error);
         }
 
         var entity = model.ToEntity();
         var result = await _productRepository.AddAsync(entity);
-
-        return result.Match(p => p.ToModel(),
-            e => new Result<ProductModel>(e));
+        return result.Match(p => p.ToModel(), Result<ProductModel>.Failure);
     }
 
     public async Task<bool?> DeleteAsync(long id)
@@ -53,36 +51,28 @@ public class ProductService : IProductService
     public async Task<ProductModel?> GetByIdAsync(long id)
     {
         var entity = await _productRepository.GetByIdWithDetailsAsync(id);
-        if (entity is null)
-        {
-            return null;
-        }
-
-        var model = entity.ToModel();
-        return model;
+        return entity?.ToModel();
     }
 
     public async Task<Result<ProductModel>> UpdateAsync(ProductModel model)
     {
         if (model is null)
         {
-            var exception = new ValidationException("The passed model is null.");
-            return new Result<ProductModel>(exception);
+            var error = new ValidationError("The passed model is null.");
+            return Result<ProductModel>.Failure(error);
         }
 
         var entity = model.ToEntity();
         var result = await _productRepository.UpdateAsync(entity);
-
-        return result.Match(p => p.ToModel(),
-            e => new Result<ProductModel>(e));
+        return result.Match(p => p.ToModel(), Result<ProductModel>.Failure);
     }
 
     public async Task<Result<bool>> IsNameTakenAsync(string name)
     {
         if (name is null)
         {
-            var exception = new ValidationException("The passed name is null");
-            return new Result<bool>(exception);
+            var error = new ValidationError("The passed name is null");
+            return Result<bool>.Failure(error);
         }
 
         var isTakenResult = await _productRepository.IsNameTakenAsync(name);

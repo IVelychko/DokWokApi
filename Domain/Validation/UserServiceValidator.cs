@@ -17,15 +17,11 @@ public class UserServiceValidator : IUserServiceValidator
 
     public async Task<ValidationResult> ValidateAdminLoginAsync(string? userName, string? password)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
         {
             result.IsValid = false;
-            result.Error = "The passed data is null.";
+            result.Errors.Add("The passed data is null.");
             return result;
         }
 
@@ -33,16 +29,22 @@ public class UserServiceValidator : IUserServiceValidator
         if (user is null)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "The credentials are wrong.";
+            result.Errors.Add("The credentials are wrong.");
             return result;
         }
 
-        bool isAdmin = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
-        if (!isAdmin)
+        var isAdminResult = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
+        if (isAdminResult.IsFaulted)
         {
             result.IsValid = false;
-            result.Error = "The authorization is denied.";
+            result.Errors.AddRange(isAdminResult.Error.Errors);
+            return result;
+        }
+
+        if (!isAdminResult.Value)
+        {
+            result.IsValid = false;
+            result.Errors.Add("The authorization is denied");
             return result;
         }
 
@@ -50,8 +52,7 @@ public class UserServiceValidator : IUserServiceValidator
         if (!isValidPassword)
         {
             result.IsValid = false;
-            result.Error = "The credentials are wrong.";
-            return result;
+            result.Errors.Add("The credentials are wrong");
         }
 
         return result;
@@ -59,15 +60,11 @@ public class UserServiceValidator : IUserServiceValidator
 
     public async Task<ValidationResult> ValidateCustomerLoginAsync(string? userName, string? password)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
         {
             result.IsValid = false;
-            result.Error = "The passed data is null.";
+            result.Errors.Add("The passed data is null");
             return result;
         }
 
@@ -75,17 +72,30 @@ public class UserServiceValidator : IUserServiceValidator
         if (user is null)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "The credentials are wrong.";
+            result.Errors.Add("The credentials are wrong");
             return result;
         }
 
-        bool isCustomer = await _userRepository.IsInRoleAsync(user, UserRoles.Customer);
-        bool isAdmin = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
-        if (!(isCustomer || isAdmin))
+        var isCustomerResult = await _userRepository.IsInRoleAsync(user, UserRoles.Customer);
+        if (isCustomerResult.IsFaulted)
         {
             result.IsValid = false;
-            result.Error = "The authorization is denied.";
+            result.Errors.AddRange(isCustomerResult.Error.Errors);
+            return result;
+        }
+
+        var isAdminResult = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
+        if (isAdminResult.IsFaulted)
+        {
+            result.IsValid = false;
+            result.Errors.AddRange(isAdminResult.Error.Errors);
+            return result;
+        }
+
+        if (!(isCustomerResult.Value || isAdminResult.Value))
+        {
+            result.IsValid = false;
+            result.Errors.Add("The authorization is denied");
             return result;
         }
 
@@ -93,8 +103,7 @@ public class UserServiceValidator : IUserServiceValidator
         if (!isValidPassword)
         {
             result.IsValid = false;
-            result.Error = "The credentials are wrong.";
-            return result;
+            result.Errors.Add("The credentials are wrong");
         }
 
         return result;
@@ -102,16 +111,11 @@ public class UserServiceValidator : IUserServiceValidator
 
     public ValidationResult ValidateRefreshTokenModel(string? securityToken, string? refreshToken)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (string.IsNullOrEmpty(securityToken) || string.IsNullOrEmpty(refreshToken))
         {
             result.IsValid = false;
-            result.Error = "The passed data is null.";
-            return result;
+            result.Errors.Add("The passed data is null");
         }
 
         return result;
@@ -119,29 +123,23 @@ public class UserServiceValidator : IUserServiceValidator
 
     public ValidationResult ValidateExpiredJwt(JwtSecurityToken? jwt, bool isAlgorithmValid)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (jwt is null)
         {
             result.IsValid = false;
-            result.Error = "The passed JWT is null.";
+            result.Errors.Add("The passed JWT is null");
             return result;
         }
 
         if (!isAlgorithmValid)
         {
             result.IsValid = false;
-            result.Error = "The token is not valid";
-            return result;
+            result.Errors.Add("The token is not valid");
         }
-        else if (jwt.ValidTo > DateTime.UtcNow)
+        if (jwt.ValidTo > DateTime.UtcNow)
         {
             result.IsValid = false;
-            result.Error = "The token has not expired yet";
-            return result;
+            result.Errors.Add("The token has not expired yet");
         }
 
         return result;
@@ -149,40 +147,45 @@ public class UserServiceValidator : IUserServiceValidator
 
     public ValidationResult ValidateRefreshToken(RefreshToken? model, string? jwtId)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
-        if (model is null)
+        ValidationResult result = new(true);
+        if (model is null || string.IsNullOrEmpty(jwtId))
         {
             result.IsValid = false;
-            result.Error = "The passed refresh token is null";
+            if (model is null)
+            {
+                result.Errors.Add("The passed refresh token is null");
+            }
+
+            if (string.IsNullOrEmpty(jwtId))
+            {
+                result.Errors.Add("The passed Jwt Id is null");
+            }
+
             return result;
         }
-        else if (DateTime.UtcNow > model.ExpiryDate)
+
+        if (DateTime.UtcNow > model.ExpiryDate)
         {
             result.IsValid = false;
-            result.Error = "The refresh token has expired";
-            return result;
+            result.Errors.Add("The refresh token has expired");
         }
-        else if (model.Invalidated)
+
+        if (model.Invalidated)
         {
             result.IsValid = false;
-            result.Error = "The refresh token has been invalidated";
-            return result;
+            result.Errors.Add("The refresh token has been invalidated");
         }
-        else if (model.Used)
+
+        if (model.Used)
         {
             result.IsValid = false;
-            result.Error = "The refresh token has been used";
-            return result;
+            result.Errors.Add("The refresh token has been used");
         }
-        else if (model.JwtId != jwtId)
+
+        if (model.JwtId != jwtId)
         {
             result.IsValid = false;
-            result.Error = "The refresh token does not match the JWT";
-            return result;
+            result.Errors.Add("The refresh token does not match the JWT");
         }
 
         return result;

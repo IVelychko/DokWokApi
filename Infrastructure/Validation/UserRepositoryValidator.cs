@@ -18,22 +18,18 @@ public class UserRepositoryValidator : IUserRepositoryValidator
 
     public async Task<ValidationResult> ValidateAddAsync(ApplicationUser? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed user is null.";
+            result.Errors.Add("The passed user is null");
             return result;
         }
 
-        if (model.PhoneNumber is null)
+        if (string.IsNullOrEmpty(model.PhoneNumber))
         {
             result.IsValid = false;
-            result.Error = "The phone number is null";
+            result.Errors.Add("The phone number is null or empty");
             return result;
         }
 
@@ -41,8 +37,25 @@ public class UserRepositoryValidator : IUserRepositoryValidator
         if (isPhoneNumberTaken)
         {
             result.IsValid = false;
-            result.Error = "The phone number is already taken";
-            return result;
+            result.Errors.Add("The phone number is already taken");
+        }
+
+        return result;
+    }
+
+    public ValidationResult ValidateCheckPassword(ApplicationUser model, string password)
+    {
+        ValidationResult result = new(true);
+        if (model is null)
+        {
+            result.IsValid = false;
+            result.Errors.Add("The passed model is null");
+        }
+
+        if (string.IsNullOrEmpty(password))
+        {
+            result.IsValid = false;
+            result.Errors.Add("The passed password is null or empty");
         }
 
         return result;
@@ -50,15 +63,11 @@ public class UserRepositoryValidator : IUserRepositoryValidator
 
     public async Task<ValidationResult> ValidateUpdateAsync(ApplicationUser? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed user is null.";
+            result.Errors.Add("The passed user is null");
             return result;
         }
 
@@ -66,27 +75,23 @@ public class UserRepositoryValidator : IUserRepositoryValidator
         if (user is null)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no user with this ID in the database.";
-            return result;
+            result.Errors.Add("There is no user with this ID in the database");
         }
 
-        if (model.PhoneNumber is null)
+        if (string.IsNullOrEmpty(model.PhoneNumber))
         {
             result.IsValid = false;
-            result.Error = "The phone number is null";
-            return result;
+            result.Errors.Add("The phone number is null or empty");
         }
 
 
-        if (model.PhoneNumber != user.PhoneNumber)
+        if (user is not null && !string.IsNullOrEmpty(model.PhoneNumber) && model.PhoneNumber != user.PhoneNumber)
         {
             bool isPhoneNumberTaken = await _userManager.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == model.PhoneNumber);
             if (isPhoneNumberTaken)
             {
                 result.IsValid = false;
-                result.Error = "The phone number is already taken";
-                return result;
+                result.Errors.Add("The phone number is already taken");
             }
         }
 
@@ -95,24 +100,25 @@ public class UserRepositoryValidator : IUserRepositoryValidator
 
     public async Task<ValidationResult> ValidateUpdateCustomerPasswordAsAdminAsync(string? userId, string? newPassword)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(newPassword))
+        ValidationResult result = new(true);
+        if (string.IsNullOrEmpty(userId))
         {
             result.IsValid = false;
-            result.Error = "The passed data is null.";
+            result.Errors.Add("The passed user id is null or empty");
             return result;
+        }
+
+        if (string.IsNullOrEmpty(newPassword))
+        {
+            result.IsValid = false;
+            result.Errors.Add("The passed new password is null or empty");
         }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no user with this ID in the database.";
+            result.Errors.Add("There is no user with this ID in the database");
             return result;
         }
 
@@ -120,8 +126,7 @@ public class UserRepositoryValidator : IUserRepositoryValidator
         if (isAdmin)
         {
             result.IsValid = false;
-            result.Error = "Forbidden action";
-            return result;
+            result.Errors.Add("Forbidden action");
         }
 
         return result;
@@ -129,24 +134,31 @@ public class UserRepositoryValidator : IUserRepositoryValidator
 
     public async Task<ValidationResult> ValidateUpdateCustomerPasswordAsync(string? userId, string? oldPassword, string? newPassword)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword))
+        ValidationResult result = new(true);
+        if (string.IsNullOrEmpty(userId))
         {
             result.IsValid = false;
-            result.Error = "The passed data is null.";
+            result.Errors.Add("The passed user id is null or empty");
             return result;
+        }
+
+        if (string.IsNullOrEmpty(oldPassword))
+        {
+            result.IsValid = false;
+            result.Errors.Add("The passed old password is null or empty");
+        }
+
+        if (string.IsNullOrEmpty(newPassword))
+        {
+            result.IsValid = false;
+            result.Errors.Add("The passed new password is null or empty");
         }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no user with this ID in the database.";
+            result.Errors.Add("There is no user with this ID in the database");
             return result;
         }
 
@@ -154,16 +166,18 @@ public class UserRepositoryValidator : IUserRepositoryValidator
         if (isAdmin)
         {
             result.IsValid = false;
-            result.Error = "Forbidden action";
+            result.Errors.Add("Forbidden action");
             return result;
         }
 
-        bool isOldPasswordValid = await _userManager.CheckPasswordAsync(user, oldPassword);
-        if (!isOldPasswordValid)
+        if (oldPassword is not null)
         {
-            result.IsValid = false;
-            result.Error = "The old password is not valid.";
-            return result;
+            bool isOldPasswordValid = await _userManager.CheckPasswordAsync(user, oldPassword);
+            if (!isOldPasswordValid)
+            {
+                result.IsValid = false;
+                result.Errors.Add("The old password is not valid");
+            }
         }
 
         return result;

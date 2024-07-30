@@ -19,32 +19,24 @@ public class OrderRepositoryValidator : IValidator<Order>
 
     public async Task<ValidationResult> ValidateAddAsync(Order? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed order is null.";
+            result.Errors.Add("The passed order is null");
             return result;
         }
 
         if (model.UserId is not null && !await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId))
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no user with the ID specified in the UserId property of the Order entity.";
-            return result;
+            result.Errors.Add("There is no user with the ID specified in the UserId property of the Order entity");
         }
 
         if (model.ShopId is not null && !await _context.Shops.AsNoTracking().AnyAsync(s => s.Id == model.ShopId))
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no shop with the ID specified in the ShopId property of the Order entity.";
-            return result;
+            result.Errors.Add("There is no shop with the ID specified in the ShopId property of the Order entity");
         }
 
         return result;
@@ -52,15 +44,11 @@ public class OrderRepositoryValidator : IValidator<Order>
 
     public async Task<ValidationResult> ValidateUpdateAsync(Order? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed order is null.";
+            result.Errors.Add("The passed order is null");
             return result;
         }
 
@@ -68,25 +56,19 @@ public class OrderRepositoryValidator : IValidator<Order>
         if (entityToUpdate is null)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no order with this ID in the database.";
-            return result;
+            result.Errors.Add("There is no order with this ID in the database");
         }
 
         if (model.UserId is not null && !await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId))
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no user with the ID specified in the UserId property of the Order entity.";
-            return result;
+            result.Errors.Add("There is no user with the ID specified in the UserId property of the Order entity");
         }
 
         if (model.ShopId is not null && !await _context.Shops.AsNoTracking().AnyAsync(s => s.Id == model.ShopId))
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no shop with the ID specified in the ShopId property of the Order entity.";
-            return result;
+            result.Errors.Add("There is no shop with the ID specified in the ShopId property of the Order entity");
         }
 
         return result;

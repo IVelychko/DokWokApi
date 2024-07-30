@@ -1,9 +1,9 @@
-﻿using Domain.Abstractions.Services;
-using Domain.Abstractions.Repositories;
+﻿using Domain.Abstractions.Repositories;
+using Domain.Abstractions.Services;
+using Domain.Errors;
+using Domain.Mapping.Extensions;
 using Domain.Models;
 using Domain.ResultType;
-using Domain.Exceptions;
-using Domain.Mapping.Extensions;
 
 namespace Domain.Services;
 
@@ -20,15 +20,14 @@ public class ProductCategoryService : IProductCategoryService
     {
         if (model is null)
         {
-            var exception = new ValidationException("The passed model is null.");
-            return new Result<ProductCategoryModel>(exception);
+            var error = new ValidationError("The passed model is null.");
+            return Result<ProductCategoryModel>.Failure(error);
         }
 
         var entity = model.ToEntity();
         var result = await _productCategoryRepository.AddAsync(entity);
-
         return result.Match(c => c.ToModel(),
-            e => new Result<ProductCategoryModel>(e));
+            Result<ProductCategoryModel>.Failure);
     }
 
     public async Task<bool?> DeleteAsync(long id)
@@ -46,36 +45,29 @@ public class ProductCategoryService : IProductCategoryService
     public async Task<ProductCategoryModel?> GetByIdAsync(long id)
     {
         var entity = await _productCategoryRepository.GetByIdAsync(id);
-        if (entity is null)
-        {
-            return null;
-        }
-
-        var model = entity.ToModel();
-        return model;
+        return entity?.ToModel();
     }
 
     public async Task<Result<ProductCategoryModel>> UpdateAsync(ProductCategoryModel model)
     {
         if (model is null)
         {
-            var exception = new ValidationException("The passed model is null.");
-            return new Result<ProductCategoryModel>(exception);
+            var error = new ValidationError("The passed model is null.");
+            return Result<ProductCategoryModel>.Failure(error);
         }
 
         var entity = model.ToEntity();
         var result = await _productCategoryRepository.UpdateAsync(entity);
-
         return result.Match(c => c.ToModel(),
-            e => new Result<ProductCategoryModel>(e));
+            Result<ProductCategoryModel>.Failure);
     }
 
     public async Task<Result<bool>> IsNameTakenAsync(string name)
     {
         if (name is null)
         {
-            var exception = new ValidationException("The passed name is null");
-            return new Result<bool>(exception);
+            var error = new ValidationError("The passed name is null");
+            return Result<bool>.Failure(error);
         }
 
         var isTakenResult = await _productCategoryRepository.IsNameTakenAsync(name);

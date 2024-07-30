@@ -7,47 +7,83 @@ namespace Application.Mapping.Extensions;
 
 public static class OrderMappingExtensions
 {
-    public static OrderModel ToModel(this AddDeliveryOrderRequest request)
+    public static AddDeliveryOrderCommand ToCommand(AddDeliveryOrderRequest request) =>
+        new(
+            request.CustomerName,
+            request.PhoneNumber,
+            request.Email,
+            request.DeliveryAddress,
+            request.PaymentType,
+            request.UserId,
+            request.OrderLines);
+
+    public static AddTakeawayOrderCommand ToCommand(AddTakeawayOrderRequest request) =>
+        new(
+            request.CustomerName,
+            request.PhoneNumber,
+            request.Email,
+            request.PaymentType,
+            request.UserId,
+            request.ShopId,
+            request.OrderLines);
+
+    public static UpdateOrderCommand ToCommand(UpdateOrderRequest request) =>
+        new(
+            request.Id,
+            request.CustomerName,
+            request.PhoneNumber,
+            request.Email,
+            request.DeliveryAddress,
+            request.PaymentType,
+            request.TotalOrderPrice,
+            request.CreationDate,
+            request.Status,
+            request.UserId,
+            request.ShopId);
+
+    public static OrderModel ToModel(this AddDeliveryOrderCommand command)
     {
         return new()
         {
-            DeliveryAddress = request.DeliveryAddress,
-            CustomerName = request.CustomerName,
-            Email = request.Email,
-            PaymentType = request.PaymentType,
-            PhoneNumber = request.PhoneNumber,
-            UserId = request.UserId
+            DeliveryAddress = command.DeliveryAddress,
+            CustomerName = command.CustomerName,
+            Email = command.Email,
+            PaymentType = command.PaymentType,
+            PhoneNumber = command.PhoneNumber,
+            UserId = command.UserId,
+            OrderLines = command.OrderLines.Select(r => r.ToModel()).ToList()
         };
     }
 
-    public static OrderModel ToModel(this AddTakeawayOrderRequest request)
+    public static OrderModel ToModel(this AddTakeawayOrderCommand command)
     {
         return new()
         {
-            ShopId = request.ShopId,
-            CustomerName = request.CustomerName,
-            Email = request.Email,
-            PaymentType = request.PaymentType,
-            PhoneNumber = request.PhoneNumber,
-            UserId = request.UserId
+            ShopId = command.ShopId,
+            CustomerName = command.CustomerName,
+            Email = command.Email,
+            PaymentType = command.PaymentType,
+            PhoneNumber = command.PhoneNumber,
+            UserId = command.UserId,
+            OrderLines = command.OrderLines.Select(r => r.ToModel()).ToList()
         };
     }
 
-    public static OrderModel ToModel(this UpdateOrderRequest request)
+    public static OrderModel ToModel(this UpdateOrderCommand command)
     {
         return new()
         {
-            ShopId = request.ShopId,
-            CustomerName = request.CustomerName,
-            Email = request.Email,
-            PaymentType = request.PaymentType,
-            PhoneNumber = request.PhoneNumber,
-            UserId = request.UserId,
-            DeliveryAddress = request.DeliveryAddress,
-            CreationDate = request.CreationDate,
-            Id = request.Id,
-            TotalOrderPrice = request.TotalOrderPrice,
-            Status = request.Status
+            ShopId = command.ShopId,
+            CustomerName = command.CustomerName,
+            Email = command.Email,
+            PaymentType = command.PaymentType,
+            PhoneNumber = command.PhoneNumber,
+            UserId = command.UserId,
+            DeliveryAddress = command.DeliveryAddress,
+            CreationDate = command.CreationDate,
+            Id = command.Id,
+            TotalOrderPrice = command.TotalOrderPrice,
+            Status = command.Status
         };
     }
 }

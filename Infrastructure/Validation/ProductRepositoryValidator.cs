@@ -16,15 +16,11 @@ public class ProductRepositoryValidator : IValidator<Product>
 
     public async Task<ValidationResult> ValidateAddAsync(Product? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-            IsFound = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed product is null.";
+            result.Errors.Add("The passed product is null");
             return result;
         }
 
@@ -32,16 +28,13 @@ public class ProductRepositoryValidator : IValidator<Product>
         if (category is null)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no product category with the ID specified in the CategoryId property of the Product entity.";
-            return result;
+            result.Errors.Add("There is no product category with the ID specified in the CategoryId property of the Product entity");
         }
 
         if (await _context.Products.AnyAsync(p => p.Name == model.Name))
         {
             result.IsValid = false;
-            result.Error = "The product with the same Name value is already present in the database.";
-            return result;
+            result.Errors.Add("The product with the same Name value is already present in the database");
         }
 
         return result;
@@ -49,23 +42,11 @@ public class ProductRepositoryValidator : IValidator<Product>
 
     public async Task<ValidationResult> ValidateUpdateAsync(Product? model)
     {
-        ValidationResult result = new()
-        {
-            IsValid = true,
-        };
+        ValidationResult result = new(true);
         if (model is null)
         {
             result.IsValid = false;
-            result.Error = "The passed product is null.";
-            return result;
-        }
-
-        var entityToUpdate = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == model.Id);
-        if (entityToUpdate is null)
-        {
-            result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no entity with this ID in the database.";
+            result.Errors.Add("The passed product is null");
             return result;
         }
 
@@ -73,16 +54,21 @@ public class ProductRepositoryValidator : IValidator<Product>
         if (category is null)
         {
             result.IsValid = false;
-            result.IsFound = false;
-            result.Error = "There is no product category with the ID specified in the CategoryId property of the Product entity.";
+            result.Errors.Add("There is no product category with the ID specified in the CategoryId property of the Product entity");
+        }
+
+        var entityToUpdate = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == model.Id);
+        if (entityToUpdate is null)
+        {
+            result.IsValid = false;
+            result.Errors.Add("There is no entity with this ID in the database");
             return result;
         }
 
-        if (model.Name != entityToUpdate!.Name && await _context.Products.AnyAsync(p => p.Name == model.Name))
+        if (model.Name != entityToUpdate.Name && await _context.Products.AnyAsync(p => p.Name == model.Name))
         {
             result.IsValid = false;
-            result.Error = "The product with the same Name value is already present in the database.";
-            return result;
+            result.Errors.Add("The product with the same Name value is already present in the database");
         }
 
         return result;

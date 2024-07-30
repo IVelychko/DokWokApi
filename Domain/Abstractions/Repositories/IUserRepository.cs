@@ -27,9 +27,9 @@ public interface IUserRepository
 
     Task<Result<IEnumerable<string>>> GetUserRolesAsync(string userId);
 
-    Task<bool> IsInRoleAsync(ApplicationUser entity, string role);
+    Task<Result<bool>> IsInRoleAsync(ApplicationUser entity, string role);
 
-    Task<bool> AddToRoleAsync(ApplicationUser entity, string role);
+    Task<Result<bool>> AddToRoleAsync(ApplicationUser entity, string role);
 
     Task<bool> CheckUserPasswordAsync(ApplicationUser entity, string password);
 

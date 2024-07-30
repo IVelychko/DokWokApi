@@ -1,5 +1,5 @@
 ﻿using Domain.Abstractions.Services;
-using Domain.Exceptions.Base;
+using Domain.Exceptions;
 using Domain.Models.User;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;

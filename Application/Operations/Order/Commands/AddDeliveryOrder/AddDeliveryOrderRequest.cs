@@ -6,5 +6,6 @@ public sealed record AddDeliveryOrderRequest(
     string Email,
     string DeliveryAddress,
     string PaymentType,
-    string? UserId
+    string? UserId,
+    List<AddDeliveryOrderLineRequest> OrderLines
 );
