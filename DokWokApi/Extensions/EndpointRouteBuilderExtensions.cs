@@ -9,7 +9,6 @@ public static class EndpointRouteBuilderExtensions
         app.MapShopsEndpoints();
         app.MapProductsEndpoints();
         app.MapProductCategoriesEndpoints();
-        app.MapCartEndpoints();
         app.MapUsersEndpoints();
         app.MapOrdersEndpoints();
         app.MapOrderLinesEndpoints();

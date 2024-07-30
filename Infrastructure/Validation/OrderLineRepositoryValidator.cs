@@ -77,7 +77,9 @@ public class OrderLineRepositoryValidator : IValidator<OrderLine>
         if (entityToUpdate is null)
         {
             result.IsValid = false;
+            result.IsNotFound = true;
             result.Errors.Add("There is no order line with this ID in the database");
+            return result;
         }
 
         var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == model.OrderId);
@@ -94,7 +96,7 @@ public class OrderLineRepositoryValidator : IValidator<OrderLine>
             result.Errors.Add("There is no product with the ID specified in the ProductId property of the OrderLine entity");
         }
 
-        if (entityToUpdate is not null && (model.OrderId != entityToUpdate.OrderId || model.ProductId != entityToUpdate.ProductId))
+        if (model.OrderId != entityToUpdate.OrderId || model.ProductId != entityToUpdate.ProductId)
         {
             var isExisting = await _context.OrderLines.AnyAsync(ol => ol.OrderId == model.OrderId && ol.ProductId == model.ProductId);
             if (isExisting)

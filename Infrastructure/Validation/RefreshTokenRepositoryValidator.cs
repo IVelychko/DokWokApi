@@ -51,7 +51,9 @@ public class RefreshTokenRepositoryValidator : IValidator<RefreshToken>
         if (entityToUpdate is null)
         {
             result.IsValid = false;
+            result.IsNotFound = true;
             result.Errors.Add("There is no refresh token with this ID in the database");
+            return result;
         }
 
         var userExists = await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId);

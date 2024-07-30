@@ -116,7 +116,8 @@ public class OrderLineRepository : IOrderLineRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
+                : new ValidationError(validationResult.Errors);
             return Result<OrderLine>.Failure(error);
         }
 

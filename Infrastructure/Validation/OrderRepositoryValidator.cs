@@ -56,7 +56,9 @@ public class OrderRepositoryValidator : IValidator<Order>
         if (entityToUpdate is null)
         {
             result.IsValid = false;
+            result.IsNotFound = true;
             result.Errors.Add("There is no order with this ID in the database");
+            return result;
         }
 
         if (model.UserId is not null && !await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId))

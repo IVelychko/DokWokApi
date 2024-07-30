@@ -1,9 +1,8 @@
-﻿using DokWokApi.BLL.Extensions;
-using DokWokApi.BLL.Models;
-using DokWokApi.BLL.Models.User;
-using DokWokApi.DAL.Exceptions;
-using DokWokApi.DAL.ResultType;
-using DokWokApi.Models.ShoppingCart;
+﻿using DokWokApi.Models.ShoppingCart;
+using Domain.Errors.Base;
+using Domain.Models;
+using Domain.Models.User;
+using Domain.ResultType;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DokWokApi.Extensions;
@@ -11,12 +10,11 @@ namespace DokWokApi.Extensions;
 public static class ResultExtensions
 {
     // IActionResult
-
     public static IActionResult ToOkActionResult(this Result<AuthorizedUserModel> result, HttpContext context)
     {
         if (result.IsFaulted)
         {
-            return GetActionResultFromError(result.Exception);
+            return GetActionResultFromError(result.Error);
         }
 
         var user = result.Value;
@@ -40,7 +38,7 @@ public static class ResultExtensions
     {
         return result.Match(cart =>
         {
-            return cart is not null ? new OkObjectResult(cart) 
+            return cart is not null ? new OkObjectResult(cart)
                 : new StatusCodeResult(StatusCodes.Status500InternalServerError);
         }, GetActionResultFromError);
     }
@@ -65,7 +63,7 @@ public static class ResultExtensions
 
     public static IActionResult ToCreatedAtActionResult(this Result<UserModel> result, string actionName, string controllerName)
     {
-        return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model), 
+        return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model),
             GetActionResultFromError);
     }
 
@@ -192,11 +190,16 @@ public static class ResultExtensions
             GetResultFromError);
     }
 
-    private static IResult GetResultFromError(Exception e)
+    private static IResult GetResultFromError(Error error)
     {
-        if (e is ValidationException validationException)
+        if (error is BadRequestError badRequestError)
         {
-            return Results.BadRequest(new ErrorResultModel { Error = validationException.Message });
+            return Results.BadRequest(new ProblemDetailsModel
+            {
+                Title = "Bad Request",
+                StatusCode = StatusCodes.Status400BadRequest,
+                Errors = badRequestError.Errors
+            });
         }
         else if (e is NotFoundException)
         {

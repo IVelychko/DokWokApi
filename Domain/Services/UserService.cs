@@ -3,6 +3,7 @@ using Domain.Abstractions.Services;
 using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
+using Domain.Errors.Base;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models.User;
@@ -174,7 +175,8 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateCustomerLoginAsync(userName, password);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
+                : new ValidationError(validationResult.Errors);
             return Result<AuthorizedUserModel>.Failure(error);
         }
 
@@ -195,7 +197,8 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateAdminLoginAsync(userName, password);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
+                : new ValidationError(validationResult.Errors);
             return Result<AuthorizedUserModel>.Failure(error);
         }
 

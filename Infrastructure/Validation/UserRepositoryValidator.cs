@@ -75,7 +75,9 @@ public class UserRepositoryValidator : IUserRepositoryValidator
         if (user is null)
         {
             result.IsValid = false;
+            result.IsNotFound = true;
             result.Errors.Add("There is no user with this ID in the database");
+            return result;
         }
 
         if (string.IsNullOrEmpty(model.PhoneNumber))
@@ -84,8 +86,7 @@ public class UserRepositoryValidator : IUserRepositoryValidator
             result.Errors.Add("The phone number is null or empty");
         }
 
-
-        if (user is not null && !string.IsNullOrEmpty(model.PhoneNumber) && model.PhoneNumber != user.PhoneNumber)
+        if (!string.IsNullOrEmpty(model.PhoneNumber) && model.PhoneNumber != user.PhoneNumber)
         {
             bool isPhoneNumberTaken = await _userManager.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == model.PhoneNumber);
             if (isPhoneNumberTaken)
@@ -108,18 +109,19 @@ public class UserRepositoryValidator : IUserRepositoryValidator
             return result;
         }
 
-        if (string.IsNullOrEmpty(newPassword))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The passed new password is null or empty");
-        }
-
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
             result.IsValid = false;
+            result.IsNotFound = true;
             result.Errors.Add("There is no user with this ID in the database");
             return result;
+        }
+
+        if (string.IsNullOrEmpty(newPassword))
+        {
+            result.IsValid = false;
+            result.Errors.Add("The passed new password is null or empty");
         }
 
         bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
@@ -142,6 +144,15 @@ public class UserRepositoryValidator : IUserRepositoryValidator
             return result;
         }
 
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            result.IsValid = false;
+            result.IsNotFound = true;
+            result.Errors.Add("There is no user with this ID in the database");
+            return result;
+        }
+
         if (string.IsNullOrEmpty(oldPassword))
         {
             result.IsValid = false;
@@ -152,14 +163,6 @@ public class UserRepositoryValidator : IUserRepositoryValidator
         {
             result.IsValid = false;
             result.Errors.Add("The passed new password is null or empty");
-        }
-
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user is null)
-        {
-            result.IsValid = false;
-            result.Errors.Add("There is no user with this ID in the database");
-            return result;
         }
 
         bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);

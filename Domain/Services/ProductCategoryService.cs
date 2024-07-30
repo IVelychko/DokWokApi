@@ -58,8 +58,7 @@ public class ProductCategoryService : IProductCategoryService
 
         var entity = model.ToEntity();
         var result = await _productCategoryRepository.UpdateAsync(entity);
-        return result.Match(c => c.ToModel(),
-            Result<ProductCategoryModel>.Failure);
+        return result.Match(c => c.ToModel(), Result<ProductCategoryModel>.Failure);
     }
 
     public async Task<Result<bool>> IsNameTakenAsync(string name)

@@ -145,7 +145,7 @@ public class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            var error = new NotFoundError("There is no user with this id.");
+            var error = new EntityNotFoundError("There is no user with this id.");
             return Result<IEnumerable<string>>.Failure(error);
         }
 
@@ -206,7 +206,8 @@ public class UserRepository : IUserRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
+                : new ValidationError(validationResult.Errors);
             return Result<ApplicationUser>.Failure(error);
         }
 
@@ -234,14 +235,15 @@ public class UserRepository : IUserRepository
         var validationResult = await _validator.ValidateUpdateCustomerPasswordAsAdminAsync(userId, newPassword);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
+                : new ValidationError(validationResult.Errors);
             return Result<bool>.Failure(error);
         }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            var error = new NotFoundError("The user was not found");
+            var error = new EntityNotFoundError("The user was not found");
             return Result<bool>.Failure(error);
         }
 
@@ -267,14 +269,15 @@ public class UserRepository : IUserRepository
         var validationResult = await _validator.ValidateUpdateCustomerPasswordAsync(userId, oldPassword, newPassword);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
+                : new ValidationError(validationResult.Errors);
             return Result<bool>.Failure(error);
         }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            var error = new NotFoundError("The user was not found");
+            var error = new EntityNotFoundError("The user was not found");
             return Result<bool>.Failure(error);
         }
 

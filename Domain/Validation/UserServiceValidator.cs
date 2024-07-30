@@ -29,6 +29,7 @@ public class UserServiceValidator : IUserServiceValidator
         if (user is null)
         {
             result.IsValid = false;
+            result.IsNotFound = true;
             result.Errors.Add("The credentials are wrong.");
             return result;
         }
@@ -72,6 +73,7 @@ public class UserServiceValidator : IUserServiceValidator
         if (user is null)
         {
             result.IsValid = false;
+            result.IsNotFound = true;
             result.Errors.Add("The credentials are wrong");
             return result;
         }

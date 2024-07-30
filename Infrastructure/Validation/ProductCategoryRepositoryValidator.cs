@@ -47,6 +47,7 @@ public class ProductCategoryRepositoryValidator : IValidator<ProductCategory>
         if (entityToUpdate is null)
         {
             result.IsValid = false;
+            result.IsNotFound = true;
             result.Errors.Add("There is no entity with this ID in the database");
             return result;
         }

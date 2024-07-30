@@ -120,7 +120,8 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
+                : new ValidationError(validationResult.Errors);
             return Result<RefreshToken>.Failure(error);
         }
 

@@ -14,7 +14,7 @@ public class AuthorizedUserModel
 
     public string? PhoneNumber { get; set; }
 
-    public string Token { get; set; } = string.Empty;
+    public required string Token { get; set; }
 
     public required RefreshToken RefreshToken { get; set; }
 }

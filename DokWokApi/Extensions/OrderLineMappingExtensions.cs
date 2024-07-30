@@ -1,5 +1,5 @@
-﻿using DokWokApi.BLL.Models.Order;
-using DokWokApi.Models.ShoppingCart;
+﻿using DokWokApi.Models.ShoppingCart;
+using Domain.Models;
 
 namespace DokWokApi.Extensions;
 
