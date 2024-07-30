@@ -1,20 +1,20 @@
-﻿using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models.User;
-using DokWokApi.BLL.Services;
-using DokWokApi.DAL.Entities;
-using DokWokApi.DAL;
-using DokWokApi.DAL.Interfaces;
-using DokWokApi.DAL.Repositories;
+﻿using DokWokApi.Helpers;
+using Domain.Abstractions.Repositories;
+using Domain.Abstractions.Services;
+using Domain.Abstractions.Validation;
+using Domain.Entities;
+using Domain.Exceptions;
+using Domain.Helpers;
+using Domain.Models.User;
+using Domain.Services;
+using Domain.Validation;
+using Infrastructure;
+using Infrastructure.Repositories;
+using Infrastructure.Validation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
-using DokWokApi.DAL.Validation;
-using DokWokApi.BLL.Validation;
-using DokWokApi.BLL.Infrastructure;
-using DokWokApi.Services;
-using DokWokApi.BLL.Exceptions;
-using DokWokApi.Infrastructure;
 
 namespace DokWokApi.Extensions;
 
@@ -47,6 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IValidator<OrderLine>, OrderLineRepositoryValidator>();
         services.AddScoped<IValidator<Shop>, ShopRepositoryValidator>();
         services.AddScoped<IValidator<RefreshToken>, RefreshTokenRepositoryValidator>();
+        services.AddScoped<IUserRepositoryValidator, UserRepositoryValidator>();
         services.AddScoped<IUserServiceValidator, UserServiceValidator>();
 
         return services;
@@ -60,6 +61,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOrderLineRepository, OrderLineRepository>();
         services.AddScoped<IShopRepository, ShopRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
 
         return services;
     }
@@ -71,7 +73,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IOrderLineService, OrderLineService>();
         services.AddScoped<IShopService, ShopService>();
-        services.AddScoped<ICartService, SessionCartService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ISecurityTokenService<UserModel, JwtSecurityToken>, JwtService>();
 
@@ -126,7 +127,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddSwaggerSetup(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen(opts => {
+        services.AddSwaggerGen(opts =>
+        {
             opts.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
             {
                 Name = "Authorization",

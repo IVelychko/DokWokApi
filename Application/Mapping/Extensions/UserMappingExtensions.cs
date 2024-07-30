@@ -51,6 +51,18 @@ public static class UserMappingExtensions
         };
     }
 
+    public static UserResponse ToResponse(this UserModel model)
+    {
+        return new()
+        {
+            Id = model.Id,
+            FirstName = model.FirstName,
+            Email = model.Email,
+            PhoneNumber = model.PhoneNumber,
+            UserName = model.UserName
+        };
+    }
+
     public static AuthorizedUserResponse ToResponse(this AuthorizedUserModel model)
     {
         return new()
@@ -58,9 +70,10 @@ public static class UserMappingExtensions
             Id = model.Id,
             Email = model.Email,
             FirstName = model.FirstName,
-            PhoneNumber= model.PhoneNumber,
+            PhoneNumber = model.PhoneNumber,
             UserName = model.UserName,
-            Token = model.Token
+            Token = model.Token,
+            RefreshToken = model.RefreshToken
         };
     }
 }

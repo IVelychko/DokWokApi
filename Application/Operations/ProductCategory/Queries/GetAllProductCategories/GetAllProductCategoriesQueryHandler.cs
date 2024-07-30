@@ -1,12 +1,15 @@
 ﻿using Application.Abstractions.Messaging;
+using Application.Mapping.Extensions;
 using Domain.Abstractions.Services;
-using Domain.Models;
 
 namespace Application.Operations.ProductCategory.Queries.GetAllProductCategories;
 
 public class GetAllProductCategoriesQueryHandler(IProductCategoryService productCategoryService)
-    : IQueryHandler<GetAllProductCategoriesQuery, IEnumerable<ProductCategoryModel>>
+    : IQueryHandler<GetAllProductCategoriesQuery, IEnumerable<ProductCategoryResponse>>
 {
-    public async Task<IEnumerable<ProductCategoryModel>> Handle(GetAllProductCategoriesQuery request, CancellationToken cancellationToken) =>
-        await productCategoryService.GetAllAsync();
+    public async Task<IEnumerable<ProductCategoryResponse>> Handle(GetAllProductCategoriesQuery request, CancellationToken cancellationToken)
+    {
+        var categories = await productCategoryService.GetAllAsync();
+        return categories.Select(c => c.ToResponse());
+    }
 }

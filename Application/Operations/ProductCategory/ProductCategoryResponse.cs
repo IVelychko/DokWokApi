@@ -1,3 +1,8 @@
 ﻿namespace Application.Operations.ProductCategory;
 
-public sealed record ProductCategoryResponse(string Name);
+public class ProductCategoryResponse : BaseResponse<long>
+{
+    //public required long Id { get; set; }
+
+    public required string Name { get; set; }
+}

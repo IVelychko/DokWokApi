@@ -1,8 +1,14 @@
-﻿using DokWokApi.BLL.Extensions;
-using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models.ProductCategory;
+﻿using Application.Mapping.Extensions;
+using Application.Operations.ProductCategory;
+using Application.Operations.ProductCategory.Commands.AddProductCategory;
+using Application.Operations.ProductCategory.Commands.DeleteProductCategory;
+using Application.Operations.ProductCategory.Commands.UpdateProductCategory;
+using Application.Operations.ProductCategory.Queries.GetAllProductCategories;
+using Application.Operations.ProductCategory.Queries.GetProductCategoryById;
+using Application.Operations.ProductCategory.Queries.IsProductCategoryNameTaken;
 using DokWokApi.Extensions;
-using DokWokApi.Infrastructure;
+using DokWokApi.Helpers;
+using MediatR;
 
 namespace DokWokApi.Endpoints;
 
@@ -21,15 +27,15 @@ public static class ProductCategoriesEndpoints
         group.MapGet(ApiRoutes.ProductCategories.IsNameTaken, IsCategoryNameTaken);
     }
 
-    public static async Task<IResult> GetAllCategories(IProductCategoryService productCategoryService)
+    public static async Task<IResult> GetAllCategories(ISender sender)
     {
-        var categories = await productCategoryService.GetAllAsync();
+        var categories = await sender.Send(new GetAllProductCategoriesQuery());
         return Results.Ok(categories);
     }
 
-    public static async Task<IResult> GetCategoryById(IProductCategoryService productCategoryService, long id)
+    public static async Task<IResult> GetCategoryById(ISender sender, long id)
     {
-        var category = await productCategoryService.GetByIdAsync(id);
+        var category = await sender.Send(new GetProductCategoryByIdQuery(id));
         if (category is null)
         {
             return Results.NotFound();
@@ -38,23 +44,21 @@ public static class ProductCategoriesEndpoints
         return Results.Ok(category);
     }
 
-    public static async Task<IResult> AddCategory(IProductCategoryService productCategoryService, ProductCategoryPostModel postModel)
+    public static async Task<IResult> AddCategory(ISender sender, AddProductCategoryRequest request)
     {
-        var model = postModel.ToModel();
-        var result = await productCategoryService.AddAsync(model);
-        return result.ToCreatedAtRouteResult(GetByIdRouteName);
+        var result = await sender.Send(request.ToCommand());
+        return result.ToCreatedAtRouteResult<ProductCategoryResponse, long>(GetByIdRouteName);
     }
 
-    public static async Task<IResult> UpdateCategory(IProductCategoryService productCategoryService, ProductCategoryPutModel putModel)
+    public static async Task<IResult> UpdateCategory(ISender sender, UpdateProductCategoryRequest request)
     {
-        var model = putModel.ToModel();
-        var result = await productCategoryService.UpdateAsync(model);
+        var result = await sender.Send(request.ToCommand());
         return result.ToOkResult();
     }
 
-    public static async Task<IResult> DeleteCategory(IProductCategoryService productCategoryService, long id)
+    public static async Task<IResult> DeleteCategory(ISender sender, long id)
     {
-        var result = await productCategoryService.DeleteAsync(id);
+        var result = await sender.Send(new DeleteProductCategoryCommand(id));
         if (result is null)
         {
             return Results.NotFound();
@@ -67,9 +71,9 @@ public static class ProductCategoriesEndpoints
         return Results.StatusCode(StatusCodes.Status500InternalServerError);
     }
 
-    public static async Task<IResult> IsCategoryNameTaken(IProductCategoryService productCategoryService, string name)
+    public static async Task<IResult> IsCategoryNameTaken(ISender sender, string name)
     {
-        var result = await productCategoryService.IsNameTaken(name);
+        var result = await sender.Send(new IsProductCategoryNameTakenQuery(name));
         return result.ToOkIsTakenResult();
     }
 }

@@ -1,4 +1,5 @@
-﻿using Application.Operations.ProductCategory.Commands.AddProductCategory;
+﻿using Application.Operations.ProductCategory;
+using Application.Operations.ProductCategory.Commands.AddProductCategory;
 using Application.Operations.ProductCategory.Commands.UpdateProductCategory;
 using Domain.Models;
 
@@ -26,6 +27,15 @@ public static class ProductCategoryMappingExtensions
         {
             Id = command.Id,
             Name = command.Name
+        };
+    }
+
+    public static ProductCategoryResponse ToResponse(this ProductCategoryModel model)
+    {
+        return new()
+        {
+            Id = model.Id,
+            Name = model.Name
         };
     }
 }

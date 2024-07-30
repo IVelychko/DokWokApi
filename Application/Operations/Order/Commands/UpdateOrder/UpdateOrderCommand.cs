@@ -1,5 +1,4 @@
 ﻿using Application.Abstractions.Messaging;
-using Domain.Models;
 using Domain.ResultType;
 
 namespace Application.Operations.Order.Commands.UpdateOrder;
@@ -16,4 +15,4 @@ public sealed record UpdateOrderCommand(
     string Status,
     string? UserId,
     long? ShopId
-) : ICommand<Result<OrderModel>>;
+) : ICommand<Result<OrderResponse>>;

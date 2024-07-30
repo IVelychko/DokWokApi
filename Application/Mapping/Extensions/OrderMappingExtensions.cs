@@ -1,4 +1,5 @@
-﻿using Application.Operations.Order.Commands.AddDeliveryOrder;
+﻿using Application.Operations.Order;
+using Application.Operations.Order.Commands.AddDeliveryOrder;
 using Application.Operations.Order.Commands.AddTakeawayOrder;
 using Application.Operations.Order.Commands.UpdateOrder;
 using Domain.Models;
@@ -7,7 +8,7 @@ namespace Application.Mapping.Extensions;
 
 public static class OrderMappingExtensions
 {
-    public static AddDeliveryOrderCommand ToCommand(AddDeliveryOrderRequest request) =>
+    public static AddDeliveryOrderCommand ToCommand(this AddDeliveryOrderRequest request) =>
         new(
             request.CustomerName,
             request.PhoneNumber,
@@ -17,7 +18,7 @@ public static class OrderMappingExtensions
             request.UserId,
             request.OrderLines);
 
-    public static AddTakeawayOrderCommand ToCommand(AddTakeawayOrderRequest request) =>
+    public static AddTakeawayOrderCommand ToCommand(this AddTakeawayOrderRequest request) =>
         new(
             request.CustomerName,
             request.PhoneNumber,
@@ -27,7 +28,7 @@ public static class OrderMappingExtensions
             request.ShopId,
             request.OrderLines);
 
-    public static UpdateOrderCommand ToCommand(UpdateOrderRequest request) =>
+    public static UpdateOrderCommand ToCommand(this UpdateOrderRequest request) =>
         new(
             request.Id,
             request.CustomerName,
@@ -84,6 +85,25 @@ public static class OrderMappingExtensions
             Id = command.Id,
             TotalOrderPrice = command.TotalOrderPrice,
             Status = command.Status
+        };
+    }
+
+    public static OrderResponse ToResponse(this OrderModel model)
+    {
+        return new()
+        {
+            Id = model.Id,
+            CreationDate = model.CreationDate,
+            CustomerName = model.CustomerName,
+            Email = model.Email,
+            PaymentType = model.PaymentType,
+            Status = model.Status,
+            TotalOrderPrice = model.TotalOrderPrice,
+            PhoneNumber = model.PhoneNumber,
+            DeliveryAddress = model.DeliveryAddress,
+            ShopId = model.ShopId,
+            UserId = model.UserId,
+            OrderLines = model.OrderLines,
         };
     }
 }

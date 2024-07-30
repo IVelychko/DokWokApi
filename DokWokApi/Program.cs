@@ -1,14 +1,13 @@
-using DokWokApi.BLL.Infrastructure;
-using DokWokApi.DAL;
 using DokWokApi.Extensions;
-using DokWokApi.Infrastructure;
 using DokWokApi.Services;
+using Domain.Entities;
+using Domain.Helpers;
+using Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// builder.Services.AddControllers();
 
 const string policyName = "ReactProjectCorsPolicy";
 
@@ -19,22 +18,15 @@ builder.Host.UseSerilog((context, config) =>
     config.ReadFrom.Configuration(context.Configuration);
 });
 
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(opts =>
+builder.Services.AddMediatR(opts =>
 {
-    opts.IdleTimeout = TimeSpan.FromMinutes(30);
-    opts.Cookie.Name = "DokWokApi.Session";
-    opts.Cookie.IsEssential = true;
-    opts.Cookie.HttpOnly = true;
+    opts.RegisterServicesFromAssembly(Application.AssemblyReference.Assembly);
 });
 
 builder.Services.AddDbContext<StoreDbContext>(opts =>
 {
     var connectionString = builder.Configuration["ConnectionStrings:FoodStoreConnection"];
-    opts.UseSqlServer(connectionString, opts =>
-    {
-        opts.MigrationsAssembly("DokWokApi");
-    });
+    opts.UseSqlServer(connectionString);
 });
 
 builder.Services.AddIdentityConfiguration();
@@ -62,22 +54,23 @@ app.UseCors(policyName);
 
 app.UseSerilogRequestLogging();
 
-app.UseSession();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapEndpoints();
-//app.MapControllers();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(options => {
+    app.UseSwaggerUI(options =>
+    {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "WebApp");
     });
 }
 
-await SeedData.SeedDatabaseAsync(app);
+var context = app.Services.CreateScope().ServiceProvider.GetRequiredService<StoreDbContext>();
+var roleManager = app.Services.CreateScope().ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+var userManager = app.Services.CreateScope().ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+await SeedData.SeedDatabaseAsync(context, roleManager, userManager);
 
 await app.RunAsync();

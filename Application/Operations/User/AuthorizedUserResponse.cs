@@ -1,9 +1,10 @@
-﻿namespace Application.Operations.User;
+﻿using Domain.Entities;
+using System.Text.Json.Serialization;
 
-public sealed class AuthorizedUserResponse
+namespace Application.Operations.User;
+
+public sealed class AuthorizedUserResponse : BaseResponse<string>
 {
-    public required string Id { get; set; }
-
     public required string? FirstName { get; set; }
 
     public required string? UserName { get; set; }
@@ -13,4 +14,7 @@ public sealed class AuthorizedUserResponse
     public required string? PhoneNumber { get; set; }
 
     public required string Token { get; set; }
+
+    [JsonIgnore]
+    public RefreshToken? RefreshToken { get; set; }
 }

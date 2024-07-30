@@ -1,8 +1,15 @@
-﻿using DokWokApi.BLL.Extensions;
-using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models.Product;
+﻿using Application.Mapping.Extensions;
+using Application.Operations.Product;
+using Application.Operations.Product.Commands.AddProduct;
+using Application.Operations.Product.Commands.DeleteProduct;
+using Application.Operations.Product.Commands.UpdateProduct;
+using Application.Operations.Product.Queries.GetAllProducts;
+using Application.Operations.Product.Queries.GetAllProductsByCategoryId;
+using Application.Operations.Product.Queries.GetProductById;
+using Application.Operations.Product.Queries.IsProductNameTaken;
 using DokWokApi.Extensions;
-using DokWokApi.Infrastructure;
+using DokWokApi.Helpers;
+using MediatR;
 
 namespace DokWokApi.Endpoints;
 
@@ -24,18 +31,18 @@ public static class ProductsEndpoints
         group.MapGet(ApiRoutes.Products.IsNameTaken, IsProductNameTaken);
     }
 
-    public static async Task<IResult> GetAllProducts(IProductService productService, long? categoryId)
+    public static async Task<IResult> GetAllProducts(ISender sender, long? categoryId)
     {
         var products = categoryId.HasValue ?
-                await productService.GetAllByCategoryIdAsync(categoryId.Value) :
-                await productService.GetAllAsync();
+                await sender.Send(new GetAllProductsByCategoryIdQuery(categoryId.Value)) :
+                await sender.Send(new GetAllProductsQuery());
 
         return Results.Ok(products);
     }
 
-    public static async Task<IResult> GetProductById(IProductService productService, long id)
+    public static async Task<IResult> GetProductById(ISender sender, long id)
     {
-        var product = await productService.GetByIdAsync(id);
+        var product = await sender.Send(new GetProductByIdQuery(id));
         if (product is null)
         {
             return Results.NotFound();
@@ -44,23 +51,21 @@ public static class ProductsEndpoints
         return Results.Ok(product);
     }
 
-    public static async Task<IResult> AddProduct(IProductService productService, ProductPostModel postModel)
+    public static async Task<IResult> AddProduct(ISender sender, AddProductRequest request)
     {
-        var model = postModel.ToModel();
-        var result = await productService.AddAsync(model);
-        return result.ToCreatedAtRouteResult(GetByIdRouteName);
+        var result = await sender.Send(request.ToCommand());
+        return result.ToCreatedAtRouteResult<ProductResponse, long>(GetByIdRouteName);
     }
 
-    public static async Task<IResult> UpdateProduct(IProductService productService, ProductPutModel putModel)
+    public static async Task<IResult> UpdateProduct(ISender sender, UpdateProductRequest request)
     {
-        var model = putModel.ToModel();
-        var result = await productService.UpdateAsync(model);
+        var result = await sender.Send(request.ToCommand());
         return result.ToOkResult();
     }
 
-    public static async Task<IResult> DeleteProduct(IProductService productService, long id)
+    public static async Task<IResult> DeleteProduct(ISender sender, long id)
     {
-        var result = await productService.DeleteAsync(id);
+        var result = await sender.Send(new DeleteProductCommand(id));
         if (result is null)
         {
             return Results.NotFound();
@@ -73,9 +78,9 @@ public static class ProductsEndpoints
         return Results.StatusCode(StatusCodes.Status500InternalServerError);
     }
 
-    public static async Task<IResult> IsProductNameTaken(IProductService productService, string name)
+    public static async Task<IResult> IsProductNameTaken(ISender sender, string name)
     {
-        var result = await productService.IsNameTaken(name);
+        var result = await sender.Send(new IsProductNameTakenQuery(name));
         return result.ToOkIsTakenResult();
     }
 }

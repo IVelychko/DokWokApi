@@ -1,8 +1,8 @@
 ﻿namespace Application.Operations.Product;
 
-public class ProductResponse
+public class ProductResponse : BaseResponse<long>
 {
-    public required long Id { get; set; }
+    //public required long Id { get; set; }
 
     public required string Name { get; set; }
 

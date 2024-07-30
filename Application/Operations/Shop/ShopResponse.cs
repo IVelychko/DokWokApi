@@ -1,6 +1,6 @@
 ﻿namespace Application.Operations.Shop;
 
-public class ShopResponse
+public class ShopResponse : BaseResponse<long>
 {
     public required string Street { get; set; }
 

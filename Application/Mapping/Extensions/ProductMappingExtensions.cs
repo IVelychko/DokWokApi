@@ -1,4 +1,5 @@
-﻿using Application.Operations.Product.Commands.AddProduct;
+﻿using Application.Operations.Product;
+using Application.Operations.Product.Commands.AddProduct;
 using Application.Operations.Product.Commands.UpdateProduct;
 using Domain.Models;
 
@@ -36,6 +37,21 @@ public static class ProductMappingExtensions
             Price = command.Price,
             Weight = command.Weight,
             MeasurementUnit = command.MeasurementUnit
+        };
+    }
+
+    public static ProductResponse ToResponse(this ProductModel model)
+    {
+        return new()
+        {
+            Id = model.Id,
+            CategoryId = model.CategoryId,
+            CategoryName = model.CategoryName,
+            Description = model.Description,
+            MeasurementUnit = model.MeasurementUnit,
+            Name = model.Name,
+            Price = model.Price,
+            Weight = model.Weight
         };
     }
 }

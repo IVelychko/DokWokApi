@@ -1,8 +1,15 @@
-﻿using DokWokApi.BLL.Extensions;
-using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models.Order;
+﻿using Application.Mapping.Extensions;
+using Application.Operations.OrderLine;
+using Application.Operations.OrderLine.Commands.AddOrderLine;
+using Application.Operations.OrderLine.Commands.DeleteOrderLine;
+using Application.Operations.OrderLine.Commands.UpdateOrderLine;
+using Application.Operations.OrderLine.Queries.GetAllOrderLines;
+using Application.Operations.OrderLine.Queries.GetAllOrderLinesByOrderId;
+using Application.Operations.OrderLine.Queries.GetOrderLineById;
+using Application.Operations.OrderLine.Queries.GetOrderLineByOrderAndProductIds;
 using DokWokApi.Extensions;
-using DokWokApi.Infrastructure;
+using DokWokApi.Helpers;
+using MediatR;
 
 namespace DokWokApi.Endpoints;
 
@@ -28,18 +35,18 @@ public static class OrderLinesEndpoints
             .RequireAuthorization(AuthorizationPolicyNames.Admin);
     }
 
-    public static async Task<IResult> GetAllOrderLines(IOrderLineService orderLineService, long? orderId)
+    public static async Task<IResult> GetAllOrderLines(ISender sender, long? orderId)
     {
         var orderLines = orderId.HasValue ?
-                await orderLineService.GetAllByOrderIdAsync(orderId.Value) :
-                await orderLineService.GetAllAsync();
+                await sender.Send(new GetAllOrderLinesByOrderIdQuery(orderId.Value)) :
+                await sender.Send(new GetAllOrderLinesQuery());
 
         return Results.Ok(orderLines);
     }
 
-    public static async Task<IResult> GetOrderLineById(IOrderLineService orderLineService, long id)
+    public static async Task<IResult> GetOrderLineById(ISender sender, long id)
     {
-        var orderLine = await orderLineService.GetByIdAsync(id);
+        var orderLine = await sender.Send(new GetOrderLineByIdQuery(id));
         if (orderLine is null)
         {
             return Results.NotFound();
@@ -48,9 +55,9 @@ public static class OrderLinesEndpoints
         return Results.Ok(orderLine);
     }
 
-    public static async Task<IResult> GetOrderLineByOrderAndProductIds(IOrderLineService orderLineService, long orderId, long productId)
+    public static async Task<IResult> GetOrderLineByOrderAndProductIds(ISender sender, long orderId, long productId)
     {
-        var orderLine = await orderLineService.GetByOrderAndProductIdsAsync(orderId, productId);
+        var orderLine = await sender.Send(new GetOrderLineByOrderAndProductIdsQuery(orderId, productId));
         if (orderLine is null)
         {
             return Results.NotFound();
@@ -59,23 +66,21 @@ public static class OrderLinesEndpoints
         return Results.Ok(orderLine);
     }
 
-    public static async Task<IResult> AddOrderLine(IOrderLineService orderLineService, OrderLinePostModel postModel)
+    public static async Task<IResult> AddOrderLine(ISender sender, AddOrderLineRequest request)
     {
-        var model = postModel.ToModel();
-        var result = await orderLineService.AddAsync(model);
-        return result.ToCreatedAtRouteResult(GetByIdRouteName);
+        var result = await sender.Send(request.ToCommand());
+        return result.ToCreatedAtRouteResult<OrderLineResponse, long>(GetByIdRouteName);
     }
 
-    public static async Task<IResult> UpdateOrderLine(IOrderLineService orderLineService, OrderLinePutModel putModel)
+    public static async Task<IResult> UpdateOrderLine(ISender sender, UpdateOrderLineRequest request)
     {
-        var model = putModel.ToModel();
-        var result = await orderLineService.UpdateAsync(model);
+        var result = await sender.Send(request.ToCommand());
         return result.ToOkResult();
     }
 
-    public static async Task<IResult> DeleteOrderLine(IOrderLineService orderLineService, long id)
+    public static async Task<IResult> DeleteOrderLine(ISender sender, long id)
     {
-        var result = await orderLineService.DeleteAsync(id);
+        var result = await sender.Send(new DeleteOrderLineCommand(id));
         if (result is null)
         {
             return Results.NotFound();

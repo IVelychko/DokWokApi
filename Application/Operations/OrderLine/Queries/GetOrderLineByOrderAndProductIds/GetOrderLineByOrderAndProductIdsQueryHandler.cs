@@ -1,12 +1,15 @@
 ﻿using Application.Abstractions.Messaging;
+using Application.Mapping.Extensions;
 using Domain.Abstractions.Services;
-using Domain.Models;
 
 namespace Application.Operations.OrderLine.Queries.GetOrderLineByOrderAndProductIds;
 
 public class GetOrderLineByOrderAndProductIdsQueryHandler(IOrderLineService orderLineService)
-    : IQueryHandler<GetOrderLineByOrderAndProductIdsQuery, OrderLineModel?>
+    : IQueryHandler<GetOrderLineByOrderAndProductIdsQuery, OrderLineResponse?>
 {
-    public async Task<OrderLineModel?> Handle(GetOrderLineByOrderAndProductIdsQuery request, CancellationToken cancellationToken) =>
-        await orderLineService.GetByOrderAndProductIdsAsync(request.OrderId, request.ProductId);
+    public async Task<OrderLineResponse?> Handle(GetOrderLineByOrderAndProductIdsQuery request, CancellationToken cancellationToken)
+    {
+        var orderLine = await orderLineService.GetByOrderAndProductIdsAsync(request.OrderId, request.ProductId);
+        return orderLine?.ToResponse();
+    }
 }

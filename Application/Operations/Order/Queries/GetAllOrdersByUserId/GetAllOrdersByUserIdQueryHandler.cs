@@ -1,12 +1,15 @@
 ﻿using Application.Abstractions.Messaging;
+using Application.Mapping.Extensions;
 using Domain.Abstractions.Services;
-using Domain.Models;
 
 namespace Application.Operations.Order.Queries.GetAllOrdersByUserId;
 
 public class GetAllOrdersByUserIdQueryHandler(IOrderService orderService)
-    : IQueryHandler<GetAllOrdersByUserIdQuery, IEnumerable<OrderModel>>
+    : IQueryHandler<GetAllOrdersByUserIdQuery, IEnumerable<OrderResponse>>
 {
-    public async Task<IEnumerable<OrderModel>> Handle(GetAllOrdersByUserIdQuery request, CancellationToken cancellationToken) =>
-        await orderService.GetAllByUserIdAsync(request.UserId);
+    public async Task<IEnumerable<OrderResponse>> Handle(GetAllOrdersByUserIdQuery request, CancellationToken cancellationToken)
+    {
+        var orders = await orderService.GetAllByUserIdAsync(request.UserId);
+        return orders.Select(o => o.ToResponse());
+    }
 }

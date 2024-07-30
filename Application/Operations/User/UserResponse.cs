@@ -1,8 +1,8 @@
 ﻿namespace Application.Operations.User;
 
-public class UserResponse
+public class UserResponse : BaseResponse<string>
 {
-    public required string Id { get; set; }
+    //public required string Id { get; set; }
 
     public required string? FirstName { get; set; }
 

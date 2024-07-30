@@ -2,9 +2,9 @@
 
 namespace Application.Operations.OrderLine;
 
-public class OrderLineResponse
+public class OrderLineResponse : BaseResponse<long>
 {
-    public required long Id { get; set; }
+    //public required long Id { get; set; }
 
     public required long OrderId { get; set; }
 
@@ -14,5 +14,5 @@ public class OrderLineResponse
 
     public required decimal TotalLinePrice { get; set; }
 
-    public required ProductModel Product { get; set; }
+    public required ProductModel? Product { get; set; }
 }

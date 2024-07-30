@@ -1,5 +1,4 @@
 ﻿using Application.Abstractions.Messaging;
-using Domain.Models;
 using Domain.ResultType;
 
 namespace Application.Operations.Shop.Commands.UpdateShop;
@@ -10,4 +9,4 @@ public sealed record UpdateShopCommand(
     string Building,
     string OpeningTime,
     string ClosingTime
-) : ICommand<Result<ShopModel>>;
+) : ICommand<Result<ShopResponse>>;

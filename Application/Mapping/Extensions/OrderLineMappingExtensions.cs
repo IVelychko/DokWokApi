@@ -1,5 +1,6 @@
 ﻿using Application.Operations.Order.Commands.AddDeliveryOrder;
 using Application.Operations.Order.Commands.AddTakeawayOrder;
+using Application.Operations.OrderLine;
 using Application.Operations.OrderLine.Commands.AddOrderLine;
 using Application.Operations.OrderLine.Commands.UpdateOrderLine;
 using Domain.Models;
@@ -50,6 +51,19 @@ public static class OrderLineMappingExtensions
         {
             ProductId = request.ProductId,
             Quantity = request.Quantity
+        };
+    }
+
+    public static OrderLineResponse ToResponse(this OrderLineModel model)
+    {
+        return new()
+        {
+            Id = model.Id,
+            OrderId = model.OrderId,
+            ProductId = model.ProductId,
+            Quantity = model.Quantity,
+            TotalLinePrice = model.TotalLinePrice,
+            Product = model.Product
         };
     }
 }

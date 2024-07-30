@@ -1,11 +1,29 @@
-﻿using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models.User;
+﻿using Application.Mapping.Extensions;
+using Application.Operations.User;
+using Application.Operations.User.Commands.AddUser;
+using Application.Operations.User.Commands.DeleteUser;
+using Application.Operations.User.Commands.LoginAdmin;
+using Application.Operations.User.Commands.LoginCustomer;
+using Application.Operations.User.Commands.RefreshToken;
+using Application.Operations.User.Commands.RegisterUser;
+using Application.Operations.User.Commands.UpdatePassword;
+using Application.Operations.User.Commands.UpdatePasswordAsAdmin;
+using Application.Operations.User.Commands.UpdateUser;
+using Application.Operations.User.Queries.GetAllCustomers;
+using Application.Operations.User.Queries.GetAllUsers;
+using Application.Operations.User.Queries.GetCustomerById;
+using Application.Operations.User.Queries.GetUserById;
+using Application.Operations.User.Queries.GetUserByUserName;
+using Application.Operations.User.Queries.GetUserRoles;
+using Application.Operations.User.Queries.IsUserEmailTaken;
+using Application.Operations.User.Queries.IsUserNameTaken;
+using Application.Operations.User.Queries.IsUserPhoneNumberTaken;
 using DokWokApi.Extensions;
-using DokWokApi.Infrastructure;
-using DokWokApi.DAL.Exceptions;
-using DokWokApi.BLL.Extensions;
-using DokWokApi.BLL.Models;
-using DokWokApi.BLL.Infrastructure;
+using DokWokApi.Helpers;
+using Domain.Errors.Base;
+using Domain.Helpers;
+using Domain.Models;
+using MediatR;
 using System.Security.Claims;
 
 namespace DokWokApi.Endpoints;
@@ -52,87 +70,87 @@ public static class UsersEndpoints
         group.MapGet(ApiRoutes.Users.IsCustomerPhoneNumberTaken, IsPhoneNumberTaken);
     }
 
-    public static async Task<IResult> GetAllUsers(IUserService userService)
+    public static async Task<IResult> GetAllUsers(ISender sender)
     {
-        var users = await userService.GetAllAsync();
+        var users = await sender.Send(new GetAllUsersQuery());
         return Results.Ok(users);
     }
 
-    public static async Task<IResult> GetAllCustomers(IUserService userService)
+    public static async Task<IResult> GetAllCustomers(ISender sender)
     {
-        var customers = await userService.GetAllCustomersAsync();
+        var customers = await sender.Send(new GetAllCustomersQuery());
         return Results.Ok(customers);
     }
 
-    public static async Task<IResult> GetUserByUserName(IUserService userService, HttpContext httpContext, string userName)
+    public static async Task<IResult> GetUserByUserName(ISender sender, HttpContext httpContext, string userName)
     {
-        var result = await AuthenticateAndGetUserByUserName(userService, httpContext, userName);
+        var result = await AuthenticateAndGetUserByUserName(sender, httpContext, userName);
         return result;
     }
 
-    public static async Task<IResult> GetUserById(IUserService userService, HttpContext httpContext, string id)
+    public static async Task<IResult> GetUserById(ISender sender, HttpContext httpContext, string id)
     {
-        var result = await AuthenticateAndGetUserById(userService, httpContext, id, false);
+        var result = await AuthenticateAndGetUserById(sender, httpContext, id, false);
         return result;
     }
 
-    public static async Task<IResult> GetCustomerById(IUserService userService, HttpContext httpContext, string id)
+    public static async Task<IResult> GetCustomerById(ISender sender, HttpContext httpContext, string id)
     {
-        var result = await AuthenticateAndGetUserById(userService, httpContext, id, true);
+        var result = await AuthenticateAndGetUserById(sender, httpContext, id, true);
         return result;
     }
 
-    public static async Task<IResult> AddUser(IUserService userService, UserRegisterModel postModel)
+    public static async Task<IResult> AddUser(ISender sender, AddUserRequest request)
     {
-        var model = postModel.ToModel();
-        var result = await userService.AddAsync(model, postModel.Password!);
-        return result.ToCreatedAtRouteResult(GetByIdRouteName);
+        var result = await sender.Send(request.ToCommand());
+        return result.ToCreatedAtRouteResult<UserResponse, string>(GetByIdRouteName);
     }
 
-    public static async Task<IResult> UpdateUser(IUserService userService, HttpContext httpContext, UserPutModel putModel)
+    public static async Task<IResult> UpdateUser(ISender sender, HttpContext httpContext, UpdateUserRequest request)
     {
-        var authorizedUser = await AuthenticateUser(userService, httpContext);
+        var authorizedUser = await AuthenticateUser(sender, httpContext);
         if (authorizedUser is null)
         {
             return Results.NotFound();
         }
 
         var isAdmin = IsAuthorizedUserAdmin(httpContext);
-        if (!isAdmin && authorizedUser.Id != putModel.Id)
+        if (!isAdmin && authorizedUser.Id != request.Id)
         {
             return Results.Forbid();
         }
 
-        var model = putModel.ToModel();
-        var result = await userService.UpdateAsync(model);
+        var result = await sender.Send(request.ToCommand());
         return result.ToOkResult();
     }
 
-    public static async Task<IResult> UpdateCustomerPassword(IUserService userService, HttpContext httpContext, UserPasswordChangeModel model)
+    public static async Task<IResult> UpdateCustomerPassword(ISender sender, HttpContext httpContext, UpdatePasswordRequest request)
     {
-        var authorizedUser = await AuthenticateUser(userService, httpContext);
+        var authorizedUser = await AuthenticateUser(sender, httpContext);
         if (authorizedUser is null)
         {
             return Results.NotFound();
         }
-        else if (authorizedUser.Id != model.UserId)
+        else if (authorizedUser.Id != request.UserId)
         {
             return Results.Forbid();
         }
 
-        var result = await userService.UpdateCustomerPasswordAsync(model);
+        var command = new UpdatePasswordCommand(request.UserId, request.OldPassword, request.NewPassword);
+        var result = await sender.Send(command);
         return result.ToOkPasswordUpdateResult();
     }
 
-    public static async Task<IResult> UpdateCustomerPasswordAsAdmin(IUserService userService, UserPasswordChangeAsAdminModel model)
+    public static async Task<IResult> UpdateCustomerPasswordAsAdmin(ISender sender, UpdatePasswordAsAdminRequest request)
     {
-        var result = await userService.UpdateCustomerPasswordAsAdminAsync(model);
+        var command = new UpdatePasswordAsAdminCommand(request.UserId, request.NewPassword);
+        var result = await sender.Send(command);
         return result.ToOkPasswordUpdateResult();
     }
 
-    public static async Task<IResult> DeleteUserById(IUserService userService, string id)
+    public static async Task<IResult> DeleteUserById(ISender sender, string id)
     {
-        var result = await userService.DeleteAsync(id);
+        var result = await sender.Send(new DeleteUserCommand(id));
         if (result is null)
         {
             return Results.NotFound();
@@ -145,57 +163,59 @@ public static class UsersEndpoints
         return Results.StatusCode(StatusCodes.Status500InternalServerError);
     }
 
-    public static async Task<IResult> LoginCustomer(IUserService userService, HttpContext httpContext, UserLoginModel loginModel)
+    public static async Task<IResult> LoginCustomer(ISender sender, HttpContext httpContext, LoginCustomerRequest request)
     {
-        var result = await userService.CustomerLoginAsync(loginModel);
+        var command = new LoginCustomerCommand(request.UserName, request.Password);
+        var result = await sender.Send(command);
         return result.ToOkResult(httpContext);
     }
 
-    public static async Task<IResult> LoginAdmin(IUserService userService, HttpContext httpContext, UserLoginModel loginModel)
+    public static async Task<IResult> LoginAdmin(ISender sender, HttpContext httpContext, LoginAdminRequest request)
     {
-        var result = await userService.AdminLoginAsync(loginModel);
+        var command = new LoginAdminCommand(request.UserName, request.Password);
+        var result = await sender.Send(command);
         return result.ToOkResult(httpContext);
     }
 
-    public static async Task<IResult> RegisterUser(IUserService userService, HttpContext httpContext, UserRegisterModel registerModel)
+    public static async Task<IResult> RegisterUser(ISender sender, HttpContext httpContext, RegisterUserRequest request)
     {
-        var result = await userService.RegisterAsync(registerModel);
+        var result = await sender.Send(request.ToCommand());
         return result.ToCreatedAtRouteResult(httpContext, GetByIdRouteName);
     }
 
-    public static async Task<IResult> RefreshToken(IUserService userService, HttpContext httpContext, SecurityTokenModel model)
+    public static async Task<IResult> RefreshToken(ISender sender, HttpContext httpContext, RefreshTokenRequest request)
     {
         var refreshToken = httpContext.Request.Cookies["RefreshToken"];
         if (refreshToken is null)
         {
-            return Results.BadRequest(new ErrorResultModel { Error = "There was no refresh token provided" });
+            return Results.BadRequest(new ProblemDetailsModel
+            {
+                Errors = ["There was no refresh token provided"],
+                StatusCode = StatusCodes.Status400BadRequest,
+                Title = "Bad Request"
+            });
         }
 
-        RefreshTokenModel refreshTokenModel = new()
-        {
-            Token = model.Token,
-            RefreshToken = refreshToken
-        };
-        var result = await userService.RefreshTokenAsync(refreshTokenModel);
+        var result = await sender.Send(new RefreshTokenCommand(request.Token, refreshToken));
         return result.ToOkResult(httpContext);
     }
 
-    public static async Task<IResult> IsCustomerTokenValid(IUserService userService, HttpContext httpContext)
+    public static async Task<IResult> IsCustomerTokenValid(ISender sender, HttpContext httpContext)
     {
-        return await ValidateToken(userService, httpContext);
+        return await ValidateToken(sender, httpContext);
     }
 
-    public static async Task<IResult> IsAdminTokenValid(IUserService userService, HttpContext httpContext)
+    public static async Task<IResult> IsAdminTokenValid(ISender sender, HttpContext httpContext)
     {
-        return await ValidateToken(userService, httpContext);
+        return await ValidateToken(sender, httpContext);
     }
 
-    public static async Task<IResult> GetUserRoles(IUserService userService, string userId)
+    public static async Task<IResult> GetUserRoles(ISender sender, string userId)
     {
-        var result = await userService.GetUserRolesAsync(userId);
-        return result.Match(roles => Results.Ok(roles), e =>
+        var result = await sender.Send(new GetUserRolesQuery(userId));
+        return result.Match(roles => Results.Ok(roles), error =>
         {
-            if (e is NotFoundException)
+            if (error is NotFoundError)
             {
                 return Results.NotFound();
             }
@@ -204,25 +224,25 @@ public static class UsersEndpoints
         });
     }
 
-    public static async Task<IResult> IsUserNameTaken(IUserService userService, string userName)
+    public static async Task<IResult> IsUserNameTaken(ISender sender, string userName)
     {
-        var result = await userService.IsUserNameTaken(userName);
+        var result = await sender.Send(new IsUserNameTakenQuery(userName));
         return result.ToOkIsTakenResult();
     }
 
-    public static async Task<IResult> IsEmailTaken(IUserService userService, string email)
+    public static async Task<IResult> IsEmailTaken(ISender sender, string email)
     {
-        var result = await userService.IsEmailTaken(email);
+        var result = await sender.Send(new IsUserEmailTakenQuery(email));
         return result.ToOkIsTakenResult();
     }
 
-    public static async Task<IResult> IsPhoneNumberTaken(IUserService userService, string phoneNumber)
+    public static async Task<IResult> IsPhoneNumberTaken(ISender sender, string phoneNumber)
     {
-        var result = await userService.IsPhoneNumberTaken(phoneNumber);
+        var result = await sender.Send(new IsUserPhoneNumberTakenQuery(phoneNumber));
         return result.ToOkIsTakenResult();
     }
 
-    private static async Task<UserModel?> AuthenticateUser(IUserService userService, HttpContext httpContext)
+    private static async Task<UserResponse?> AuthenticateUser(ISender sender, HttpContext httpContext)
     {
         var userId = httpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
         if (userId is null)
@@ -230,7 +250,7 @@ public static class UsersEndpoints
             return null;
         }
 
-        var authorizedUser = await userService.GetByIdAsync(userId);
+        var authorizedUser = await sender.Send(new GetUserByIdQuery(userId));
         if (authorizedUser is null)
         {
             return null;
@@ -246,9 +266,9 @@ public static class UsersEndpoints
         return isAdmin;
     }
 
-    private static async Task<IResult> AuthenticateAndGetUserById(IUserService userService, HttpContext httpContext, string id, bool isCustomer)
+    private static async Task<IResult> AuthenticateAndGetUserById(ISender sender, HttpContext httpContext, string id, bool isCustomer)
     {
-        var authorizedUser = await AuthenticateUser(userService, httpContext);
+        var authorizedUser = await AuthenticateUser(sender, httpContext);
         if (authorizedUser is null)
         {
             return Results.NotFound();
@@ -260,7 +280,7 @@ public static class UsersEndpoints
             return Results.Forbid();
         }
 
-        var user = isCustomer ? await userService.GetCustomerByIdAsync(id) : await userService.GetByIdAsync(id);
+        var user = await sender.Send(isCustomer ? new GetCustomerByIdQuery(id) : new GetUserByIdQuery(id));
         if (user is null)
         {
             return Results.NotFound();
@@ -269,9 +289,9 @@ public static class UsersEndpoints
         return Results.Ok(user);
     }
 
-    private static async Task<IResult> AuthenticateAndGetUserByUserName(IUserService userService, HttpContext httpContext, string userName)
+    private static async Task<IResult> AuthenticateAndGetUserByUserName(ISender sender, HttpContext httpContext, string userName)
     {
-        var authorizedUser = await AuthenticateUser(userService, httpContext);
+        var authorizedUser = await AuthenticateUser(sender, httpContext);
         if (authorizedUser is null)
         {
             return Results.NotFound();
@@ -283,7 +303,7 @@ public static class UsersEndpoints
             return Results.Forbid();
         }
 
-        var user = await userService.GetByUserNameAsync(userName);
+        var user = await sender.Send(new GetUserByUserNameQuery(userName));
         if (user is null)
         {
             return Results.NotFound();
@@ -292,7 +312,7 @@ public static class UsersEndpoints
         return Results.Ok(user);
     }
 
-    private static async Task<IResult> ValidateToken(IUserService userService, HttpContext context)
+    private static async Task<IResult> ValidateToken(ISender sender, HttpContext context)
     {
         var userId = context.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
         if (userId is null)
@@ -300,7 +320,7 @@ public static class UsersEndpoints
             return Results.Unauthorized();
         }
 
-        var authorizedUser = await userService.GetByIdAsync(userId);
+        var authorizedUser = await sender.Send(new GetUserByIdQuery(userId));
         if (authorizedUser is null)
         {
             return Results.Unauthorized();

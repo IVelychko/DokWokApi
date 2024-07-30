@@ -1,7 +1,7 @@
-﻿using DokWokApi.Models.ShoppingCart;
+﻿using Application.Operations;
+using Application.Operations.User;
 using Domain.Errors.Base;
 using Domain.Models;
-using Domain.Models.User;
 using Domain.ResultType;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,7 +10,7 @@ namespace DokWokApi.Extensions;
 public static class ResultExtensions
 {
     // IActionResult
-    public static IActionResult ToOkActionResult(this Result<AuthorizedUserModel> result, HttpContext context)
+    public static IActionResult ToOkActionResult(this Result<AuthorizedUserResponse> result, HttpContext context)
     {
         if (result.IsFaulted)
         {
@@ -21,26 +21,17 @@ public static class ResultExtensions
         CookieOptions cookieOptions = new()
         {
             HttpOnly = true,
-            Expires = new DateTimeOffset(user.RefreshToken.ExpiryDate),
+            Expires = new DateTimeOffset(user.RefreshToken!.ExpiryDate),
             IsEssential = true,
             Path = "/api/users/authorization"
         };
-        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken.Token, cookieOptions);
-        return new OkObjectResult(user.ToAuthorizedResponseModel());
+        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken!.Token, cookieOptions);
+        return new OkObjectResult(user);
     }
 
-    public static IActionResult ToOkActionResult<TModel>(this Result<TModel> result)
+    public static IActionResult ToOkActionResult<TResponse>(this Result<TResponse> result)
     {
-        return result.Match(model => new OkObjectResult(model), GetActionResultFromError);
-    }
-
-    public static IActionResult ToOkActionResult(this Result<Cart?> result)
-    {
-        return result.Match(cart =>
-        {
-            return cart is not null ? new OkObjectResult(cart)
-                : new StatusCodeResult(StatusCodes.Status500InternalServerError);
-        }, GetActionResultFromError);
+        return result.Match(response => new OkObjectResult(response), GetActionResultFromError);
     }
 
     public static IActionResult ToOkPasswordUpdateActionResult(this Result<bool> result)
@@ -50,95 +41,94 @@ public static class ResultExtensions
 
     public static IActionResult ToOkIsTakenActionResult(this Result<bool> result)
     {
-        return result.Match<IActionResult>(isTaken => new OkObjectResult(new { isTaken }), e =>
+        return result.Match<IActionResult>(isTaken => new OkObjectResult(new { isTaken }), error =>
         {
-            if (e is ValidationException validationException)
+            if (error is BadRequestError badRequestError)
             {
-                return new BadRequestObjectResult(new ErrorResultModel { Error = validationException.Message });
+                return new BadRequestObjectResult(new ProblemDetailsModel
+                {
+                    Errors = badRequestError.Errors,
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Title = "Bad Request"
+                });
             }
 
             return new StatusCodeResult(StatusCodes.Status500InternalServerError);
         });
     }
 
-    public static IActionResult ToCreatedAtActionResult(this Result<UserModel> result, string actionName, string controllerName)
-    {
-        return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model),
-            GetActionResultFromError);
-    }
-
-    public static IActionResult ToCreatedAtActionResult(this Result<AuthorizedUserModel> result, HttpContext context, string actionName, string controllerName)
+    public static IActionResult ToCreatedAtActionResult(this Result<AuthorizedUserResponse> result, HttpContext context, string actionName, string controllerName)
     {
         if (result.IsFaulted)
         {
-            return GetActionResultFromError(result.Exception);
+            return GetActionResultFromError(result.Error);
         }
 
         var user = result.Value;
         CookieOptions cookieOptions = new()
         {
             HttpOnly = true,
-            Expires = new DateTimeOffset(user.RefreshToken.ExpiryDate),
+            Expires = new DateTimeOffset(user.RefreshToken!.ExpiryDate),
             IsEssential = true,
             Path = "/api/users/authorization"
         };
-        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken.Token, cookieOptions);
-        return new CreatedAtActionResult(actionName, controllerName, new { id = user.Id }, user.ToAuthorizedResponseModel());
+        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken!.Token, cookieOptions);
+        return new CreatedAtActionResult(actionName, controllerName, new { id = user.Id }, user);
     }
 
-    public static IActionResult ToCreatedAtActionResult<TModel>(this Result<TModel> result, string actionName, string controllerName) where TModel : BaseModel
+    public static IActionResult ToCreatedAtActionResult<TResponse, TKey>(this Result<TResponse> result, string actionName, string controllerName) where TResponse : BaseResponse<TKey>
     {
-        return result.Match(model => new CreatedAtActionResult(actionName, controllerName, new { id = model.Id }, model),
+        return result.Match(response => new CreatedAtActionResult(actionName, controllerName, new { id = response.Id }, response),
             GetActionResultFromError);
     }
 
-    private static IActionResult GetActionResultFromError(Exception e)
+    private static IActionResult GetActionResultFromError(Error error)
     {
-        if (e is ValidationException validationException)
+        if (error is BadRequestError badRequestError)
         {
-            return new BadRequestObjectResult(new ErrorResultModel { Error = validationException.Message });
+            return new BadRequestObjectResult(new ProblemDetailsModel
+            {
+                Errors = badRequestError.Errors,
+                StatusCode = StatusCodes.Status400BadRequest,
+                Title = "Bad Request"
+            });
         }
-        else if (e is NotFoundException)
+        else if (error is NotFoundError notFoundError)
         {
-            return new NotFoundResult();
+            return new NotFoundObjectResult(new ProblemDetailsModel
+            {
+                Errors = notFoundError.Errors,
+                StatusCode = StatusCodes.Status404NotFound,
+                Title = "Not Found"
+            });
         }
 
         return new StatusCodeResult(StatusCodes.Status500InternalServerError);
     }
 
     // IResult
-
-    public static IResult ToOkResult(this Result<AuthorizedUserModel> result, HttpContext context)
+    public static IResult ToOkResult(this Result<AuthorizedUserResponse> result, HttpContext context)
     {
         if (result.IsFaulted)
         {
-            return GetResultFromError(result.Exception);
+            return GetResultFromError(result.Error);
         }
 
         var user = result.Value;
         CookieOptions cookieOptions = new()
         {
             HttpOnly = true,
-            Expires = new DateTimeOffset(user.RefreshToken.ExpiryDate),
+            Expires = new DateTimeOffset(user.RefreshToken!.ExpiryDate),
             IsEssential = true,
             Path = "/api/users/authorization"
         };
-        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken.Token, cookieOptions);
-        return Results.Ok(user.ToAuthorizedResponseModel());
+        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken!.Token, cookieOptions);
+        return Results.Ok(user);
     }
 
-    public static IResult ToOkResult<TModel>(this Result<TModel> result)
+    public static IResult ToOkResult<TResponse>(this Result<TResponse> result)
     {
-        return result.Match(model => Results.Ok(model), GetResultFromError);
-    }
-
-    public static IResult ToOkResult(this Result<Cart?> result)
-    {
-        return result.Match(cart =>
-        {
-            return cart is not null ? Results.Ok(cart)
-                : Results.StatusCode(StatusCodes.Status500InternalServerError);
-        }, GetResultFromError);
+        return result.Match(response => Results.Ok(response), GetResultFromError);
     }
 
     public static IResult ToOkPasswordUpdateResult(this Result<bool> result)
@@ -148,45 +138,44 @@ public static class ResultExtensions
 
     public static IResult ToOkIsTakenResult(this Result<bool> result)
     {
-        return result.Match(isTaken => Results.Ok(new { isTaken }), e =>
+        return result.Match(isTaken => Results.Ok(new { isTaken }), error =>
         {
-            if (e is ValidationException validationException)
+            if (error is BadRequestError badRequestError)
             {
-                return Results.BadRequest(new ErrorResultModel { Error = validationException.Message });
+                return Results.BadRequest(new ProblemDetailsModel
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Title = "Bad Request",
+                    Errors = badRequestError.Errors
+                });
             }
 
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         });
     }
 
-    public static IResult ToCreatedAtRouteResult(this Result<UserModel> result, string routeName)
-    {
-        return result.Match(model => Results.CreatedAtRoute(routeName, new { id = model.Id }, model),
-            GetResultFromError);
-    }
-
-    public static IResult ToCreatedAtRouteResult(this Result<AuthorizedUserModel> result, HttpContext context, string routeName)
+    public static IResult ToCreatedAtRouteResult(this Result<AuthorizedUserResponse> result, HttpContext context, string routeName)
     {
         if (result.IsFaulted)
         {
-            return GetResultFromError(result.Exception);
+            return GetResultFromError(result.Error);
         }
 
         var user = result.Value;
         CookieOptions cookieOptions = new()
         {
             HttpOnly = true,
-            Expires = new DateTimeOffset(user.RefreshToken.ExpiryDate),
+            Expires = new DateTimeOffset(user.RefreshToken!.ExpiryDate),
             IsEssential = true,
             Path = "/api/users/authorization"
         };
-        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken.Token, cookieOptions);
-        return Results.CreatedAtRoute(routeName, new { id = user.Id }, user.ToAuthorizedResponseModel());
+        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken!.Token, cookieOptions);
+        return Results.CreatedAtRoute(routeName, new { id = user.Id }, user);
     }
 
-    public static IResult ToCreatedAtRouteResult<TModel>(this Result<TModel> result, string routeName) where TModel : BaseModel
+    public static IResult ToCreatedAtRouteResult<TResponse, TKey>(this Result<TResponse> result, string routeName) where TResponse : BaseResponse<TKey>
     {
-        return result.Match(model => Results.CreatedAtRoute(routeName, new { id = model.Id }, model),
+        return result.Match(response => Results.CreatedAtRoute(routeName, new { id = response.Id }, response),
             GetResultFromError);
     }
 
@@ -201,9 +190,14 @@ public static class ResultExtensions
                 Errors = badRequestError.Errors
             });
         }
-        else if (e is NotFoundException)
+        else if (error is NotFoundError notFoundError)
         {
-            return Results.NotFound();
+            return Results.NotFound(new ProblemDetailsModel
+            {
+                Title = "Not Found",
+                StatusCode = StatusCodes.Status404NotFound,
+                Errors = notFoundError.Errors
+            });
         }
 
         return Results.StatusCode(StatusCodes.Status500InternalServerError);

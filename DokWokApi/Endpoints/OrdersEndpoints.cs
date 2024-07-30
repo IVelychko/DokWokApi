@@ -1,9 +1,15 @@
-﻿using DokWokApi.BLL.Extensions;
-using DokWokApi.BLL.Interfaces;
-using DokWokApi.BLL.Models.Order;
+﻿using Application.Mapping.Extensions;
+using Application.Operations.Order;
+using Application.Operations.Order.Commands.AddDeliveryOrder;
+using Application.Operations.Order.Commands.AddTakeawayOrder;
+using Application.Operations.Order.Commands.DeleteOrder;
+using Application.Operations.Order.Commands.UpdateOrder;
+using Application.Operations.Order.Queries.GetAllOrders;
+using Application.Operations.Order.Queries.GetAllOrdersByUserId;
+using Application.Operations.Order.Queries.GetOrderById;
 using DokWokApi.Extensions;
-using DokWokApi.Infrastructure;
-using DokWokApi.Services;
+using DokWokApi.Helpers;
+using MediatR;
 
 namespace DokWokApi.Endpoints;
 
@@ -27,18 +33,18 @@ public static class OrdersEndpoints
             .RequireAuthorization(AuthorizationPolicyNames.Admin);
     }
 
-    public static async Task<IResult> GetAllOrders(IOrderService orderService, string? userId)
+    public static async Task<IResult> GetAllOrders(ISender sender, string? userId)
     {
         var orders = userId is null ?
-                await orderService.GetAllAsync() :
-                await orderService.GetAllByUserIdAsync(userId);
+                await sender.Send(new GetAllOrdersQuery()) :
+                await sender.Send(new GetAllOrdersByUserIdQuery(userId));
 
         return Results.Ok(orders);
     }
 
-    public static async Task<IResult> GetOrderById(IOrderService orderService, long id)
+    public static async Task<IResult> GetOrderById(ISender sender, long id)
     {
-        var order = await orderService.GetByIdAsync(id);
+        var order = await sender.Send(new GetOrderByIdQuery(id));
         if (order is null)
         {
             return Results.NotFound();
@@ -47,30 +53,27 @@ public static class OrdersEndpoints
         return Results.Ok(order);
     }
 
-    public static async Task<IResult> AddDeliveryOrder(IOrderService orderService, ICartService cartService, DeliveryOrderModel form)
+    public static async Task<IResult> AddDeliveryOrder(ISender sender, AddDeliveryOrderRequest request)
     {
-        var model = form.ToModel();
-        var result = await orderService.AddOrderFromCartAsync(model, cartService);
-        return result.ToCreatedAtRouteResult(GetByIdRouteName);
+        var result = await sender.Send(request.ToCommand());
+        return result.ToCreatedAtRouteResult<OrderResponse, long>(GetByIdRouteName);
     }
 
-    public static async Task<IResult> AddTakeawayOrder(IOrderService orderService, ICartService cartService, TakeawayOrderModel form)
+    public static async Task<IResult> AddTakeawayOrder(ISender sender, AddTakeawayOrderRequest request)
     {
-        var model = form.ToModel();
-        var result = await orderService.AddOrderFromCartAsync(model, cartService);
-        return result.ToCreatedAtRouteResult(GetByIdRouteName);
+        var result = await sender.Send(request.ToCommand());
+        return result.ToCreatedAtRouteResult<OrderResponse, long>(GetByIdRouteName);
     }
 
-    public static async Task<IResult> UpdateOrder(IOrderService orderService, OrderPutModel putModel)
+    public static async Task<IResult> UpdateOrder(ISender sender, UpdateOrderRequest request)
     {
-        var model = putModel.ToModel();
-        var result = await orderService.UpdateAsync(model);
+        var result = await sender.Send(request.ToCommand());
         return result.ToOkResult();
     }
 
-    public static async Task<IResult> DeleteOrder(IOrderService orderService, long id)
+    public static async Task<IResult> DeleteOrder(ISender sender, long id)
     {
-        var result = await orderService.DeleteAsync(id);
+        var result = await sender.Send(new DeleteOrderCommand(id));
         if (result is null)
         {
             return Results.NotFound();

@@ -1,4 +1,5 @@
-﻿using Application.Operations.Shop.Commands.AddShop;
+﻿using Application.Operations.Shop;
+using Application.Operations.Shop.Commands.AddShop;
 using Application.Operations.Shop.Commands.UpdateShop;
 using Domain.Models;
 
@@ -32,6 +33,18 @@ public static class ShopMappingExtensions
             ClosingTime = command.ClosingTime,
             OpeningTime = command.OpeningTime,
             Street = command.Street
+        };
+    }
+
+    public static ShopResponse ToResponse(this ShopModel model)
+    {
+        return new()
+        {
+            Id = model.Id,
+            Building = model.Building,
+            ClosingTime = model.ClosingTime,
+            OpeningTime = model.OpeningTime,
+            Street = model.Street
         };
     }
 }

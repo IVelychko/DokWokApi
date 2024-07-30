@@ -2,9 +2,9 @@
 
 namespace Application.Operations.Order;
 
-public class OrderResponse
+public class OrderResponse : BaseResponse<long>
 {
-    public required long Id { get; set; }
+    //public required long Id { get; set; }
 
     public required string CustomerName { get; set; }
 
@@ -12,7 +12,7 @@ public class OrderResponse
 
     public required string Email { get; set; }
 
-    public string? DeliveryAddress { get; set; }
+    public required string? DeliveryAddress { get; set; }
 
     public required string PaymentType { get; set; }
 
@@ -22,9 +22,9 @@ public class OrderResponse
 
     public required string Status { get; set; }
 
-    public string? UserId { get; set; }
+    public required string? UserId { get; set; }
 
-    public long? ShopId { get; set; }
+    public required long? ShopId { get; set; }
 
-    public List<OrderLineModel> OrderLines { get; set; } = [];
+    public required List<OrderLineModel> OrderLines { get; set; }
 }
