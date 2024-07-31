@@ -114,12 +114,10 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddAuthorizationServicesAndPolicies(this IServiceCollection services)
     {
-        services.AddAuthorization(opts =>
-        {
-            opts.AddPolicy(AuthorizationPolicyNames.Admin, opts => opts.RequireRole(UserRoles.Admin));
-            opts.AddPolicy(AuthorizationPolicyNames.Customer, opts => opts.RequireRole(UserRoles.Customer));
-            opts.AddPolicy(AuthorizationPolicyNames.AdminAndCustomer, opts => opts.RequireRole(UserRoles.Admin, UserRoles.Customer));
-        });
+        services.AddAuthorizationBuilder()
+            .AddPolicy(AuthorizationPolicyNames.Admin, opts => opts.RequireRole(UserRoles.Admin))
+            .AddPolicy(AuthorizationPolicyNames.Customer, opts => opts.RequireRole(UserRoles.Customer))
+            .AddPolicy(AuthorizationPolicyNames.AdminAndCustomer, opts => opts.RequireRole(UserRoles.Admin, UserRoles.Customer));
 
         return services;
     }
@@ -137,7 +135,7 @@ public static class ServiceCollectionExtensions
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
                 Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] " +
-                "and then your token in the text input below.\r\n\r\nExample: \"Bearer 1safsfsdfdfd\"",
+                "and then your token in the text input below",
             });
             opts.AddSecurityRequirement(new OpenApiSecurityRequirement
             {

@@ -1,4 +1,5 @@
 ﻿using Application.Mapping.Extensions;
+using Application.Operations;
 using Application.Operations.ProductCategory;
 using Application.Operations.ProductCategory.Commands.AddProductCategory;
 using Application.Operations.ProductCategory.Commands.DeleteProductCategory;
@@ -6,31 +7,55 @@ using Application.Operations.ProductCategory.Commands.UpdateProductCategory;
 using Application.Operations.ProductCategory.Queries.GetAllProductCategories;
 using Application.Operations.ProductCategory.Queries.GetProductCategoryById;
 using Application.Operations.ProductCategory.Queries.IsProductCategoryNameTaken;
+using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
+using Domain.Models;
 using MediatR;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DokWokApi.Endpoints;
 
-public static class ProductCategoriesEndpoints
+public class ProductCategoriesEndpointsModule : ICarterModule
 {
     private const string GetByIdRouteName = nameof(GetCategoryById);
 
-    public static void MapProductCategoriesEndpoints(this IEndpointRouteBuilder app)
+    public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(ApiRoutes.ProductCategories.Group);
+        var group = app.MapGroup(ApiRoutes.ProductCategories.Group).WithTags("ProductCategories");
+
         group.MapGet("/", GetAllCategories);
-        group.MapGet(ApiRoutes.ProductCategories.GetById, GetCategoryById).WithName(GetByIdRouteName);
-        group.MapPost("/", AddCategory).RequireAuthorization(AuthorizationPolicyNames.Admin);
-        group.MapPut("/", UpdateCategory).RequireAuthorization(AuthorizationPolicyNames.Admin);
-        group.MapDelete(ApiRoutes.ProductCategories.DeleteById, DeleteCategory).RequireAuthorization(AuthorizationPolicyNames.Admin);
-        group.MapGet(ApiRoutes.ProductCategories.IsNameTaken, IsCategoryNameTaken);
+
+        group.MapGet(ApiRoutes.ProductCategories.GetById, GetCategoryById)
+            .WithName(GetByIdRouteName)
+            .Produces<ProductCategoryResponse>()
+            .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/", AddCategory)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces<ProductCategoryResponse>(StatusCodes.Status201Created)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
+        group.MapPut("/", UpdateCategory)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces<ProductCategoryResponse>()
+            .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
+        group.MapDelete(ApiRoutes.ProductCategories.DeleteById, DeleteCategory)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
+        group.MapGet(ApiRoutes.ProductCategories.IsNameTaken, IsCategoryNameTaken)
+            .Produces<IsTakenResponse>()
+            .Produces(StatusCodes.Status400BadRequest);
     }
 
-    public static async Task<IResult> GetAllCategories(ISender sender)
+    public static async Task<Ok<IEnumerable<ProductCategoryResponse>>> GetAllCategories(ISender sender)
     {
         var categories = await sender.Send(new GetAllProductCategoriesQuery());
-        return Results.Ok(categories);
+        return TypedResults.Ok(categories);
     }
 
     public static async Task<IResult> GetCategoryById(ISender sender, long id)

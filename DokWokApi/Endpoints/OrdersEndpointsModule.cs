@@ -7,39 +7,59 @@ using Application.Operations.Order.Commands.UpdateOrder;
 using Application.Operations.Order.Queries.GetAllOrders;
 using Application.Operations.Order.Queries.GetAllOrdersByUserId;
 using Application.Operations.Order.Queries.GetOrderById;
+using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
+using Domain.Models;
 using MediatR;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DokWokApi.Endpoints;
 
-public static class OrdersEndpoints
+public class OrdersEndpointsModule : ICarterModule
 {
     private const string GetByIdRouteName = nameof(GetOrderById);
 
-    public static void MapOrdersEndpoints(this IEndpointRouteBuilder app)
+    public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(ApiRoutes.Orders.Group);
+        var group = app.MapGroup(ApiRoutes.Orders.Group).WithTags("Orders");
+
         group.MapGet("/", GetAllOrders)
             .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
+
         group.MapGet(ApiRoutes.Orders.GetById, GetOrderById)
             .WithName(GetByIdRouteName)
-            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
-        group.MapPost(ApiRoutes.Orders.AddDelivery, AddDeliveryOrder);
-        group.MapPost(ApiRoutes.Orders.AddTakeaway, AddTakeawayOrder);
+            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
+            .Produces<OrderResponse>()
+            .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost(ApiRoutes.Orders.AddDelivery, AddDeliveryOrder)
+            .Produces<OrderResponse>(StatusCodes.Status201Created)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
+        group.MapPost(ApiRoutes.Orders.AddTakeaway, AddTakeawayOrder)
+            .Produces<OrderResponse>(StatusCodes.Status201Created)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
         group.MapPut("/", UpdateOrder)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces<OrderResponse>()
+            .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
         group.MapDelete(ApiRoutes.Orders.DeleteById, DeleteOrder)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
     }
 
-    public static async Task<IResult> GetAllOrders(ISender sender, string? userId)
+    public static async Task<Ok<IEnumerable<OrderResponse>>> GetAllOrders(ISender sender, string? userId)
     {
         var orders = userId is null ?
                 await sender.Send(new GetAllOrdersQuery()) :
                 await sender.Send(new GetAllOrdersByUserIdQuery(userId));
 
-        return Results.Ok(orders);
+        return TypedResults.Ok(orders);
     }
 
     public static async Task<IResult> GetOrderById(ISender sender, long id)

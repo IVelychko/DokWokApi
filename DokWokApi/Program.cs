@@ -1,3 +1,4 @@
+using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Services;
 using Domain.Entities;
@@ -46,6 +47,8 @@ builder.Services.AddAuthorizationServicesAndPolicies();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+builder.Services.AddCarter();
+
 var app = builder.Build();
 
 app.UseExceptionHandler(x => { });
@@ -57,7 +60,7 @@ app.UseSerilogRequestLogging();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapEndpoints();
+app.MapCarter();
 
 if (app.Environment.IsDevelopment())
 {

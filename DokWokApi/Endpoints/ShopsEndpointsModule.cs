@@ -1,4 +1,5 @@
 ﻿using Application.Mapping.Extensions;
+using Application.Operations;
 using Application.Operations.Shop;
 using Application.Operations.Shop.Commands.AddShop;
 using Application.Operations.Shop.Commands.DeleteShop;
@@ -7,32 +8,57 @@ using Application.Operations.Shop.Queries.GetAllShops;
 using Application.Operations.Shop.Queries.GetShopByAddress;
 using Application.Operations.Shop.Queries.GetShopById;
 using Application.Operations.Shop.Queries.IsShopAddressTaken;
+using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
+using Domain.Models;
 using MediatR;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DokWokApi.Endpoints;
 
-public static class ShopsEndpoints
+public class ShopsEndpointsModule : ICarterModule
 {
     private const string GetByIdRouteName = nameof(GetShopById);
 
-    public static void MapShopsEndpoints(this IEndpointRouteBuilder app)
+    public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(ApiRoutes.Shops.Group);
+        var group = app.MapGroup(ApiRoutes.Shops.Group).WithTags("Shops");
+
         group.MapGet("/", GetAllShops);
-        group.MapGet(ApiRoutes.Shops.GetById, GetShopById).WithName(GetByIdRouteName);
+
+        group.MapGet(ApiRoutes.Shops.GetById, GetShopById)
+            .WithName(GetByIdRouteName)
+            .Produces<ShopResponse>()
+            .Produces(StatusCodes.Status404NotFound);
+
         group.MapGet(ApiRoutes.Shops.GetByAddress, GetShopByAddress);
-        group.MapPost("/", AddShop).RequireAuthorization(AuthorizationPolicyNames.Admin);
-        group.MapPut("/", UpdateShop).RequireAuthorization(AuthorizationPolicyNames.Admin);
-        group.MapDelete(ApiRoutes.Shops.DeleteById, DeleteShop).RequireAuthorization(AuthorizationPolicyNames.Admin);
-        group.MapGet(ApiRoutes.Shops.IsAddressTaken, IsShopAddressTaken);
+
+        group.MapPost("/", AddShop)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces<ShopResponse>(StatusCodes.Status201Created)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
+        group.MapPut("/", UpdateShop)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces<ShopResponse>()
+            .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
+        group.MapDelete(ApiRoutes.Shops.DeleteById, DeleteShop)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
+        group.MapGet(ApiRoutes.Shops.IsAddressTaken, IsShopAddressTaken)
+            .Produces<IsTakenResponse>()
+            .Produces(StatusCodes.Status400BadRequest);
     }
 
-    public static async Task<IResult> GetAllShops(ISender sender)
+    public static async Task<Ok<IEnumerable<ShopResponse>>> GetAllShops(ISender sender)
     {
         var shops = await sender.Send(new GetAllShopsQuery());
-        return Results.Ok(shops);
+        return TypedResults.Ok(shops);
     }
 
     public static async Task<IResult> GetShopById(ISender sender, long id)

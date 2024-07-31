@@ -7,41 +7,61 @@ using Application.Operations.OrderLine.Queries.GetAllOrderLines;
 using Application.Operations.OrderLine.Queries.GetAllOrderLinesByOrderId;
 using Application.Operations.OrderLine.Queries.GetOrderLineById;
 using Application.Operations.OrderLine.Queries.GetOrderLineByOrderAndProductIds;
+using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
+using Domain.Models;
 using MediatR;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DokWokApi.Endpoints;
 
-public static class OrderLinesEndpoints
+public class OrderLinesEndpointsModule : ICarterModule
 {
     private const string GetByIdRouteName = nameof(GetOrderLineById);
 
-    public static void MapOrderLinesEndpoints(this IEndpointRouteBuilder app)
+    public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(ApiRoutes.OrderLines.Group);
+        var group = app.MapGroup(ApiRoutes.OrderLines.Group).WithTags("OrderLines");
+
         group.MapGet("/", GetAllOrderLines)
             .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
+
         group.MapGet(ApiRoutes.OrderLines.GetById, GetOrderLineById)
             .WithName(GetByIdRouteName)
-            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
+            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
+            .Produces<OrderLineResponse>()
+            .Produces(StatusCodes.Status404NotFound);
+
         group.MapGet(ApiRoutes.OrderLines.GetByOrderAndProductIds, GetOrderLineByOrderAndProductIds)
-            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
+            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
+            .Produces<OrderLineResponse>()
+            .Produces(StatusCodes.Status404NotFound);
+
         group.MapPost("/", AddOrderLine)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces<OrderLineResponse>(StatusCodes.Status201Created)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
         group.MapPut("/", UpdateOrderLine)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces<OrderLineResponse>()
+            .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
         group.MapDelete(ApiRoutes.OrderLines.DeleteById, DeleteOrderLine)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
     }
 
-    public static async Task<IResult> GetAllOrderLines(ISender sender, long? orderId)
+    public static async Task<Ok<IEnumerable<OrderLineResponse>>> GetAllOrderLines(ISender sender, long? orderId)
     {
         var orderLines = orderId.HasValue ?
                 await sender.Send(new GetAllOrderLinesByOrderIdQuery(orderId.Value)) :
                 await sender.Send(new GetAllOrderLinesQuery());
 
-        return Results.Ok(orderLines);
+        return TypedResults.Ok(orderLines);
     }
 
     public static async Task<IResult> GetOrderLineById(ISender sender, long id)

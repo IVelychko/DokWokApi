@@ -138,7 +138,7 @@ public static class ResultExtensions
 
     public static IResult ToOkIsTakenResult(this Result<bool> result)
     {
-        return result.Match(isTaken => Results.Ok(new { isTaken }), error =>
+        return result.Match(isTaken => Results.Ok(new IsTakenResponse(isTaken)), error =>
         {
             if (error is BadRequestError badRequestError)
             {

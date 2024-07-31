@@ -1,4 +1,5 @@
 ﻿using Application.Mapping.Extensions;
+using Application.Operations;
 using Application.Operations.User;
 using Application.Operations.User.Commands.AddUser;
 using Application.Operations.User.Commands.DeleteUser;
@@ -18,68 +19,132 @@ using Application.Operations.User.Queries.GetUserRoles;
 using Application.Operations.User.Queries.IsUserEmailTaken;
 using Application.Operations.User.Queries.IsUserNameTaken;
 using Application.Operations.User.Queries.IsUserPhoneNumberTaken;
+using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
 using Domain.Errors.Base;
 using Domain.Helpers;
 using Domain.Models;
 using MediatR;
+using Microsoft.AspNetCore.Http.HttpResults;
 using System.Security.Claims;
 
 namespace DokWokApi.Endpoints;
 
-public static class UsersEndpoints
+public class UsersEndpointsModule : ICarterModule
 {
     private const string GetByIdRouteName = nameof(GetCustomerById);
 
-    public static void MapUsersEndpoints(this IEndpointRouteBuilder app)
+    public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup(ApiRoutes.Users.Group);
-        group.MapGet("/", GetAllUsers).RequireAuthorization(AuthorizationPolicyNames.Admin);
-        group.MapGet(ApiRoutes.Users.GetAllCustomers, GetAllCustomers).RequireAuthorization(AuthorizationPolicyNames.Admin);
-        group.MapGet(ApiRoutes.Users.GetUserByUserName, GetUserByUserName).RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
-        group.MapGet(ApiRoutes.Users.GetUserById, GetUserById).RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
+        var group = app.MapGroup(ApiRoutes.Users.Group).WithTags("Users");
+
+        group.MapGet("/", GetAllUsers)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+
+        group.MapGet(ApiRoutes.Users.GetAllCustomers, GetAllCustomers)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+
+        group.MapGet(ApiRoutes.Users.GetUserByUserName, GetUserByUserName)
+            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
+            .Produces<UserResponse>()
+            .Produces(StatusCodes.Status404NotFound);
+
+        group.MapGet(ApiRoutes.Users.GetUserById, GetUserById)
+            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
+            .Produces<UserResponse>()
+            .Produces(StatusCodes.Status404NotFound);
+
         group.MapGet(ApiRoutes.Users.GetCustomerById, GetCustomerById)
             .WithName(GetByIdRouteName)
-            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
+            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
+            .Produces<UserResponse>()
+            .Produces(StatusCodes.Status404NotFound);
 
-        group.MapPost("/", AddUser).RequireAuthorization(AuthorizationPolicyNames.Admin);
+        group.MapPost("/", AddUser)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces<UserResponse>(StatusCodes.Status201Created)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
 
-        group.MapPut("/", UpdateUser).RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
+        group.MapPut("/", UpdateUser)
+            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
+            .Produces<UserResponse>()
+            .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
         group.MapPut(ApiRoutes.Users.UpdateCustomerPassword, UpdateCustomerPassword)
-            .RequireAuthorization(AuthorizationPolicyNames.Customer);
+            .RequireAuthorization(AuthorizationPolicyNames.Customer)
+            .Produces(StatusCodes.Status200OK)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
         group.MapPut(ApiRoutes.Users.UpdateCustomerPasswordAsAdmin, UpdateCustomerPasswordAsAdmin)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces(StatusCodes.Status200OK)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
 
-        group.MapDelete(ApiRoutes.Users.DeleteUserById, DeleteUserById).RequireAuthorization(AuthorizationPolicyNames.Admin);
+        group.MapDelete(ApiRoutes.Users.DeleteUserById, DeleteUserById)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
 
-        group.MapPost(ApiRoutes.Users.LoginCustomer, LoginCustomer);
-        group.MapPost(ApiRoutes.Users.LoginAdmin, LoginAdmin);
-        group.MapPost(ApiRoutes.Users.RegisterUser, RegisterUser);
-        group.MapPost(ApiRoutes.Users.RefreshToken, RefreshToken);
+        group.MapPost(ApiRoutes.Users.LoginCustomer, LoginCustomer)
+            .Produces<AuthorizedUserResponse>()
+            .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
+        group.MapPost(ApiRoutes.Users.LoginAdmin, LoginAdmin)
+            .Produces<AuthorizedUserResponse>()
+            .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
+        group.MapPost(ApiRoutes.Users.RegisterUser, RegisterUser)
+            .Produces<AuthorizedUserResponse>(StatusCodes.Status201Created)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
+        group.MapPost(ApiRoutes.Users.RefreshToken, RefreshToken)
+            .Produces<AuthorizedUserResponse>()
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
         group.MapGet(ApiRoutes.Users.IsCustomerTokenValid, IsCustomerTokenValid)
-            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
+            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
+            .Produces<UserResponse>()
+            .Produces(StatusCodes.Status401Unauthorized);
+
         group.MapGet(ApiRoutes.Users.IsAdminTokenValid, IsAdminTokenValid)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces<UserResponse>()
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet(ApiRoutes.Users.GetUserRoles, GetUserRoles)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces<IEnumerable<string>>()
+            .Produces(StatusCodes.Status404NotFound);
 
-        group.MapGet(ApiRoutes.Users.IsCustomerUserNameTaken, IsUserNameTaken);
-        group.MapGet(ApiRoutes.Users.IsCustomerEmailTaken, IsEmailTaken);
-        group.MapGet(ApiRoutes.Users.IsCustomerPhoneNumberTaken, IsPhoneNumberTaken);
+        group.MapGet(ApiRoutes.Users.IsCustomerUserNameTaken, IsUserNameTaken)
+            .Produces<IsTakenResponse>()
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
+        group.MapGet(ApiRoutes.Users.IsCustomerEmailTaken, IsEmailTaken)
+            .Produces<IsTakenResponse>()
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+
+        group.MapGet(ApiRoutes.Users.IsCustomerPhoneNumberTaken, IsPhoneNumberTaken)
+            .Produces<IsTakenResponse>()
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
     }
 
-    public static async Task<IResult> GetAllUsers(ISender sender)
+    public static async Task<Ok<IEnumerable<UserResponse>>> GetAllUsers(ISender sender)
     {
         var users = await sender.Send(new GetAllUsersQuery());
-        return Results.Ok(users);
+        return TypedResults.Ok(users);
     }
 
-    public static async Task<IResult> GetAllCustomers(ISender sender)
+    public static async Task<Ok<IEnumerable<UserResponse>>> GetAllCustomers(ISender sender)
     {
         var customers = await sender.Send(new GetAllCustomersQuery());
-        return Results.Ok(customers);
+        return TypedResults.Ok(customers);
     }
 
     public static async Task<IResult> GetUserByUserName(ISender sender, HttpContext httpContext, string userName)
