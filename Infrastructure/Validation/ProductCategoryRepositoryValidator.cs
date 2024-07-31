@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Validation;
 
-public class ProductCategoryRepositoryValidator : IValidator<ProductCategory>
+public class ProductCategoryRepositoryValidator : IProductCategoryRepositoryValidator
 {
     private readonly StoreDbContext _context;
 

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Validation;
 
-public class OrderRepositoryValidator : IValidator<Order>
+public class OrderRepositoryValidator : IOrderRepositoryValidator
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly StoreDbContext _context;

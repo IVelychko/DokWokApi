@@ -41,12 +41,12 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddValidators(this IServiceCollection services)
     {
-        services.AddScoped<IValidator<ProductCategory>, ProductCategoryRepositoryValidator>();
-        services.AddScoped<IValidator<Product>, ProductRepositoryValidator>();
-        services.AddScoped<IValidator<Order>, OrderRepositoryValidator>();
-        services.AddScoped<IValidator<OrderLine>, OrderLineRepositoryValidator>();
-        services.AddScoped<IValidator<Shop>, ShopRepositoryValidator>();
-        services.AddScoped<IValidator<RefreshToken>, RefreshTokenRepositoryValidator>();
+        services.AddScoped<IProductCategoryRepositoryValidator, ProductCategoryRepositoryValidator>();
+        services.AddScoped<IProductRepositoryValidator, ProductRepositoryValidator>();
+        services.AddScoped<IOrderRepositoryValidator, OrderRepositoryValidator>();
+        services.AddScoped<IOrderLineRepositoryValidator, OrderLineRepositoryValidator>();
+        services.AddScoped<IShopRepositoryValidator, ShopRepositoryValidator>();
+        services.AddScoped<IRefreshTokenRepositoryValidator, RefreshTokenRepositoryValidator>();
         services.AddScoped<IUserRepositoryValidator, UserRepositoryValidator>();
         services.AddScoped<IUserServiceValidator, UserServiceValidator>();
 

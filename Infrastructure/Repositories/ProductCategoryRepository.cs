@@ -11,9 +11,9 @@ namespace Infrastructure.Repositories;
 public class ProductCategoryRepository : IProductCategoryRepository
 {
     private readonly StoreDbContext _context;
-    private readonly IValidator<ProductCategory> _validator;
+    private readonly IProductCategoryRepositoryValidator _validator;
 
-    public ProductCategoryRepository(StoreDbContext context, IValidator<ProductCategory> validator)
+    public ProductCategoryRepository(StoreDbContext context, IProductCategoryRepositoryValidator validator)
     {
         _context = context;
         _validator = validator;

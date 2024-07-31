@@ -11,9 +11,9 @@ namespace Infrastructure.Repositories;
 public class OrderRepository : IOrderRepository
 {
     private readonly StoreDbContext _context;
-    private readonly IValidator<Order> _validator;
+    private readonly IOrderRepositoryValidator _validator;
 
-    public OrderRepository(StoreDbContext context, IValidator<Order> validator)
+    public OrderRepository(StoreDbContext context, IOrderRepositoryValidator validator)
     {
         _context = context;
         _validator = validator;

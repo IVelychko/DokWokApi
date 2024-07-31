@@ -11,9 +11,9 @@ namespace Infrastructure.Repositories;
 public class ShopRepository : IShopRepository
 {
     private readonly StoreDbContext _context;
-    private readonly IValidator<Shop> _validator;
+    private readonly IShopRepositoryValidator _validator;
 
-    public ShopRepository(StoreDbContext context, IValidator<Shop> validator)
+    public ShopRepository(StoreDbContext context, IShopRepositoryValidator validator)
     {
         _context = context;
         _validator = validator;

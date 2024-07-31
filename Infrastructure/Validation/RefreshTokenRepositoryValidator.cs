@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Validation;
 
-public class RefreshTokenRepositoryValidator : IValidator<RefreshToken>
+public class RefreshTokenRepositoryValidator : IRefreshTokenRepositoryValidator
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly StoreDbContext _context;

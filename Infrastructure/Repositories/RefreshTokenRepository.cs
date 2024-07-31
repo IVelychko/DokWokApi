@@ -11,9 +11,9 @@ namespace Infrastructure.Repositories;
 public class RefreshTokenRepository : IRefreshTokenRepository
 {
     private readonly StoreDbContext _context;
-    private readonly IValidator<RefreshToken> _validator;
+    private readonly IRefreshTokenRepositoryValidator _validator;
 
-    public RefreshTokenRepository(StoreDbContext context, IValidator<RefreshToken> validator)
+    public RefreshTokenRepository(StoreDbContext context, IRefreshTokenRepositoryValidator validator)
     {
         _context = context;
         _validator = validator;

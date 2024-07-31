@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Validation;
 
-public class OrderLineRepositoryValidator : IValidator<OrderLine>
+public class OrderLineRepositoryValidator : IOrderLineRepositoryValidator
 {
     private readonly StoreDbContext _context;
 
