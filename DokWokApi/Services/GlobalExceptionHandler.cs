@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿using Domain.Exceptions;
+using Microsoft.AspNetCore.Diagnostics;
 using System.Net;
 
 namespace DokWokApi.Services;
@@ -12,11 +13,18 @@ public class GlobalExceptionHandler : IExceptionHandler
         _logger = logger;
     }
 
-    public ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
+    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
+        if (exception is ValidationException validationException)
+        {
+            httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            await httpContext.Response.WriteAsJsonAsync(validationException.Errors, cancellationToken);
+            return true;
+        }
+
         _logger.LogError(exception, "Server error");
         httpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-        return ValueTask.FromResult(true);
+        return true;
     }
 }

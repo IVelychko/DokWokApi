@@ -6,6 +6,8 @@ public static class RegularExpressions
 
     public const string PhoneNumber = @"^(?:\+38)?(0\d{9})$";
 
+    public const string Email = @"^[^\s@]+@[^\s@]+\.[^\s@]+$";
+
     public const string Address = @"^[a-zA-Zа-яА-ЯёЁіїІЇєЄґҐ0-9.,\-()№\s]+$";
 
     public const string PaymentType = @"^(cash|card)$";

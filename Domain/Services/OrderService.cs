@@ -93,7 +93,7 @@ public class OrderService : IOrderService
             {
                 errors.Add($"Incorrect order line data. There is no product with the id: {line.ProductId}");
             }
-            else if (errors.Count < 1)
+            else if (errors.Count < 1 && line.TotalLinePrice == 0)
             {
                 line.TotalLinePrice = product.Price * line.Quantity;
             }
