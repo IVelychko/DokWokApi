@@ -8,6 +8,7 @@ using Domain.Helpers;
 using Domain.Models.User;
 using Domain.Services;
 using Domain.Validation;
+using FluentValidation;
 using Infrastructure;
 using Infrastructure.Repositories;
 using Infrastructure.Validation;
@@ -41,6 +42,10 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddValidators(this IServiceCollection services)
     {
+        services.AddValidatorsFromAssemblies([Domain.AssemblyReference.Assembly,
+            Application.AssemblyReference.Assembly,
+            Infrastructure.AssemblyReference.Assembly]);
+
         services.AddScoped<IProductCategoryRepositoryValidator, ProductCategoryRepositoryValidator>();
         services.AddScoped<IProductRepositoryValidator, ProductRepositoryValidator>();
         services.AddScoped<IOrderRepositoryValidator, OrderRepositoryValidator>();

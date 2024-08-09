@@ -125,7 +125,7 @@ public class UserRepositoryValidator : IUserRepositoryValidator
         }
 
         bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-        if (isAdmin)
+        if (!isAdmin)
         {
             result.IsValid = false;
             result.Errors.Add("Forbidden action");

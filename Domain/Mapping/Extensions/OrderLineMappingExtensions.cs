@@ -1,5 +1,4 @@
 ﻿using Domain.Entities;
-using Domain.Mapping.Extensions;
 using Domain.Models;
 
 namespace Domain.Mapping.Extensions;
