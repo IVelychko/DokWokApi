@@ -22,7 +22,7 @@ public class OrderLineService : IOrderLineService
     {
         if (model is null)
         {
-            var error = new ValidationError("The passed model is null");
+            var error = new ValidationError("orderLineModel", "The passed model is null");
             return Result<OrderLineModel>.Failure(error);
         }
 
@@ -31,7 +31,7 @@ public class OrderLineService : IOrderLineService
             var product = await _productRepository.GetByIdAsync(model.ProductId);
             if (product is null)
             {
-                var error = new ValidationError($"Incorrect product id of the order line. The product does not exist with id: {model.ProductId}");
+                var error = new ValidationError(nameof(product), $"Incorrect product id of the order line. The product does not exist with id: {model.ProductId}");
                 return Result<OrderLineModel>.Failure(error);
             }
 
@@ -55,9 +55,23 @@ public class OrderLineService : IOrderLineService
         return models;
     }
 
+    public async Task<IEnumerable<OrderLineModel>> GetAllByOrderIdAndPageAsync(long orderId, int pageNumber, int pageSize)
+    {
+        var entities = await _orderLineRepository.GetAllWithDetailsByOrderIdAndPageAsync(orderId, pageNumber, pageSize);
+        var models = entities.Select(ol => ol.ToModel());
+        return models;
+    }
+
     public async Task<IEnumerable<OrderLineModel>> GetAllByOrderIdAsync(long orderId)
     {
         var entities = await _orderLineRepository.GetAllWithDetailsByOrderIdAsync(orderId);
+        var models = entities.Select(ol => ol.ToModel());
+        return models;
+    }
+
+    public async Task<IEnumerable<OrderLineModel>> GetAllByPageAsync(int pageNumber, int pageSize)
+    {
+        var entities = await _orderLineRepository.GetAllWithDetailsByPageAsync(pageNumber, pageSize);
         var models = entities.Select(ol => ol.ToModel());
         return models;
     }
@@ -78,7 +92,7 @@ public class OrderLineService : IOrderLineService
     {
         if (model is null)
         {
-            var error = new ValidationError("The passed model is null.");
+            var error = new ValidationError("orderLineModel", "The passed model is null.");
             return Result<OrderLineModel>.Failure(error);
         }
 
@@ -87,7 +101,7 @@ public class OrderLineService : IOrderLineService
             var product = await _productRepository.GetByIdAsync(model.ProductId);
             if (product is null)
             {
-                var error = new ValidationError($"Incorrect product id of the order line. The product does not exist with id: {model.ProductId}");
+                var error = new ValidationError(nameof(product), $"Incorrect product id of the order line. The product does not exist with id: {model.ProductId}");
                 return Result<OrderLineModel>.Failure(error);
             }
 

@@ -11,14 +11,11 @@ public sealed class AddProductCategoryValidator : AbstractValidator<AddProductCa
     {
         _context = context;
 
-        RuleFor(x => x).NotNull().WithMessage("The passed product category is null").DependentRules(() =>
-        {
-            RuleFor(x => x.Name)
+        RuleFor(x => x.Name)
                 .MustAsync(async (name, cancellationToken) =>
                 {
                     return !await _context.ProductCategories.AsNoTracking().AnyAsync(c => c.Name == name, cancellationToken);
                 })
                 .WithMessage("The product category with the same Name value is already present in the database");
-        });
     }
 }

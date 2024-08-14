@@ -13,14 +13,11 @@ public sealed class AddRefreshTokenValidator : AbstractValidator<AddRefreshToken
     {
         _userManager = userManager;
 
-        RuleFor(x => x).NotNull().WithMessage("The passed refresh token is null").DependentRules(() =>
-        {
-            RuleFor(x => x.UserId)
+        RuleFor(x => x.UserId)
                 .MustAsync(async (userId, cancellationToken) =>
                 {
                     return await _userManager.Users.AsNoTracking().AnyAsync(x => x.Id == userId, cancellationToken);
                 })
                 .WithMessage("There is no user with the ID specified in the UserId property of the RefreshToken entity");
-        });
     }
 }

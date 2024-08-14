@@ -1,5 +1,4 @@
-﻿using Domain.Validation;
-using FluentValidation;
+﻿using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Validation.Shops.Update;
@@ -13,15 +12,15 @@ public sealed class UpdateShopValidator : AbstractValidator<UpdateShopValidation
         _context = context;
 
         RuleFor(x => x)
-            .NotNull()
-            .WithMessage("The passed shop is null")
             .MustAsync(ShopToUpdateExists)
-            .WithState(_ => new ValidationFailureState { IsNotFound = true })
+            .WithName("shop")
+            .WithErrorCode("404")
             .WithMessage("There is no entity with this ID in the database")
             .DependentRules(() =>
             {
                 RuleFor(x => x)
                     .MustAsync(IsAddressTaken)
+                    .WithName("address")
                     .WithMessage("The shop with the same Street and Building values is already present in the database");
             });
     }

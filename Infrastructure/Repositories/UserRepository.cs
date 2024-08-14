@@ -3,6 +3,7 @@ using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Errors.Base;
+using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.ResultType;
 using Microsoft.AspNetCore.Identity;
@@ -27,19 +28,20 @@ public class UserRepository : IUserRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            var error = new ValidationError(validationResult.ToDictionary());
             return Result<ApplicationUser>.Failure(error);
         }
         else if (string.IsNullOrEmpty(password))
         {
-            var error = new ValidationError("The passed password is null or empty");
+            var error = new ValidationError(nameof(password), "The passed password is null or empty");
             return Result<ApplicationUser>.Failure(error);
         }
 
         var result = await _userManager.CreateAsync(entity, password);
         if (!result.Succeeded)
         {
-            var error = new ValidationError(result.Errors.Select(e => e.Description).ToList());
+            Dictionary<string, string[]> errors = new() { [nameof(result)] = result.Errors.Select(e => e.Description).ToArray() };
+            var error = new ValidationError(errors);
             return Result<ApplicationUser>.Failure(error);
         }
 
@@ -51,8 +53,7 @@ public class UserRepository : IUserRepository
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<ApplicationUser>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 
@@ -60,7 +61,18 @@ public class UserRepository : IUserRepository
     {
         if (entity is null || string.IsNullOrEmpty(role))
         {
-            var error = new ValidationError("The passed data is null");
+            Dictionary<string, string[]> errors = [];
+            if (entity is null)
+            {
+                errors.Add(nameof(entity), ["The passed entity is null"]);
+            }
+
+            if (string.IsNullOrEmpty(role))
+            {
+                errors.Add(nameof(role), ["The passed role is null or empty"]);
+            }
+
+            var error = new ValidationError(errors);
             return Result<bool>.Failure(error);
         }
 
@@ -75,8 +87,7 @@ public class UserRepository : IUserRepository
 
     public async Task<bool> CheckUserPasswordAsync(ApplicationUser entity, string password)
     {
-        var validationResult = _validator.ValidateCheckPassword(entity, password);
-        if (!validationResult.IsValid)
+        if (entity is null || string.IsNullOrEmpty(password))
         {
             return false;
         }
@@ -113,9 +124,26 @@ public class UserRepository : IUserRepository
         return await _userManager.GetUsersInRoleAsync(UserRoles.Customer);
     }
 
+    public async Task<IEnumerable<ApplicationUser>> GetAllCustomersByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        var customers = await _userManager.GetUsersInRoleAsync(UserRoles.Customer);
+        return customers.Skip(itemsToSkip).Take(pageSize);
+    }
+
     public async Task<IEnumerable<ApplicationUser>> GetAllUsersAsync()
     {
         return await _userManager.Users.AsNoTracking().ToListAsync();
+    }
+
+    public async Task<IEnumerable<ApplicationUser>> GetAllUsersByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _userManager.Users
+            .AsNoTracking()
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
     }
 
     public async Task<ApplicationUser?> GetCustomerByIdAsync(string id)
@@ -145,7 +173,7 @@ public class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            var error = new EntityNotFoundError("There is no user with this id.");
+            var error = new EntityNotFoundError(nameof(user), "There is no user with this id.");
             return Result<IEnumerable<string>>.Failure(error);
         }
 
@@ -157,7 +185,7 @@ public class UserRepository : IUserRepository
     {
         if (string.IsNullOrEmpty(email))
         {
-            var error = new ValidationError("The passed email is null or empty");
+            var error = new ValidationError(nameof(email), "The passed email is null or empty");
             return Result<bool>.Failure(error);
         }
 
@@ -169,7 +197,18 @@ public class UserRepository : IUserRepository
     {
         if (entity is null || string.IsNullOrEmpty(role))
         {
-            var error = new ValidationError("The passed data is null");
+            Dictionary<string, string[]> errors = [];
+            if (entity is null)
+            {
+                errors.Add(nameof(entity), ["The passed entity is null"]);
+            }
+
+            if (string.IsNullOrEmpty(role))
+            {
+                errors.Add(nameof(role), ["The passed role is null or empty"]);
+            }
+
+            var error = new ValidationError(errors);
             return Result<bool>.Failure(error);
         }
 
@@ -181,7 +220,7 @@ public class UserRepository : IUserRepository
     {
         if (string.IsNullOrEmpty(phoneNumber))
         {
-            var error = new ValidationError("The passed phone number is null or empty");
+            var error = new ValidationError(nameof(phoneNumber), "The passed phone number is null or empty");
             return Result<bool>.Failure(error);
         }
 
@@ -193,7 +232,7 @@ public class UserRepository : IUserRepository
     {
         if (string.IsNullOrEmpty(userName))
         {
-            var error = new ValidationError("The passed user name is null or empty");
+            var error = new ValidationError(nameof(userName), "The passed user name is null or empty");
             return Result<bool>.Failure(error);
         }
 
@@ -206,15 +245,16 @@ public class UserRepository : IUserRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
-                : new ValidationError(validationResult.Errors);
+            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
+                : new ValidationError(validationResult.ToDictionary());
             return Result<ApplicationUser>.Failure(error);
         }
 
         var result = await _userManager.UpdateAsync(entity);
         if (!result.Succeeded)
         {
-            var error = new ValidationError(result.Errors.Select(e => e.Description).ToList());
+            Dictionary<string, string[]> errors = new() { [nameof(result)] = result.Errors.Select(e => e.Description).ToArray() };
+            var error = new ValidationError(errors);
             return Result<ApplicationUser>.Failure(error);
         }
 
@@ -225,8 +265,7 @@ public class UserRepository : IUserRepository
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<ApplicationUser>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 
@@ -235,29 +274,31 @@ public class UserRepository : IUserRepository
         var validationResult = await _validator.ValidateUpdateCustomerPasswordAsAdminAsync(userId, newPassword);
         if (!validationResult.IsValid)
         {
-            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
-                : new ValidationError(validationResult.Errors);
+            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
+                : new ValidationError(validationResult.ToDictionary());
             return Result<bool>.Failure(error);
         }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            var error = new EntityNotFoundError("The user was not found");
+            var error = new EntityNotFoundError(nameof(user), "The user was not found");
             return Result<bool>.Failure(error);
         }
 
         var oldPasswordResult = await _userManager.RemovePasswordAsync(user);
         if (!oldPasswordResult.Succeeded)
         {
-            var error = new DbError(oldPasswordResult.Errors.Select(e => e.Description).ToList());
+            Dictionary<string, string[]> errors = new() { [nameof(oldPasswordResult)] = oldPasswordResult.Errors.Select(e => e.Description).ToArray() };
+            var error = new ValidationError(errors);
             return Result<bool>.Failure(error);
         }
 
         var newPasswordResult = await _userManager.AddPasswordAsync(user, newPassword);
         if (!newPasswordResult.Succeeded)
         {
-            var error = new DbError(newPasswordResult.Errors.Select(e => e.Description).ToList());
+            Dictionary<string, string[]> errors = new() { [nameof(oldPasswordResult)] = newPasswordResult.Errors.Select(e => e.Description).ToArray() };
+            var error = new ValidationError(errors);
             return Result<bool>.Failure(error);
         }
 
@@ -269,29 +310,31 @@ public class UserRepository : IUserRepository
         var validationResult = await _validator.ValidateUpdateCustomerPasswordAsync(userId, oldPassword, newPassword);
         if (!validationResult.IsValid)
         {
-            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
-                : new ValidationError(validationResult.Errors);
+            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
+                : new ValidationError(validationResult.ToDictionary());
             return Result<bool>.Failure(error);
         }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            var error = new EntityNotFoundError("The user was not found");
+            var error = new EntityNotFoundError(nameof(user), "The user was not found");
             return Result<bool>.Failure(error);
         }
 
         var oldPasswordResult = await _userManager.RemovePasswordAsync(user);
         if (!oldPasswordResult.Succeeded)
         {
-            var error = new DbError(oldPasswordResult.Errors.Select(e => e.Description).ToList());
+            Dictionary<string, string[]> errors = new() { [nameof(oldPasswordResult)] = oldPasswordResult.Errors.Select(e => e.Description).ToArray() };
+            var error = new ValidationError(errors);
             return Result<bool>.Failure(error);
         }
 
         var newPasswordResult = await _userManager.AddPasswordAsync(user, newPassword);
         if (!newPasswordResult.Succeeded)
         {
-            var error = new DbError(newPasswordResult.Errors.Select(e => e.Description).ToList());
+            Dictionary<string, string[]> errors = new() { [nameof(oldPasswordResult)] = newPasswordResult.Errors.Select(e => e.Description).ToArray() };
+            var error = new ValidationError(errors);
             return Result<bool>.Failure(error);
         }
 

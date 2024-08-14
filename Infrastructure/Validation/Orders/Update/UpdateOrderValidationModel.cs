@@ -1,4 +1,4 @@
-﻿using Domain.Models;
+﻿using Domain.Entities;
 
 namespace Infrastructure.Validation.Orders.Update;
 
@@ -14,5 +14,5 @@ public sealed record UpdateOrderValidationModel(
     string Status,
     string? UserId,
     long? ShopId,
-    List<OrderLineModel> OrderLines
+    List<OrderLine> OrderLines
 );

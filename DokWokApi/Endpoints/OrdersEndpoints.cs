@@ -5,9 +5,10 @@ using Application.Operations.Order.Commands.AddTakeawayOrder;
 using Application.Operations.Order.Commands.DeleteOrder;
 using Application.Operations.Order.Commands.UpdateOrder;
 using Application.Operations.Order.Queries.GetAllOrders;
+using Application.Operations.Order.Queries.GetAllOrdersByPage;
 using Application.Operations.Order.Queries.GetAllOrdersByUserId;
+using Application.Operations.Order.Queries.GetAllOrdersByUserIdAndPage;
 using Application.Operations.Order.Queries.GetOrderById;
-using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
 using Domain.Models;
@@ -16,11 +17,11 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DokWokApi.Endpoints;
 
-public class OrdersEndpointsModule : ICarterModule
+public static class OrdersEndpoints
 {
     private const string GetByIdRouteName = nameof(GetOrderById);
 
-    public void AddRoutes(IEndpointRouteBuilder app)
+    public static void AddOrdersEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup(ApiRoutes.Orders.Group).WithTags("Orders");
 
@@ -53,11 +54,22 @@ public class OrdersEndpointsModule : ICarterModule
             .Produces(StatusCodes.Status404NotFound);
     }
 
-    public static async Task<Ok<IEnumerable<OrderResponse>>> GetAllOrders(ISender sender, string? userId)
+    public static async Task<Ok<IEnumerable<OrderResponse>>> GetAllOrders(ISender sender,
+        string? userId, int? pageNumber, int? pageSize)
     {
-        var orders = userId is null ?
+        IEnumerable<OrderResponse> orders;
+        if (pageNumber.HasValue && pageSize.HasValue)
+        {
+            orders = userId is null ?
+                await sender.Send(new GetAllOrdersByPageQuery(pageNumber.Value, pageSize.Value)) :
+                await sender.Send(new GetAllOrdersByUserIdAndPageQuery(userId, pageNumber.Value, pageSize.Value));
+        }
+        else
+        {
+            orders = userId is null ?
                 await sender.Send(new GetAllOrdersQuery()) :
                 await sender.Send(new GetAllOrdersByUserIdQuery(userId));
+        }
 
         return TypedResults.Ok(orders);
     }

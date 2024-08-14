@@ -3,6 +3,7 @@ using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Errors.Base;
+using Domain.Exceptions;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,7 +25,7 @@ public class ShopRepository : IShopRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            var error = new ValidationError(validationResult.ToDictionary());
             return Result<Shop>.Failure(error);
         }
 
@@ -34,13 +35,11 @@ public class ShopRepository : IShopRepository
         if (result > 0)
         {
             var addedEntity = await GetByIdAsync(entity.Id);
-            return addedEntity is not null ? addedEntity
-                : Result<Shop>.Failure(new DbError("There was the database error"));
+            return addedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<Shop>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 
@@ -77,8 +76,8 @@ public class ShopRepository : IShopRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
-                : new ValidationError(validationResult.Errors);
+            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
+                : new ValidationError(validationResult.ToDictionary());
             return Result<Shop>.Failure(error);
         }
 
@@ -88,13 +87,11 @@ public class ShopRepository : IShopRepository
         if (result > 0)
         {
             var updatedEntity = await GetByIdAsync(entity.Id);
-            return updatedEntity is not null ? updatedEntity
-                : Result<Shop>.Failure(new DbError("There was the database error"));
+            return updatedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<Shop>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 
@@ -102,16 +99,26 @@ public class ShopRepository : IShopRepository
     {
         if (string.IsNullOrEmpty(street))
         {
-            var error = new ValidationError("The passed street is null or empty");
+            var error = new ValidationError(nameof(street), "The passed street is null or empty");
             return Result<bool>.Failure(error);
         }
         else if (string.IsNullOrEmpty(building))
         {
-            var error = new ValidationError("The passed building is null or empty");
+            var error = new ValidationError(nameof(building), "The passed building is null or empty");
             return Result<bool>.Failure(error);
         }
 
         var isTaken = await _context.Shops.AnyAsync(s => s.Street == street && s.Building == building);
         return isTaken;
+    }
+
+    public async Task<IEnumerable<Shop>> GetAllByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.Shops
+            .AsNoTracking()
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
     }
 }

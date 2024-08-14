@@ -6,9 +6,10 @@ using Application.Operations.Product.Commands.DeleteProduct;
 using Application.Operations.Product.Commands.UpdateProduct;
 using Application.Operations.Product.Queries.GetAllProducts;
 using Application.Operations.Product.Queries.GetAllProductsByCategoryId;
+using Application.Operations.Product.Queries.GetAllProductsByCategoryIdAndPage;
+using Application.Operations.Product.Queries.GetAllProductsByPage;
 using Application.Operations.Product.Queries.GetProductById;
 using Application.Operations.Product.Queries.IsProductNameTaken;
-using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
 using Domain.Models;
@@ -17,11 +18,11 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DokWokApi.Endpoints;
 
-public class ProductsEndpointsModule : ICarterModule
+public static class ProductsEndpoints
 {
     private const string GetByIdRouteName = nameof(GetProductById);
 
-    public void AddRoutes(IEndpointRouteBuilder app)
+    public static void AddProductsEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup(ApiRoutes.Products.Group).WithTags("Products");
 
@@ -53,11 +54,22 @@ public class ProductsEndpointsModule : ICarterModule
             .Produces(StatusCodes.Status400BadRequest);
     }
 
-    public static async Task<Ok<IEnumerable<ProductResponse>>> GetAllProducts(ISender sender, long? categoryId)
+    public static async Task<Ok<IEnumerable<ProductResponse>>> GetAllProducts(ISender sender,
+        long? categoryId, int? pageNumber, int? pageSize)
     {
-        var products = categoryId.HasValue ?
+        IEnumerable<ProductResponse> products;
+        if (pageNumber.HasValue && pageSize.HasValue)
+        {
+            products = categoryId.HasValue ?
+                await sender.Send(new GetAllProductsByCategoryIdAndPageQuery(categoryId.Value, pageNumber.Value, pageSize.Value)) :
+                await sender.Send(new GetAllProductsByPageQuery(pageNumber.Value, pageSize.Value));
+        }
+        else
+        {
+            products = categoryId.HasValue ?
                 await sender.Send(new GetAllProductsByCategoryIdQuery(categoryId.Value)) :
                 await sender.Send(new GetAllProductsQuery());
+        }
 
         return TypedResults.Ok(products);
     }

@@ -1,9 +1,10 @@
-using Carter;
+using Application.Behaviors;
 using DokWokApi.Extensions;
 using DokWokApi.Services;
 using Domain.Entities;
 using Domain.Helpers;
 using Infrastructure;
+using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -21,13 +22,14 @@ builder.Host.UseSerilog((context, config) =>
 
 builder.Services.AddMediatR(opts =>
 {
-    opts.RegisterServicesFromAssembly(Application.AssemblyReference.Assembly);
+    opts.RegisterServicesFromAssembly(Application.ApplicationAssemblyReference.Assembly);
+    opts.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 });
 
 builder.Services.AddDbContext<StoreDbContext>(opts =>
 {
-    var connectionString = builder.Configuration["ConnectionStrings:FoodStoreConnection"];
-    opts.UseSqlServer(connectionString);
+    var connectionString = builder.Configuration.GetConnectionString("FoodStoreConnection");
+    opts.UseNpgsql(connectionString);
 });
 
 builder.Services.AddIdentityConfiguration();
@@ -47,8 +49,6 @@ builder.Services.AddAuthorizationServicesAndPolicies();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-builder.Services.AddCarter();
-
 var app = builder.Build();
 
 app.UseExceptionHandler(x => { });
@@ -60,7 +60,7 @@ app.UseSerilogRequestLogging();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapCarter();
+app.AddAllEndpoints();
 
 if (app.Environment.IsDevelopment())
 {

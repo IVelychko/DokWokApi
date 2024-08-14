@@ -3,7 +3,9 @@ using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Errors.Base;
+using Domain.Exceptions;
 using Domain.ResultType;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -24,7 +26,7 @@ public class OrderLineRepository : IOrderLineRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            var error = new ValidationError(validationResult.ToDictionary());
             return Result<OrderLine>.Failure(error);
         }
 
@@ -34,13 +36,11 @@ public class OrderLineRepository : IOrderLineRepository
         if (result > 0)
         {
             var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return addedEntity is not null ? addedEntity
-                : Result<OrderLine>.Failure(new DbError("There was the database error"));
+            return addedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<OrderLine>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 
@@ -62,21 +62,77 @@ public class OrderLineRepository : IOrderLineRepository
         return await _context.OrderLines.AsNoTracking().ToListAsync();
     }
 
+    public async Task<IEnumerable<OrderLine>> GetAllByOrderIdAndPageAsync(long orderId, int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.OrderLines
+            .AsNoTracking()
+            .Where(ol => ol.OrderId == orderId)
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<OrderLine>> GetAllByOrderIdAsync(long orderId)
+    {
+        return await _context.OrderLines.AsNoTracking().Where(ol => ol.OrderId == orderId).ToListAsync();
+    }
+
+    public async Task<IEnumerable<OrderLine>> GetAllByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.OrderLines
+            .AsNoTracking()
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
     public async Task<IEnumerable<OrderLine>> GetAllWithDetailsAsync()
     {
         return await _context.OrderLines
+            .AsNoTracking()
             .Include(ol => ol.Order)
             .Include(ol => ol.Product)
-                .ThenInclude(p => p!.Category).AsNoTracking().ToListAsync();
+                .ThenInclude(p => p!.Category)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAndPageAsync(long orderId, int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.OrderLines
+            .AsNoTracking()
+            .Include(ol => ol.Order)
+            .Include(ol => ol.Product)
+                .ThenInclude(p => p!.Category)
+            .Where(ol => ol.OrderId == orderId)
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
     }
 
     public async Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId)
     {
         return await _context.OrderLines
+            .AsNoTracking()
             .Include(ol => ol.Order)
             .Include(ol => ol.Product)
-                .ThenInclude(p => p!.Category).AsNoTracking()
+                .ThenInclude(p => p!.Category)
             .Where(ol => ol.OrderId == orderId)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<OrderLine>> GetAllWithDetailsByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.OrderLines
+            .AsNoTracking()
+            .Include(ol => ol.Order)
+            .Include(ol => ol.Product)
+                .ThenInclude(p => p!.Category)
+            .Skip(itemsToSkip)
+            .Take(pageSize)
             .ToListAsync();
     }
 
@@ -88,26 +144,27 @@ public class OrderLineRepository : IOrderLineRepository
     public async Task<OrderLine?> GetByIdWithDetailsAsync(long id)
     {
         return await _context.OrderLines
+            .AsNoTracking()
             .Include(ol => ol.Order)
             .Include(ol => ol.Product)
                 .ThenInclude(p => p!.Category)
-            .AsNoTracking()
             .FirstOrDefaultAsync(ol => ol.Id == id);
     }
 
     public async Task<OrderLine?> GetByOrderAndProductIdsAsync(long orderId, long productId)
     {
-        return await _context.OrderLines.AsNoTracking()
+        return await _context.OrderLines
+            .AsNoTracking()
             .FirstOrDefaultAsync(ol => ol.OrderId == orderId && ol.ProductId == productId);
     }
 
     public async Task<OrderLine?> GetByOrderAndProductIdsWithDetailsAsync(long orderId, long productId)
     {
         return await _context.OrderLines
+            .AsNoTracking()
             .Include(ol => ol.Order)
             .Include(ol => ol.Product)
                 .ThenInclude(p => p!.Category)
-            .AsNoTracking()
             .FirstOrDefaultAsync(ol => ol.OrderId == orderId && ol.ProductId == productId);
     }
 
@@ -116,8 +173,8 @@ public class OrderLineRepository : IOrderLineRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
-                : new ValidationError(validationResult.Errors);
+            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
+                : new ValidationError(validationResult.ToDictionary());
             return Result<OrderLine>.Failure(error);
         }
 
@@ -127,13 +184,11 @@ public class OrderLineRepository : IOrderLineRepository
         if (result > 0)
         {
             var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return updatedEntity is not null ? updatedEntity
-                : Result<OrderLine>.Failure(new DbError("There was the database error"));
+            return updatedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<OrderLine>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 }

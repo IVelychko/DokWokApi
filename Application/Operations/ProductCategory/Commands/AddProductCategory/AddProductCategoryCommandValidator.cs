@@ -7,6 +7,6 @@ public sealed class AddProductCategoryCommandValidator : AbstractValidator<AddPr
 {
     public AddProductCategoryCommandValidator()
     {
-        RuleFor(x => x.Name).NotEmpty().Matches(RegularExpressions.RegularString);
+        RuleFor(x => x.Name).NotEmpty().Matches(RegularExpressions.RegularString).MinimumLength(3);
     }
 }

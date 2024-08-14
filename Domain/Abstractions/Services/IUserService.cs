@@ -7,7 +7,11 @@ public interface IUserService
 {
     Task<IEnumerable<UserModel>> GetAllUsersAsync();
 
+    Task<IEnumerable<UserModel>> GetAllUsersByPageAsync(int pageNumber, int pageSize);
+
     Task<IEnumerable<UserModel>> GetAllCustomersAsync();
+
+    Task<IEnumerable<UserModel>> GetAllCustomersByPageAsync(int pageNumber, int pageSize);
 
     Task<UserModel?> GetUserByUserNameAsync(string userName);
 

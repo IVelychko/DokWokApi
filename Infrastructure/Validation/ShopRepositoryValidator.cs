@@ -1,64 +1,43 @@
 ﻿using Domain.Abstractions.Validation;
 using Domain.Entities;
-using Domain.Validation;
-using Microsoft.EntityFrameworkCore;
+using FluentValidation;
+using FluentValidation.Results;
+using Infrastructure.Mapping.Extensions;
+using Infrastructure.Validation.Shops.Add;
+using Infrastructure.Validation.Shops.Update;
 
 namespace Infrastructure.Validation;
 
 public class ShopRepositoryValidator : IShopRepositoryValidator
 {
-    private readonly StoreDbContext _context;
+    private readonly IValidator<AddShopValidationModel> _addValidator;
+    private readonly IValidator<UpdateShopValidationModel> _updateValidator;
 
-    public ShopRepositoryValidator(StoreDbContext context)
+    public ShopRepositoryValidator(IValidator<AddShopValidationModel> addValidator, IValidator<UpdateShopValidationModel> updateValidator)
     {
-        _context = context;
+        _addValidator = addValidator;
+        _updateValidator = updateValidator;
     }
 
-    public async Task<ValidationResult> ValidateAddAsync(Shop? model)
+    public async Task<ValidationResult> ValidateAddAsync(Shop model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed product category is null");
-            return result;
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        if (await _context.Shops.AnyAsync(s => s.Street == model.Street && s.Building == model.Building))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The shop with the same Street and Building values is already present in the database");
-        }
-
-        return result;
+        return await _addValidator.ValidateAsync(model.ToAddValidationModel());
     }
 
-    public async Task<ValidationResult> ValidateUpdateAsync(Shop? model)
+    public async Task<ValidationResult> ValidateUpdateAsync(Shop model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed product category is null");
-            return result;
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        var entityToUpdate = await _context.Shops.AsNoTracking().FirstOrDefaultAsync(s => s.Id == model.Id);
-        if (entityToUpdate is null)
-        {
-            result.IsValid = false;
-            result.IsNotFound = true;
-            result.Errors.Add("There is no entity with this ID in the database");
-            return result;
-        }
-
-        if ((model.Street != entityToUpdate.Street || model.Building != entityToUpdate.Building) &&
-            await _context.Shops.AnyAsync(s => s.Street == model.Street && s.Building == model.Building))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The shop with the same Street and Building values is already present in the database");
-        }
-
-        return result;
+        return await _updateValidator.ValidateAsync(model.ToUpdateValidationModel());
     }
 }

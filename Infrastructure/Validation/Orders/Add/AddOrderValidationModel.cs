@@ -1,4 +1,4 @@
-﻿using Domain.Models;
+﻿using Domain.Entities;
 
 namespace Infrastructure.Validation.Orders.Add;
 
@@ -13,5 +13,5 @@ public sealed record AddOrderValidationModel(
     string Status,
     string? UserId,
     long? ShopId,
-    List<OrderLineModel> OrderLines
+    List<OrderLine> OrderLines
 );

@@ -1,5 +1,4 @@
-﻿using Domain.Validation;
-using FluentValidation;
+﻿using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Validation.Products.Update;
@@ -13,10 +12,9 @@ public sealed class UpdateProductValidator : AbstractValidator<UpdateProductVali
         _context = context;
 
         RuleFor(x => x)
-            .NotNull()
-            .WithMessage("The passed product is null")
             .MustAsync(ProductExists)
-            .WithState(_ => new ValidationFailureState { IsNotFound = true })
+            .WithName("product")
+            .WithErrorCode("404")
             .WithMessage("There is no entity with this ID in the database")
             .DependentRules(() =>
             {
@@ -26,6 +24,7 @@ public sealed class UpdateProductValidator : AbstractValidator<UpdateProductVali
 
                 RuleFor(x => x)
                     .MustAsync(IsNameTaken)
+                    .WithName("name")
                     .WithMessage("The product with the same Name value is already present in the database");
             });
     }

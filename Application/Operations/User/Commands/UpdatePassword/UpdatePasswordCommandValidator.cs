@@ -9,8 +9,8 @@ public sealed class UpdatePasswordCommandValidator : AbstractValidator<UpdatePas
     {
         RuleFor(x => x.UserId).NotEmpty().Matches(RegularExpressions.Guid);
 
-        RuleFor(x => x.OldPassword).NotEmpty().Matches(RegularExpressions.Password);
+        RuleFor(x => x.OldPassword).NotEmpty().Matches(RegularExpressions.Password).MinimumLength(6);
 
-        RuleFor(x => x.NewPassword).NotEmpty().Matches(RegularExpressions.Password);
+        RuleFor(x => x.NewPassword).NotEmpty().Matches(RegularExpressions.Password).MinimumLength(6);
     }
 }

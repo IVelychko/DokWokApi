@@ -6,7 +6,7 @@ public class AddDeliveryOrderLineRequestValidator : AbstractValidator<AddDeliver
 {
     public AddDeliveryOrderLineRequestValidator()
     {
-        RuleFor(x => x.ProductId).NotNull();
+        RuleFor(x => x.ProductId).NotEmpty();
 
         RuleFor(x => x.Quantity).GreaterThan(0);
     }

@@ -12,9 +12,8 @@ public sealed class AddShopValidator : AbstractValidator<AddShopValidationModel>
         _context = context;
 
         RuleFor(x => x)
-            .NotNull()
-            .WithMessage("The passed shop is null")
             .MustAsync(IsAddressTaken)
+            .WithName("shop")
             .WithMessage("The shop with the same Street and Building values is already present in the database");
     }
 

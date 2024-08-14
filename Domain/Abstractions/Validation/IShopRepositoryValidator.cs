@@ -2,4 +2,4 @@
 
 namespace Domain.Abstractions.Validation;
 
-public interface IShopRepositoryValidator : IValidator<Shop>;
+public interface IShopRepositoryValidator : IBaseValidator<Shop>;

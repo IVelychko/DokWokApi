@@ -20,7 +20,7 @@ public class ProductService : IProductService
     {
         if (model is null)
         {
-            var error = new ValidationError("The passed model is null.");
+            var error = new ValidationError("productModel", "The passed model is null.");
             return Result<ProductModel>.Failure(error);
         }
 
@@ -48,6 +48,20 @@ public class ProductService : IProductService
         return models;
     }
 
+    public async Task<IEnumerable<ProductModel>> GetAllByPageAsync(int pageNumber, int pageSize)
+    {
+        var entities = await _productRepository.GetAllWithDetailsByPageAsync(pageNumber, pageSize);
+        var models = entities.Select(p => p.ToModel());
+        return models;
+    }
+
+    public async Task<IEnumerable<ProductModel>> GetAllByCategoryIdAndPageAsync(long categoryId, int pageNumber, int pageSize)
+    {
+        var entities = await _productRepository.GetAllWithDetailsByCategoryIdAndPageAsync(categoryId, pageNumber, pageSize);
+        var models = entities.Select(p => p.ToModel());
+        return models;
+    }
+
     public async Task<ProductModel?> GetByIdAsync(long id)
     {
         var entity = await _productRepository.GetByIdWithDetailsAsync(id);
@@ -58,7 +72,7 @@ public class ProductService : IProductService
     {
         if (model is null)
         {
-            var error = new ValidationError("The passed model is null.");
+            var error = new ValidationError("productModel", "The passed model is null.");
             return Result<ProductModel>.Failure(error);
         }
 
@@ -71,7 +85,7 @@ public class ProductService : IProductService
     {
         if (name is null)
         {
-            var error = new ValidationError("The passed name is null");
+            var error = new ValidationError(nameof(name), "The passed name is null");
             return Result<bool>.Failure(error);
         }
 

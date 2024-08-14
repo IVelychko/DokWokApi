@@ -23,7 +23,7 @@ public class OrderService : IOrderService
     {
         if (model is null)
         {
-            var error = new ValidationError("The passed model is null");
+            var error = new ValidationError("orderModel", "The passed model is null");
             return Result<OrderModel>.Failure(error);
         }
 
@@ -57,6 +57,20 @@ public class OrderService : IOrderService
         return models;
     }
 
+    public async Task<IEnumerable<OrderModel>> GetAllByPageAsync(int pageNumber, int pageSize)
+    {
+        var entities = await _orderRepository.GetAllWithDetailsByPageAsync(pageNumber, pageSize);
+        var models = entities.Select(o => o.ToModel());
+        return models;
+    }
+
+    public async Task<IEnumerable<OrderModel>> GetAllByUserIdAndPageAsync(string userId, int pageNumber, int pageSize)
+    {
+        var entities = await _orderRepository.GetAllWithDetailsByUserIdAndPageAsync(userId, pageNumber, pageSize);
+        var models = entities.Select(o => o.ToModel());
+        return models;
+    }
+
     public async Task<IEnumerable<OrderModel>> GetAllByUserIdAsync(string userId)
     {
         var entities = await _orderRepository.GetAllWithDetailsByUserIdAsync(userId);
@@ -74,7 +88,7 @@ public class OrderService : IOrderService
     {
         if (model is null)
         {
-            var error = new ValidationError("The passed model is null");
+            var error = new ValidationError("orderModel", "The passed model is null");
             return Result<OrderModel>.Failure(error);
         }
 
@@ -85,13 +99,13 @@ public class OrderService : IOrderService
 
     private async Task<Result<List<OrderLineModel>>> SetTotalLinePricesAsync(List<OrderLineModel> orderLines)
     {
-        List<string> errors = [];
+        Dictionary<string, string[]> errors = [];
         foreach (var line in orderLines)
         {
             var product = await _productRepository.GetByIdAsync(line.ProductId);
             if (product is null)
             {
-                errors.Add($"Incorrect order line data. There is no product with the id: {line.ProductId}");
+                errors.Add(nameof(product), [$"Incorrect order line data. There is no product with the id: {line.ProductId}"]);
             }
             else if (errors.Count < 1 && line.TotalLinePrice == 0)
             {

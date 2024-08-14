@@ -1,78 +1,44 @@
 ﻿using Domain.Abstractions.Validation;
 using Domain.Entities;
-using Domain.Validation;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using FluentValidation;
+using FluentValidation.Results;
+using Infrastructure.Mapping.Extensions;
+using Infrastructure.Validation.Orders.Add;
+using Infrastructure.Validation.Orders.Update;
 
 namespace Infrastructure.Validation;
 
 public class OrderRepositoryValidator : IOrderRepositoryValidator
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly StoreDbContext _context;
+    private readonly IValidator<AddOrderValidationModel> _addValidator;
+    private readonly IValidator<UpdateOrderValidationModel> _updateValidator;
 
-    public OrderRepositoryValidator(UserManager<ApplicationUser> userManager, StoreDbContext context)
+    public OrderRepositoryValidator(IValidator<AddOrderValidationModel> addValidator,
+        IValidator<UpdateOrderValidationModel> updateValidator)
     {
-        _userManager = userManager;
-        _context = context;
+        _addValidator = addValidator;
+        _updateValidator = updateValidator;
     }
 
-    public async Task<ValidationResult> ValidateAddAsync(Order? model)
+    public async Task<ValidationResult> ValidateAddAsync(Order model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed order is null");
-            return result;
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        if (model.UserId is not null && !await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId))
-        {
-            result.IsValid = false;
-            result.Errors.Add("There is no user with the ID specified in the UserId property of the Order entity");
-        }
-
-        if (model.ShopId is not null && !await _context.Shops.AsNoTracking().AnyAsync(s => s.Id == model.ShopId))
-        {
-            result.IsValid = false;
-            result.Errors.Add("There is no shop with the ID specified in the ShopId property of the Order entity");
-        }
-
-        return result;
+        return await _addValidator.ValidateAsync(model.ToAddValidationModel());
     }
 
-    public async Task<ValidationResult> ValidateUpdateAsync(Order? model)
+    public async Task<ValidationResult> ValidateUpdateAsync(Order model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed order is null");
-            return result;
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        var entityToUpdate = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == model.Id);
-        if (entityToUpdate is null)
-        {
-            result.IsValid = false;
-            result.IsNotFound = true;
-            result.Errors.Add("There is no order with this ID in the database");
-            return result;
-        }
-
-        if (model.UserId is not null && !await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId))
-        {
-            result.IsValid = false;
-            result.Errors.Add("There is no user with the ID specified in the UserId property of the Order entity");
-        }
-
-        if (model.ShopId is not null && !await _context.Shops.AsNoTracking().AnyAsync(s => s.Id == model.ShopId))
-        {
-            result.IsValid = false;
-            result.Errors.Add("There is no shop with the ID specified in the ShopId property of the Order entity");
-        }
-
-        return result;
+        return await _updateValidator.ValidateAsync(model.ToUpdateValidationModel());
     }
 }

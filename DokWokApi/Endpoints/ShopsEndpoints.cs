@@ -5,10 +5,10 @@ using Application.Operations.Shop.Commands.AddShop;
 using Application.Operations.Shop.Commands.DeleteShop;
 using Application.Operations.Shop.Commands.UpdateShop;
 using Application.Operations.Shop.Queries.GetAllShops;
+using Application.Operations.Shop.Queries.GetAllShopsByPage;
 using Application.Operations.Shop.Queries.GetShopByAddress;
 using Application.Operations.Shop.Queries.GetShopById;
 using Application.Operations.Shop.Queries.IsShopAddressTaken;
-using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
 using Domain.Models;
@@ -17,11 +17,11 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DokWokApi.Endpoints;
 
-public class ShopsEndpointsModule : ICarterModule
+public static class ShopsEndpoints
 {
     private const string GetByIdRouteName = nameof(GetShopById);
 
-    public void AddRoutes(IEndpointRouteBuilder app)
+    public static void AddShopsEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup(ApiRoutes.Shops.Group).WithTags("Shops");
 
@@ -55,9 +55,13 @@ public class ShopsEndpointsModule : ICarterModule
             .Produces(StatusCodes.Status400BadRequest);
     }
 
-    public static async Task<Ok<IEnumerable<ShopResponse>>> GetAllShops(ISender sender)
+    public static async Task<Ok<IEnumerable<ShopResponse>>> GetAllShops(ISender sender,
+        int? pageNumber, int? pageSize)
     {
-        var shops = await sender.Send(new GetAllShopsQuery());
+        var shops = pageNumber.HasValue && pageSize.HasValue ?
+            await sender.Send(new GetAllShopsByPageQuery(pageNumber.Value, pageSize.Value)) :
+            await sender.Send(new GetAllShopsQuery());
+
         return TypedResults.Ok(shops);
     }
 

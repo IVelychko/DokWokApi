@@ -1,6 +1,5 @@
 ﻿using Domain.Entities;
 using Domain.Helpers;
-using Domain.Validation;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -16,24 +15,33 @@ public sealed class UpdateUserPasswordValidator : AbstractValidator<UpdateUserPa
         _userManager = userManager;
 
         RuleFor(x => x)
-            .NotNull()
-            .WithMessage("The passed update password model is null")
             .MustAsync(UserToUpdateExists)
-            .WithState(_ => new ValidationFailureState { IsNotFound = true })
+            .WithName("user")
+            .WithErrorCode("404")
             .WithMessage("There is no user with this ID in the database")
-            .MustAsync(IsNotAdmin)
-            .WithMessage("Forbidden action")
             .DependentRules(() =>
             {
                 RuleFor(x => x)
-                    .NotEmpty()
-                    .WithMessage("The passed old password is null or empty")
-                    .MustAsync(IsOldPasswordValid)
-                    .WithMessage("The old password is not valid");
+                    .MustAsync(IsNotAdmin)
+                    .WithName("user")
+                    .WithMessage("Forbidden action")
+                    .DependentRules(() =>
+                    {
+                        RuleFor(x => x.OldPassword)
+                            .NotEmpty()
+                            .WithMessage("The passed old password is null or empty")
+                            .DependentRules(() =>
+                            {
+                                RuleFor(x => x)
+                                .MustAsync(IsOldPasswordValid)
+                                .WithName("oldPassword")
+                                .WithMessage("The old password is not valid");
+                            });
 
-                RuleFor(x => x.NewPassword)
-                    .NotEmpty()
-                    .WithMessage("The passed new password is null or empty");
+                        RuleFor(x => x.NewPassword)
+                            .NotEmpty()
+                            .WithMessage("The passed new password is null or empty");
+                    });
             });
     }
 

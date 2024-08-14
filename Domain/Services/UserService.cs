@@ -37,15 +37,15 @@ public class UserService : IUserService
     {
         if (model is null || string.IsNullOrEmpty(password))
         {
-            List<string> errors = [];
+            Dictionary<string, string[]> errors = [];
             if (model is null)
             {
-                errors.Add("The passed user is null");
+                errors.Add(nameof(model), ["The passed user is null"]);
             }
 
             if (string.IsNullOrEmpty(password))
             {
-                errors.Add("The passed password is null or empty");
+                errors.Add(nameof(password), ["The passed password is null or empty"]);
             }
 
             var error = new ValidationError(errors);
@@ -77,6 +77,20 @@ public class UserService : IUserService
         return models;
     }
 
+    public async Task<IEnumerable<UserModel>> GetAllUsersByPageAsync(int pageNumber, int pageSize)
+    {
+        var entities = await _userRepository.GetAllUsersByPageAsync(pageNumber, pageSize);
+        var models = entities.Select(u => u.ToModel());
+        return models;
+    }
+
+    public async Task<IEnumerable<UserModel>> GetAllCustomersByPageAsync(int pageNumber, int pageSize)
+    {
+        var entities = await _userRepository.GetAllCustomersByPageAsync(pageNumber, pageSize);
+        var models = entities.Select(u => u.ToModel());
+        return models;
+    }
+
     public async Task<UserModel?> GetUserByUserNameAsync(string userName)
     {
         var entity = await _userRepository.GetUserByUserNameAsync(userName);
@@ -99,7 +113,7 @@ public class UserService : IUserService
     {
         if (model is null)
         {
-            var error = new ValidationError("The passed model is null");
+            var error = new ValidationError(nameof(model), "The passed model is null");
             return Result<UserModel>.Failure(error);
         }
 
@@ -112,20 +126,20 @@ public class UserService : IUserService
     {
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword))
         {
-            List<string> errors = [];
+            Dictionary<string, string[]> errors = [];
             if (string.IsNullOrEmpty(userId))
             {
-                errors.Add("The passed user id is null or empty");
+                errors.Add(nameof(userId), ["The passed user id is null or empty"]);
             }
 
             if (string.IsNullOrEmpty(oldPassword))
             {
-                errors.Add("The passed old password is null or empty");
+                errors.Add(nameof(oldPassword), ["The passed old password is null or empty"]);
             }
 
             if (string.IsNullOrEmpty(newPassword))
             {
-                errors.Add("The passed new password is null or empty");
+                errors.Add(nameof(newPassword), ["The passed new password is null or empty"]);
             }
 
             var error = new ValidationError(errors);
@@ -140,15 +154,15 @@ public class UserService : IUserService
     {
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(newPassword))
         {
-            List<string> errors = [];
+            Dictionary<string, string[]> errors = [];
             if (string.IsNullOrEmpty(userId))
             {
-                errors.Add("The passed user id is null or empty");
+                errors.Add(nameof(userId), ["The passed user id is null or empty"]);
             }
 
             if (string.IsNullOrEmpty(newPassword))
             {
-                errors.Add("The passed new password is null or empty");
+                errors.Add(nameof(newPassword), ["The passed new password is null or empty"]);
             }
             var error = new ValidationError(errors);
             return Result<bool>.Failure(error);
@@ -162,7 +176,7 @@ public class UserService : IUserService
     {
         if (string.IsNullOrEmpty(userId))
         {
-            var error = new ValidationError("The passed user id is null or empty");
+            var error = new ValidationError(nameof(userId), "The passed user id is null or empty");
             return Result<IEnumerable<string>>.Failure(error);
         }
 
@@ -175,15 +189,16 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateCustomerLoginAsync(userName, password);
         if (!validationResult.IsValid)
         {
-            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
-                : new ValidationError(validationResult.Errors);
+            var errors = validationResult.Errors;
+            Error error = errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary()) :
+                new ValidationError(validationResult.ToDictionary());
             return Result<AuthorizedUserModel>.Failure(error);
         }
 
         var user = await _userRepository.GetUserByUserNameAsync(userName);
         if (user is null)
         {
-            var error = new EntityNotFoundError("The user was not found");
+            var error = new EntityNotFoundError(nameof(user), "The user was not found");
             return Result<AuthorizedUserModel>.Failure(error);
         }
 
@@ -197,15 +212,16 @@ public class UserService : IUserService
         var validationResult = await _validator.ValidateAdminLoginAsync(userName, password);
         if (!validationResult.IsValid)
         {
-            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
-                : new ValidationError(validationResult.Errors);
+            var errors = validationResult.Errors;
+            Error error = errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary()) :
+                new ValidationError(validationResult.ToDictionary());
             return Result<AuthorizedUserModel>.Failure(error);
         }
 
         var user = await _userRepository.GetUserByUserNameAsync(userName);
         if (user is null)
         {
-            var error = new EntityNotFoundError("The user was not found");
+            var error = new EntityNotFoundError(nameof(user), "The user was not found");
             return Result<AuthorizedUserModel>.Failure(error);
         }
 
@@ -218,15 +234,15 @@ public class UserService : IUserService
     {
         if (model is null || string.IsNullOrEmpty(password))
         {
-            List<string> errors = [];
+            Dictionary<string, string[]> errors = [];
             if (model is null)
             {
-                errors.Add("The passed model is null");
+                errors.Add(nameof(model), ["The passed model is null"]);
             }
 
             if (string.IsNullOrEmpty(password))
             {
-                errors.Add("The passed password is null or empty");
+                errors.Add(nameof(password), ["The passed password is null or empty"]);
             }
 
             var error = new ValidationError(errors);
@@ -246,10 +262,20 @@ public class UserService : IUserService
 
     public async Task<Result<AuthorizedUserModel>> RefreshTokenAsync(string securityToken, string refreshToken)
     {
-        var validationResult = _validator.ValidateRefreshTokenModel(securityToken, refreshToken);
-        if (!validationResult.IsValid)
+        if (securityToken is null || refreshToken is null)
         {
-            var error = new ValidationError(validationResult.Errors);
+            Dictionary<string, string[]> errors = [];
+            if (securityToken is null)
+            {
+                errors.Add(nameof(securityToken), ["The passed security token is null"]);
+            }
+
+            if (refreshToken is null)
+            {
+                errors.Add(nameof(refreshToken), ["The passed refresh token is null"]);
+            }
+
+            var error = new ValidationError(errors);
             return Result<AuthorizedUserModel>.Failure(error);
         }
 
@@ -260,16 +286,16 @@ public class UserService : IUserService
             var jwtValidationResult = _validator.ValidateExpiredJwt(jwtSecurityToken, isAlgorithmValid);
             if (!jwtValidationResult.IsValid)
             {
-                var error = new ValidationError(jwtValidationResult.Errors);
+                var error = new ValidationError(jwtValidationResult.ToDictionary());
                 return Result<AuthorizedUserModel>.Failure(error);
             }
 
             var storedRefreshToken = await _refreshTokenRepository.GetByTokenWithDetailsAsync(refreshToken);
             var jti = jwtSecurityToken.Claims.First(c => c.Type == JwtRegisteredClaimNames.Jti).Value;
-            var refreshTokenValidationResult = _validator.ValidateRefreshToken(storedRefreshToken, jti);
+            var refreshTokenValidationResult = _validator.ValidateRefreshToken(storedRefreshToken!, jti);
             if (!refreshTokenValidationResult.IsValid)
             {
-                var error = new ValidationError(refreshTokenValidationResult.Errors);
+                var error = new ValidationError(refreshTokenValidationResult.ToDictionary());
                 return Result<AuthorizedUserModel>.Failure(error);
             }
 
@@ -284,7 +310,7 @@ public class UserService : IUserService
             var user = await _userRepository.GetUserByIdAsync(userId);
             if (user is null)
             {
-                var error = new ValidationError("The user does not exist");
+                var error = new ValidationError(nameof(user), "The user does not exist");
                 return Result<AuthorizedUserModel>.Failure(error);
             }
 
@@ -294,7 +320,7 @@ public class UserService : IUserService
         }
         catch
         {
-            var error = new ValidationError("The token is not valid");
+            var error = new ValidationError(nameof(securityToken), "The token is not valid");
             return Result<AuthorizedUserModel>.Failure(error);
         }
     }
@@ -393,7 +419,7 @@ public class UserService : IUserService
     {
         if (string.IsNullOrEmpty(userName))
         {
-            var error = new ValidationError("The passed user name is null or empty");
+            var error = new ValidationError(nameof(userName), "The passed user name is null or empty");
             return Result<bool>.Failure(error);
         }
 
@@ -405,7 +431,7 @@ public class UserService : IUserService
     {
         if (string.IsNullOrEmpty(email))
         {
-            var error = new ValidationError("The passed email is null or empty");
+            var error = new ValidationError(nameof(email), "The passed email is null or empty");
             return Result<bool>.Failure(error);
         }
 
@@ -417,7 +443,7 @@ public class UserService : IUserService
     {
         if (string.IsNullOrEmpty(phoneNumber))
         {
-            var error = new ValidationError("The passed phone number is null or empty");
+            var error = new ValidationError(nameof(phoneNumber), "The passed phone number is null or empty");
             return Result<bool>.Failure(error);
         }
 

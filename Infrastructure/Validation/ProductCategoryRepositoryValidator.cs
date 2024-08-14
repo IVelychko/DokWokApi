@@ -1,63 +1,44 @@
 ﻿using Domain.Abstractions.Validation;
 using Domain.Entities;
-using Domain.Validation;
-using Microsoft.EntityFrameworkCore;
+using FluentValidation;
+using FluentValidation.Results;
+using Infrastructure.Mapping.Extensions;
+using Infrastructure.Validation.ProductCategories.Add;
+using Infrastructure.Validation.ProductCategories.Update;
 
 namespace Infrastructure.Validation;
 
 public class ProductCategoryRepositoryValidator : IProductCategoryRepositoryValidator
 {
-    private readonly StoreDbContext _context;
+    private readonly IValidator<AddProductCategoryValidationModel> _addValidator;
+    private readonly IValidator<UpdateProductCategoryValidationModel> _updateValidator;
 
-    public ProductCategoryRepositoryValidator(StoreDbContext context)
+    public ProductCategoryRepositoryValidator(IValidator<AddProductCategoryValidationModel> addValidator,
+        IValidator<UpdateProductCategoryValidationModel> updateValidator)
     {
-        _context = context;
+        _addValidator = addValidator;
+        _updateValidator = updateValidator;
     }
 
-    public async Task<ValidationResult> ValidateAddAsync(ProductCategory? model)
+    public async Task<ValidationResult> ValidateAddAsync(ProductCategory model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed product category is null");
-            return result;
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        if (await _context.ProductCategories.AnyAsync(c => c.Name == model.Name))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The product category with the same Name value is already present in the database");
-        }
-
-        return result;
+        return await _addValidator.ValidateAsync(model.ToAddValidationModel());
     }
 
-    public async Task<ValidationResult> ValidateUpdateAsync(ProductCategory? model)
+    public async Task<ValidationResult> ValidateUpdateAsync(ProductCategory model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed product category is null");
-            return result;
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        var entityToUpdate = await _context.ProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == model.Id);
-        if (entityToUpdate is null)
-        {
-            result.IsValid = false;
-            result.IsNotFound = true;
-            result.Errors.Add("There is no entity with this ID in the database");
-            return result;
-        }
-
-        if (model.Name != entityToUpdate.Name && await _context.ProductCategories.AnyAsync(c => c.Name == model.Name))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The product category with the same Name value is already present in the database");
-        }
-
-        return result;
+        return await _updateValidator.ValidateAsync(model.ToUpdateValidationModel());
     }
 }

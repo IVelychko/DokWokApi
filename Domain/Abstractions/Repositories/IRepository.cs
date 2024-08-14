@@ -7,6 +7,8 @@ public interface IRepository<TEntity> where TEntity : BaseEntity
 {
     Task<IEnumerable<TEntity>> GetAllAsync();
 
+    Task<IEnumerable<TEntity>> GetAllByPageAsync(int pageNumber, int pageSize);
+
     Task<TEntity?> GetByIdAsync(long id);
 
     Task<Result<TEntity>> AddAsync(TEntity entity);

@@ -11,7 +11,9 @@ using Application.Operations.User.Commands.UpdatePassword;
 using Application.Operations.User.Commands.UpdatePasswordAsAdmin;
 using Application.Operations.User.Commands.UpdateUser;
 using Application.Operations.User.Queries.GetAllCustomers;
+using Application.Operations.User.Queries.GetAllCustomersByPage;
 using Application.Operations.User.Queries.GetAllUsers;
+using Application.Operations.User.Queries.GetAllUsersByPage;
 using Application.Operations.User.Queries.GetCustomerById;
 using Application.Operations.User.Queries.GetUserById;
 using Application.Operations.User.Queries.GetUserByUserName;
@@ -19,7 +21,6 @@ using Application.Operations.User.Queries.GetUserRoles;
 using Application.Operations.User.Queries.IsUserEmailTaken;
 using Application.Operations.User.Queries.IsUserNameTaken;
 using Application.Operations.User.Queries.IsUserPhoneNumberTaken;
-using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
 using Domain.Errors.Base;
@@ -31,11 +32,11 @@ using System.Security.Claims;
 
 namespace DokWokApi.Endpoints;
 
-public class UsersEndpointsModule : ICarterModule
+public static class UsersEndpoints
 {
     private const string GetByIdRouteName = nameof(GetCustomerById);
 
-    public void AddRoutes(IEndpointRouteBuilder app)
+    public static void AddUsersEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup(ApiRoutes.Users.Group).WithTags("Users");
 
@@ -79,7 +80,8 @@ public class UsersEndpointsModule : ICarterModule
             .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
 
         group.MapPut(ApiRoutes.Users.UpdateCustomerPasswordAsAdmin, UpdateCustomerPasswordAsAdmin)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            //.RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
             .Produces(StatusCodes.Status200OK)
             .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
             .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
@@ -135,15 +137,23 @@ public class UsersEndpointsModule : ICarterModule
             .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
     }
 
-    public static async Task<Ok<IEnumerable<UserResponse>>> GetAllUsers(ISender sender)
+    public static async Task<Ok<IEnumerable<UserResponse>>> GetAllUsers(ISender sender,
+        int? pageNumber, int? pageSize)
     {
-        var users = await sender.Send(new GetAllUsersQuery());
+        var users = pageNumber.HasValue && pageSize.HasValue ?
+            await sender.Send(new GetAllUsersByPageQuery(pageNumber.Value, pageSize.Value)) :
+            await sender.Send(new GetAllUsersQuery());
+
         return TypedResults.Ok(users);
     }
 
-    public static async Task<Ok<IEnumerable<UserResponse>>> GetAllCustomers(ISender sender)
+    public static async Task<Ok<IEnumerable<UserResponse>>> GetAllCustomers(ISender sender,
+        int? pageNumber, int? pageSize)
     {
-        var customers = await sender.Send(new GetAllCustomersQuery());
+        var customers = pageNumber.HasValue && pageSize.HasValue ?
+            await sender.Send(new GetAllCustomersByPageQuery(pageNumber.Value, pageSize.Value)) :
+            await sender.Send(new GetAllCustomersQuery());
+
         return TypedResults.Ok(customers);
     }
 
@@ -253,9 +263,10 @@ public class UsersEndpointsModule : ICarterModule
         var refreshToken = httpContext.Request.Cookies["RefreshToken"];
         if (refreshToken is null)
         {
+            Dictionary<string, string[]> errors = new() { [nameof(refreshToken)] = ["There was no refresh token provided"] };
             return Results.BadRequest(new ProblemDetailsModel
             {
-                Errors = ["There was no refresh token provided"],
+                Errors = errors,
                 StatusCode = StatusCodes.Status400BadRequest,
                 Title = "Bad Request"
             });

@@ -1,4 +1,6 @@
-﻿using DokWokApi.Helpers;
+﻿using Application;
+using DokWokApi.Helpers;
+using Domain;
 using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Abstractions.Validation;
@@ -42,9 +44,9 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddValidators(this IServiceCollection services)
     {
-        services.AddValidatorsFromAssemblies([Domain.AssemblyReference.Assembly,
-            Application.AssemblyReference.Assembly,
-            Infrastructure.AssemblyReference.Assembly]);
+        services.AddValidatorsFromAssembly(DomainAssemblyReference.Assembly);
+        services.AddValidatorsFromAssembly(ApplicationAssemblyReference.Assembly);
+        services.AddValidatorsFromAssembly(InfrastructureAssemblyReference.Assembly);
 
         services.AddScoped<IProductCategoryRepositoryValidator, ProductCategoryRepositoryValidator>();
         services.AddScoped<IProductRepositoryValidator, ProductRepositoryValidator>();

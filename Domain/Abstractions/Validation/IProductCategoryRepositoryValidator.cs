@@ -2,4 +2,4 @@
 
 namespace Domain.Abstractions.Validation;
 
-public interface IProductCategoryRepositoryValidator : IValidator<ProductCategory>;
+public interface IProductCategoryRepositoryValidator : IBaseValidator<ProductCategory>;

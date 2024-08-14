@@ -1,13 +1,11 @@
 ﻿using Domain.Entities;
-using Domain.Validation;
+using FluentValidation.Results;
 
 namespace Domain.Abstractions.Validation;
 
-public interface IUserRepositoryValidator : IValidator<ApplicationUser>
+public interface IUserRepositoryValidator : IBaseValidator<ApplicationUser>
 {
-    Task<ValidationResult> ValidateUpdateCustomerPasswordAsync(string? userId, string? oldPassword, string? newPassword);
+    Task<ValidationResult> ValidateUpdateCustomerPasswordAsync(string userId, string oldPassword, string newPassword);
 
-    Task<ValidationResult> ValidateUpdateCustomerPasswordAsAdminAsync(string? userId, string? newPassword);
-
-    ValidationResult ValidateCheckPassword(ApplicationUser model, string password);
+    Task<ValidationResult> ValidateUpdateCustomerPasswordAsAdminAsync(string userId, string newPassword);
 }

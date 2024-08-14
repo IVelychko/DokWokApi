@@ -7,8 +7,8 @@ public sealed class LoginAdminCommandValidator : AbstractValidator<LoginAdminCom
 {
     public LoginAdminCommandValidator()
     {
-        RuleFor(x => x.UserName).NotEmpty().Matches(RegularExpressions.UserName);
+        RuleFor(x => x.UserName).NotEmpty().Matches(RegularExpressions.UserName).MinimumLength(5);
 
-        RuleFor(x => x.Password).NotEmpty().Matches(RegularExpressions.Password);
+        RuleFor(x => x.Password).NotEmpty().Matches(RegularExpressions.Password).MinimumLength(6);
     }
 }

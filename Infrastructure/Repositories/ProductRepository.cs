@@ -3,7 +3,9 @@ using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Errors.Base;
+using Domain.Exceptions;
 using Domain.ResultType;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -24,7 +26,7 @@ public class ProductRepository : IProductRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            var error = new ValidationError(validationResult.ToDictionary());
             return Result<Product>.Failure(error);
         }
 
@@ -34,13 +36,11 @@ public class ProductRepository : IProductRepository
         if (result > 0)
         {
             var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return addedEntity is not null ? addedEntity
-                : Result<Product>.Failure(new DbError("There was the database error"));
+            return addedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<Product>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 
@@ -62,30 +62,87 @@ public class ProductRepository : IProductRepository
         return await _context.Products.AsNoTracking().ToListAsync();
     }
 
-    public async Task<IEnumerable<Product>> GetAllWithDetailsAsync()
+    public async Task<IEnumerable<Product>> GetAllByCategoryIdAndPageAsync(long categoryId, int pageNumber, int pageSize)
     {
-        return await _context.Products.Include(p => p.Category).AsNoTracking().ToListAsync();
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.Products
+            .AsNoTracking()
+            .Where(p => p.CategoryId == categoryId)
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
     }
 
-    public async Task<IEnumerable<Product>> GetAllWithDetailsByCategoryIdAsync(long categoryId)
+    public async Task<IEnumerable<Product>> GetAllByCategoryIdAsync(long categoryId)
     {
         return await _context.Products
-            .Include(p => p.Category)
             .AsNoTracking()
             .Where(p => p.CategoryId == categoryId)
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<Product>> GetAllByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.Products
+            .AsNoTracking()
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Product>> GetAllWithDetailsAsync()
+    {
+        return await _context.Products
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Product>> GetAllWithDetailsByCategoryIdAndPageAsync(long categoryId, int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.Products
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .Where(p => p.CategoryId == categoryId)
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Product>> GetAllWithDetailsByCategoryIdAsync(long categoryId)
+    {
+        return await _context.Products
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .Where(p => p.CategoryId == categoryId)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Product>> GetAllWithDetailsByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.Products
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
     public async Task<Product?> GetByIdAsync(long id)
     {
-        return await _context.Products.AsNoTracking()
+        return await _context.Products
+            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
     public async Task<Product?> GetByIdWithDetailsAsync(long id)
     {
-        return await _context.Products.Include(p => p.Category)
+        return await _context.Products
             .AsNoTracking()
+            .Include(p => p.Category)
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
@@ -93,7 +150,7 @@ public class ProductRepository : IProductRepository
     {
         if (string.IsNullOrEmpty(name))
         {
-            var error = new ValidationError("The passed name is null or empty");
+            var error = new ValidationError(nameof(name), "The passed name is null or empty");
             return Result<bool>.Failure(error);
         }
 
@@ -106,8 +163,8 @@ public class ProductRepository : IProductRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
-                : new ValidationError(validationResult.Errors);
+            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
+                : new ValidationError(validationResult.ToDictionary());
             return Result<Product>.Failure(error);
         }
 
@@ -116,13 +173,11 @@ public class ProductRepository : IProductRepository
         if (result > 0)
         {
             var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return updatedEntity is not null ? updatedEntity
-                : Result<Product>.Failure(new DbError("There was the database error"));
+            return updatedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<Product>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 }

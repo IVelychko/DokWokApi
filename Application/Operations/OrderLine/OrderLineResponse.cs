@@ -4,8 +4,6 @@ namespace Application.Operations.OrderLine;
 
 public class OrderLineResponse : BaseResponse<long>
 {
-    //public required long Id { get; set; }
-
     public required long OrderId { get; set; }
 
     public required long ProductId { get; set; }

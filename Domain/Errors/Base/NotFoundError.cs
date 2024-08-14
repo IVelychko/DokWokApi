@@ -2,11 +2,11 @@
 
 public class NotFoundError : Error
 {
-    public NotFoundError(List<string> errors) : base(errors)
+    public NotFoundError(IDictionary<string, string[]> errors) : base(errors)
     {
     }
 
-    public NotFoundError(string error) : base(error)
+    public NotFoundError(string objectError, string error) : base(objectError, error)
     {
     }
 }

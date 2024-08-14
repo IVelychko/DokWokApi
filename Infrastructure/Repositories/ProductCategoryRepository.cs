@@ -3,6 +3,7 @@ using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Errors.Base;
+using Domain.Exceptions;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,7 +25,7 @@ public class ProductCategoryRepository : IProductCategoryRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            var error = new ValidationError(validationResult.ToDictionary());
             return Result<ProductCategory>.Failure(error);
         }
 
@@ -34,13 +35,11 @@ public class ProductCategoryRepository : IProductCategoryRepository
         if (result > 0)
         {
             var addedEntity = await GetByIdAsync(entity.Id);
-            return addedEntity is not null ? addedEntity
-                : Result<ProductCategory>.Failure(new DbError("There was the database error"));
+            return addedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<ProductCategory>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 
@@ -62,6 +61,16 @@ public class ProductCategoryRepository : IProductCategoryRepository
         return await _context.ProductCategories.AsNoTracking().ToListAsync();
     }
 
+    public async Task<IEnumerable<ProductCategory>> GetAllByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.ProductCategories
+            .AsNoTracking()
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
     public async Task<ProductCategory?> GetByIdAsync(long id)
     {
         return await _context.ProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
@@ -71,7 +80,7 @@ public class ProductCategoryRepository : IProductCategoryRepository
     {
         if (string.IsNullOrEmpty(name))
         {
-            var error = new ValidationError("The passed name is null or empty");
+            var error = new ValidationError(nameof(name), "The passed name is null or empty");
             return Result<bool>.Failure(error);
         }
 
@@ -84,8 +93,8 @@ public class ProductCategoryRepository : IProductCategoryRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
-                : new ValidationError(validationResult.Errors);
+            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
+                : new ValidationError(validationResult.ToDictionary());
             return Result<ProductCategory>.Failure(error);
         }
 
@@ -95,13 +104,11 @@ public class ProductCategoryRepository : IProductCategoryRepository
         if (result > 0)
         {
             var updatedEntity = await GetByIdAsync(entity.Id);
-            return updatedEntity is not null ? updatedEntity
-                : Result<ProductCategory>.Failure(new DbError("There was the database error"));
+            return updatedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<ProductCategory>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 }

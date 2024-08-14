@@ -5,9 +5,9 @@ using Application.Operations.ProductCategory.Commands.AddProductCategory;
 using Application.Operations.ProductCategory.Commands.DeleteProductCategory;
 using Application.Operations.ProductCategory.Commands.UpdateProductCategory;
 using Application.Operations.ProductCategory.Queries.GetAllProductCategories;
+using Application.Operations.ProductCategory.Queries.GetAllProductCategoriesByPage;
 using Application.Operations.ProductCategory.Queries.GetProductCategoryById;
 using Application.Operations.ProductCategory.Queries.IsProductCategoryNameTaken;
-using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
 using Domain.Models;
@@ -16,11 +16,11 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DokWokApi.Endpoints;
 
-public class ProductCategoriesEndpointsModule : ICarterModule
+public static class ProductCategoriesEndpoints
 {
     private const string GetByIdRouteName = nameof(GetCategoryById);
 
-    public void AddRoutes(IEndpointRouteBuilder app)
+    public static void AddCategoriesEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup(ApiRoutes.ProductCategories.Group).WithTags("ProductCategories");
 
@@ -52,9 +52,13 @@ public class ProductCategoriesEndpointsModule : ICarterModule
             .Produces(StatusCodes.Status400BadRequest);
     }
 
-    public static async Task<Ok<IEnumerable<ProductCategoryResponse>>> GetAllCategories(ISender sender)
+    public static async Task<Ok<IEnumerable<ProductCategoryResponse>>> GetAllCategories(ISender sender,
+        int? pageNumber, int? pageSize)
     {
-        var categories = await sender.Send(new GetAllProductCategoriesQuery());
+        var categories = pageNumber.HasValue && pageSize.HasValue ?
+            await sender.Send(new GetAllProductCategoriesByPageQuery(pageNumber.Value, pageSize.Value)) :
+            await sender.Send(new GetAllProductCategoriesQuery());
+
         return TypedResults.Ok(categories);
     }
 

@@ -20,7 +20,7 @@ public class ShopService : IShopService
     {
         if (model is null)
         {
-            var error = new ValidationError("The passed model is null.");
+            var error = new ValidationError("shopModel", "The passed model is null.");
             return Result<ShopModel>.Failure(error);
         }
 
@@ -41,6 +41,13 @@ public class ShopService : IShopService
         return models;
     }
 
+    public async Task<IEnumerable<ShopModel>> GetAllByPageAsync(int pageNumber, int pageSize)
+    {
+        var entities = await _shopRepository.GetAllByPageAsync(pageNumber, pageSize);
+        var models = entities.Select(s => s.ToModel());
+        return models;
+    }
+
     public async Task<ShopModel?> GetByIdAsync(long id)
     {
         var entity = await _shopRepository.GetByIdAsync(id);
@@ -57,15 +64,15 @@ public class ShopService : IShopService
     {
         if (street is null || building is null)
         {
-            List<string> errors = [];
+            Dictionary<string, string[]> errors = [];
             if (street is null)
             {
-                errors.Add("The passed street is null");
+                errors.Add(nameof(street), ["The passed street is null"]);
             }
 
             if (building is null)
             {
-                errors.Add("The passed building is null");
+                errors.Add(nameof(building), ["The passed building is null"]);
             }
 
             var error = new ValidationError(errors);
@@ -80,7 +87,7 @@ public class ShopService : IShopService
     {
         if (model is null)
         {
-            var error = new ValidationError("The passed model is null.");
+            var error = new ValidationError("shopModel", "The passed model is null.");
             return Result<ShopModel>.Failure(error);
         }
 

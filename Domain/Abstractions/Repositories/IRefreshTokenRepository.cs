@@ -6,6 +6,8 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken>
 {
     Task<IEnumerable<RefreshToken>> GetAllWithDetailsAsync();
 
+    Task<IEnumerable<RefreshToken>> GetAllWithDetailsByPageAsync(int pageNumber, int pageSize);
+
     Task<RefreshToken?> GetByTokenAsync(string token);
 
     Task<RefreshToken?> GetByJwtIdAsync(string jwtId);

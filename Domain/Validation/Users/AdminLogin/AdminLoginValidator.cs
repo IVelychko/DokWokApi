@@ -13,17 +13,31 @@ public sealed class AdminLoginValidator : AbstractValidator<AdminLoginValidation
         _userRepository = userRepository;
 
         RuleFor(x => x)
-            .NotNull()
-            .WithMessage("The passed admin login model is null")
             .MustAsync(IsUserNameAndPasswordNotNull)
+            .WithName("user")
             .WithMessage("User name or password is null")
-            .MustAsync(UserExists)
-            .WithState(_ => new ValidationFailureState { IsNotFound = true })
-            .WithMessage("The credentials are wrong.")
-            .MustAsync(IsAdmin)
-            .WithMessage("The authorization is denied")
-            .MustAsync(IsValidPassword)
-            .WithMessage("The credentials are wrong");
+            .DependentRules(() =>
+            {
+                RuleFor(x => x)
+                    .MustAsync(UserExists)
+                    .WithName("user")
+                    .WithErrorCode("404")
+                    .WithMessage("The credentials are wrong.")
+                    .DependentRules(() =>
+                    {
+                        RuleFor(x => x)
+                            .MustAsync(IsAdmin)
+                            .WithName("user")
+                            .WithMessage("The authorization is denied")
+                            .DependentRules(() =>
+                            {
+                                RuleFor(x => x)
+                                    .MustAsync(IsValidPassword)
+                                    .WithName("user")
+                                    .WithMessage("The credentials are wrong");
+                            });
+                    });
+            });
     }
 
     private Task<bool> IsUserNameAndPasswordNotNull(AdminLoginValidationModel adminLogin, CancellationToken cancellationToken)

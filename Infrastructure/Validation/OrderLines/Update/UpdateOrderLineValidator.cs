@@ -1,5 +1,4 @@
-﻿using Domain.Validation;
-using FluentValidation;
+﻿using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Validation.OrderLines.Update;
@@ -13,15 +12,12 @@ public sealed class UpdateOrderLineValidator : AbstractValidator<UpdateOrderLine
         _context = context;
 
         RuleFor(x => x)
-            .NotNull()
-            .WithMessage("The passed order line is null")
             .MustAsync(OrderLineToUpdateExists)
-            .WithState(_ => new ValidationFailureState { IsNotFound = true })
+            .WithName("orderLine")
+            .WithErrorCode("404")
             .WithMessage("The order line to update was not found")
             .DependentRules(() =>
             {
-                RuleFor(x => x.Quantity).GreaterThan(0).WithMessage("The quantity must be greater than zero");
-
                 RuleFor(x => x.OrderId)
                     .MustAsync(OrderExists)
                     .WithMessage("There is no order with the ID specified in the OrderId property of the OrderLine entity");
@@ -32,6 +28,7 @@ public sealed class UpdateOrderLineValidator : AbstractValidator<UpdateOrderLine
 
                 RuleFor(x => x)
                     .MustAsync(OrderLineNotExists)
+                    .WithName("orderLine")
                     .WithMessage("The order line with the same orderID and productID already exists");
 
             });

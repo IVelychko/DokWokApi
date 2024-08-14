@@ -2,4 +2,4 @@
 
 namespace Domain.Abstractions.Validation;
 
-public interface IRefreshTokenRepositoryValidator : IValidator<RefreshToken>;
+public interface IRefreshTokenRepositoryValidator : IBaseValidator<RefreshToken>;

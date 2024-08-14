@@ -1,188 +1,62 @@
 ﻿using Domain.Abstractions.Validation;
 using Domain.Entities;
-using Domain.Helpers;
-using Domain.Validation;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using FluentValidation;
+using FluentValidation.Results;
+using Infrastructure.Mapping.Extensions;
+using Infrastructure.Validation.Users.Add;
+using Infrastructure.Validation.Users.Update;
+using Infrastructure.Validation.Users.UpdatePassword;
+using Infrastructure.Validation.Users.UpdatePasswordAsAdmin;
 
 namespace Infrastructure.Validation;
 
 public class UserRepositoryValidator : IUserRepositoryValidator
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IValidator<AddUserValidationModel> _addValidator;
+    private readonly IValidator<UpdateUserValidationModel> _updateValidator;
+    private readonly IValidator<UpdateUserPasswordValidationModel> _updatePasswordValidator;
+    private readonly IValidator<UpdateUserPasswordAsAdminValidationModel> _updatePasswordAsAdminValidator;
 
-    public UserRepositoryValidator(UserManager<ApplicationUser> userManager)
+    public UserRepositoryValidator(IValidator<AddUserValidationModel> addValidator,
+        IValidator<UpdateUserValidationModel> updateValidator,
+        IValidator<UpdateUserPasswordValidationModel> updatePasswordValidator,
+        IValidator<UpdateUserPasswordAsAdminValidationModel> updatePasswordAsAdminValidator)
     {
-        _userManager = userManager;
+        _addValidator = addValidator;
+        _updateValidator = updateValidator;
+        _updatePasswordValidator = updatePasswordValidator;
+        _updatePasswordAsAdminValidator = updatePasswordAsAdminValidator;
     }
 
-    public async Task<ValidationResult> ValidateAddAsync(ApplicationUser? model)
+    public async Task<ValidationResult> ValidateAddAsync(ApplicationUser model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed user is null");
-            return result;
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        if (string.IsNullOrEmpty(model.PhoneNumber))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The phone number is null or empty");
-            return result;
-        }
-
-        bool isPhoneNumberTaken = await _userManager.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == model.PhoneNumber);
-        if (isPhoneNumberTaken)
-        {
-            result.IsValid = false;
-            result.Errors.Add("The phone number is already taken");
-        }
-
-        return result;
+        return await _addValidator.ValidateAsync(model.ToAddValidationModel());
     }
 
-    public ValidationResult ValidateCheckPassword(ApplicationUser model, string password)
+    public async Task<ValidationResult> ValidateUpdateAsync(ApplicationUser model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed model is null");
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        if (string.IsNullOrEmpty(password))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The passed password is null or empty");
-        }
-
-        return result;
+        return await _updateValidator.ValidateAsync(model.ToUpdateValidationModel());
     }
 
-    public async Task<ValidationResult> ValidateUpdateAsync(ApplicationUser? model)
+    public async Task<ValidationResult> ValidateUpdateCustomerPasswordAsAdminAsync(string userId, string newPassword)
     {
-        ValidationResult result = new(true);
-        if (model is null)
-        {
-            result.IsValid = false;
-            result.Errors.Add("The passed user is null");
-            return result;
-        }
-
-        var user = await _userManager.FindByIdAsync(model.Id);
-        if (user is null)
-        {
-            result.IsValid = false;
-            result.IsNotFound = true;
-            result.Errors.Add("There is no user with this ID in the database");
-            return result;
-        }
-
-        if (string.IsNullOrEmpty(model.PhoneNumber))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The phone number is null or empty");
-        }
-
-        if (!string.IsNullOrEmpty(model.PhoneNumber) && model.PhoneNumber != user.PhoneNumber)
-        {
-            bool isPhoneNumberTaken = await _userManager.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == model.PhoneNumber);
-            if (isPhoneNumberTaken)
-            {
-                result.IsValid = false;
-                result.Errors.Add("The phone number is already taken");
-            }
-        }
-
-        return result;
+        return await _updatePasswordAsAdminValidator.ValidateAsync(new(userId, newPassword));
     }
 
-    public async Task<ValidationResult> ValidateUpdateCustomerPasswordAsAdminAsync(string? userId, string? newPassword)
+    public async Task<ValidationResult> ValidateUpdateCustomerPasswordAsync(string userId, string oldPassword, string newPassword)
     {
-        ValidationResult result = new(true);
-        if (string.IsNullOrEmpty(userId))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The passed user id is null or empty");
-            return result;
-        }
-
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user is null)
-        {
-            result.IsValid = false;
-            result.IsNotFound = true;
-            result.Errors.Add("There is no user with this ID in the database");
-            return result;
-        }
-
-        if (string.IsNullOrEmpty(newPassword))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The passed new password is null or empty");
-        }
-
-        bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-        if (!isAdmin)
-        {
-            result.IsValid = false;
-            result.Errors.Add("Forbidden action");
-        }
-
-        return result;
-    }
-
-    public async Task<ValidationResult> ValidateUpdateCustomerPasswordAsync(string? userId, string? oldPassword, string? newPassword)
-    {
-        ValidationResult result = new(true);
-        if (string.IsNullOrEmpty(userId))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The passed user id is null or empty");
-            return result;
-        }
-
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user is null)
-        {
-            result.IsValid = false;
-            result.IsNotFound = true;
-            result.Errors.Add("There is no user with this ID in the database");
-            return result;
-        }
-
-        if (string.IsNullOrEmpty(oldPassword))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The passed old password is null or empty");
-        }
-
-        if (string.IsNullOrEmpty(newPassword))
-        {
-            result.IsValid = false;
-            result.Errors.Add("The passed new password is null or empty");
-        }
-
-        bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-        if (isAdmin)
-        {
-            result.IsValid = false;
-            result.Errors.Add("Forbidden action");
-            return result;
-        }
-
-        if (oldPassword is not null)
-        {
-            bool isOldPasswordValid = await _userManager.CheckPasswordAsync(user, oldPassword);
-            if (!isOldPasswordValid)
-            {
-                result.IsValid = false;
-                result.Errors.Add("The old password is not valid");
-            }
-        }
-
-        return result;
+        return await _updatePasswordValidator.ValidateAsync(new(userId, oldPassword, newPassword));
     }
 }

@@ -5,9 +5,10 @@ using Application.Operations.OrderLine.Commands.DeleteOrderLine;
 using Application.Operations.OrderLine.Commands.UpdateOrderLine;
 using Application.Operations.OrderLine.Queries.GetAllOrderLines;
 using Application.Operations.OrderLine.Queries.GetAllOrderLinesByOrderId;
+using Application.Operations.OrderLine.Queries.GetAllOrderLinesByOrderIdAndPage;
+using Application.Operations.OrderLine.Queries.GetAllOrderLinesByPage;
 using Application.Operations.OrderLine.Queries.GetOrderLineById;
 using Application.Operations.OrderLine.Queries.GetOrderLineByOrderAndProductIds;
-using Carter;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
 using Domain.Models;
@@ -16,11 +17,11 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DokWokApi.Endpoints;
 
-public class OrderLinesEndpointsModule : ICarterModule
+public static class OrderLinesEndpoints
 {
     private const string GetByIdRouteName = nameof(GetOrderLineById);
 
-    public void AddRoutes(IEndpointRouteBuilder app)
+    public static void AddOrderLinesEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup(ApiRoutes.OrderLines.Group).WithTags("OrderLines");
 
@@ -55,11 +56,22 @@ public class OrderLinesEndpointsModule : ICarterModule
             .Produces(StatusCodes.Status404NotFound);
     }
 
-    public static async Task<Ok<IEnumerable<OrderLineResponse>>> GetAllOrderLines(ISender sender, long? orderId)
+    public static async Task<Ok<IEnumerable<OrderLineResponse>>> GetAllOrderLines(ISender sender,
+        long? orderId, int? pageNumber, int? pageSize)
     {
-        var orderLines = orderId.HasValue ?
+        IEnumerable<OrderLineResponse> orderLines;
+        if (pageNumber.HasValue && pageSize.HasValue)
+        {
+            orderLines = orderId.HasValue ?
+                await sender.Send(new GetAllOrderLinesByOrderIdAndPageQuery(orderId.Value, pageNumber.Value, pageSize.Value)) :
+                await sender.Send(new GetAllOrderLinesByPageQuery(pageNumber.Value, pageSize.Value));
+        }
+        else
+        {
+            orderLines = orderId.HasValue ?
                 await sender.Send(new GetAllOrderLinesByOrderIdQuery(orderId.Value)) :
                 await sender.Send(new GetAllOrderLinesQuery());
+        }
 
         return TypedResults.Ok(orderLines);
     }

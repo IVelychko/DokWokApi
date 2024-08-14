@@ -1,6 +1,5 @@
 ﻿using Domain.Entities;
 using Domain.Helpers;
-using Domain.Validation;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -16,18 +15,22 @@ public sealed class UpdateUserPasswordAsAdminValidator : AbstractValidator<Updat
         _userManager = userManager;
 
         RuleFor(x => x)
-            .NotNull()
-            .WithMessage("The passed update password model is null")
             .MustAsync(UserToUpdateExists)
-            .WithState(_ => new ValidationFailureState { IsNotFound = true })
+            .WithName("user")
+            .WithErrorCode("404")
             .WithMessage("There is no user with this ID in the database")
-            .MustAsync(IsAdmin)
-            .WithMessage("Forbidden action")
             .DependentRules(() =>
             {
-                RuleFor(x => x.NewPassword)
-                    .NotEmpty()
-                    .WithMessage("The passed new password is null or empty");
+                RuleFor(x => x)
+                    .MustAsync(IsAdmin)
+                    .WithName("user")
+                    .WithMessage("Forbidden action")
+                    .DependentRules(() =>
+                    {
+                        RuleFor(x => x.NewPassword)
+                            .NotEmpty()
+                            .WithMessage("The passed new password is null or empty");
+                    });
             });
     }
 

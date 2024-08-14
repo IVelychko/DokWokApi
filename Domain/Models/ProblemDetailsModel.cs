@@ -6,5 +6,5 @@ public class ProblemDetailsModel
 
     public required string Title { get; set; }
 
-    public IEnumerable<string> Errors { get; set; } = [];
+    public IDictionary<string, string[]> Errors { get; set; } = new Dictionary<string, string[]>();
 }

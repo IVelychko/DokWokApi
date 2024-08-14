@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Domain.Validation.Users.ExpiredJwt;
 
@@ -6,17 +7,23 @@ public sealed class ExpiredJwtValidator : AbstractValidator<ExpiredJwtValidation
 {
     public ExpiredJwtValidator()
     {
-        RuleFor(x => x)
+        RuleFor(x => x.IsAlgorithmValid)
+            .Must(x => x)
+            .WithMessage("The token is not valid");
+
+        RuleFor(x => x.Jwt)
             .NotNull()
-            .WithMessage("The passed expired jwt object is null")
-            .Must(x => x.IsAlgorithmValid)
-            .WithMessage("The token is not valid")
-            .Must(IsTokenExpired)
-            .WithMessage("The token has not expired yet");
+            .WithMessage("The passed JWT is null")
+            .DependentRules(() =>
+            {
+                RuleFor(x => x.Jwt)
+                    .Must(IsTokenExpired)
+                    .WithMessage("The token has not expired yet");
+            });
     }
 
-    private bool IsTokenExpired(ExpiredJwtValidationModel expiredJwt)
+    private bool IsTokenExpired(JwtSecurityToken expiredJwt)
     {
-        return expiredJwt.Jwt.ValidTo < DateTime.UtcNow;
+        return expiredJwt.ValidTo < DateTime.UtcNow;
     }
 }

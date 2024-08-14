@@ -2,4 +2,4 @@
 
 namespace Domain.Abstractions.Validation;
 
-public interface IOrderRepositoryValidator : IValidator<Order>;
+public interface IOrderRepositoryValidator : IBaseValidator<Order>;

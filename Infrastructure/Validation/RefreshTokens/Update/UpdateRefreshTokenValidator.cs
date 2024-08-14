@@ -1,5 +1,4 @@
 ﻿using Domain.Entities;
-using Domain.Validation;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -17,10 +16,9 @@ public sealed class UpdateRefreshTokenValidator : AbstractValidator<UpdateRefres
         _userManager = userManager;
 
         RuleFor(x => x)
-            .NotNull()
-            .WithMessage("The passed refresh token is null")
             .MustAsync(RefreshTokenToUpdateExists)
-            .WithState(_ => new ValidationFailureState { IsNotFound = true })
+            .WithName("refreshToken")
+            .WithErrorCode("404")
             .WithMessage("There is no refresh token with this ID in the database")
             .DependentRules(() =>
             {

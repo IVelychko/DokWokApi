@@ -9,12 +9,12 @@ public sealed class UpdateUserCommandValidator : AbstractValidator<UpdateUserCom
     {
         RuleFor(x => x.Id).NotEmpty().Matches(RegularExpressions.Guid);
 
-        RuleFor(x => x.FirstName).NotEmpty().Matches(RegularExpressions.FirstName);
+        RuleFor(x => x.FirstName).NotEmpty().Matches(RegularExpressions.FirstName).MinimumLength(2);
 
-        RuleFor(x => x.UserName).NotEmpty().Matches(RegularExpressions.UserName);
+        RuleFor(x => x.UserName).NotEmpty().Matches(RegularExpressions.UserName).MinimumLength(5);
 
         RuleFor(x => x.Email).NotEmpty().EmailAddress();
 
-        RuleFor(x => x.PhoneNumber).NotEmpty().Matches(RegularExpressions.PhoneNumber);
+        RuleFor(x => x.PhoneNumber).NotEmpty().Matches(RegularExpressions.PhoneNumber).MinimumLength(9);
     }
 }

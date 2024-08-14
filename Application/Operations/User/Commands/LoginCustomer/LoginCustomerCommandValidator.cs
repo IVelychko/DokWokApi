@@ -7,8 +7,8 @@ public sealed class LoginCustomerCommandValidator : AbstractValidator<LoginCusto
 {
     public LoginCustomerCommandValidator()
     {
-        RuleFor(x => x.UserName).NotEmpty().Matches(RegularExpressions.UserName);
+        RuleFor(x => x.UserName).NotEmpty().Matches(RegularExpressions.UserName).MinimumLength(5);
 
-        RuleFor(x => x.Password).NotEmpty().Matches(RegularExpressions.Password);
+        RuleFor(x => x.Password).NotEmpty().Matches(RegularExpressions.Password).MinimumLength(6);
     }
 }

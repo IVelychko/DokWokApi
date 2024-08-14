@@ -3,7 +3,9 @@ using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Errors.Base;
+using Domain.Exceptions;
 using Domain.ResultType;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -24,7 +26,7 @@ public class OrderRepository : IOrderRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            var error = new ValidationError(validationResult.ToDictionary());
             return Result<Order>.Failure(error);
         }
 
@@ -34,13 +36,11 @@ public class OrderRepository : IOrderRepository
         if (result > 0)
         {
             var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return addedEntity is not null ? addedEntity
-                : Result<Order>.Failure(new DbError("There was the database error"));
+            return addedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<Order>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 
@@ -62,27 +62,87 @@ public class OrderRepository : IOrderRepository
         return await _context.Orders.AsNoTracking().ToListAsync();
     }
 
+    public async Task<IEnumerable<Order>> GetAllByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.Orders
+            .AsNoTracking()
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Order>> GetAllByUserIdAndPageAsync(string userId, int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.Orders
+            .AsNoTracking()
+            .Where(o => o.UserId == userId)
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Order>> GetAllByUserIdAsync(string userId)
+    {
+        return await _context.Orders
+            .AsNoTracking()
+            .Where(o => o.UserId == userId)
+            .ToListAsync();
+    }
+
     public async Task<IEnumerable<Order>> GetAllWithDetailsAsync()
     {
         return await _context.Orders
+            .AsNoTracking()
             .Include(o => o.User)
             .Include(o => o.Shop)
             .Include(o => o.OrderLines)
                 .ThenInclude(ol => ol.Product)
                     .ThenInclude(p => p!.Category)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Order>> GetAllWithDetailsByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.Orders
             .AsNoTracking()
+            .Include(o => o.User)
+            .Include(o => o.Shop)
+            .Include(o => o.OrderLines)
+                .ThenInclude(ol => ol.Product)
+                    .ThenInclude(p => p!.Category)
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Order>> GetAllWithDetailsByUserIdAndPageAsync(string userId, int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.Orders
+            .AsNoTracking()
+            .Include(o => o.User)
+            .Include(o => o.Shop)
+            .Include(o => o.OrderLines)
+                .ThenInclude(ol => ol.Product)
+                    .ThenInclude(p => p!.Category)
+            .Where(o => o.UserId == userId)
+            .Skip(itemsToSkip)
+            .Take(pageSize)
             .ToListAsync();
     }
 
     public async Task<IEnumerable<Order>> GetAllWithDetailsByUserIdAsync(string userId)
     {
         return await _context.Orders
+            .AsNoTracking()
             .Include(o => o.User)
             .Include(o => o.Shop)
             .Include(o => o.OrderLines)
                 .ThenInclude(ol => ol.Product)
                     .ThenInclude(p => p!.Category)
-            .AsNoTracking()
             .Where(o => o.UserId == userId)
             .ToListAsync();
     }
@@ -97,12 +157,12 @@ public class OrderRepository : IOrderRepository
     public async Task<Order?> GetByIdWithDetailsAsync(long id)
     {
         return await _context.Orders
+            .AsNoTracking()
             .Include(o => o.User)
             .Include(o => o.Shop)
             .Include(o => o.OrderLines)
                 .ThenInclude(ol => ol.Product)
                     .ThenInclude(p => p!.Category)
-            .AsNoTracking()
             .FirstOrDefaultAsync(o => o.Id == id);
     }
 
@@ -111,8 +171,8 @@ public class OrderRepository : IOrderRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
-                : new ValidationError(validationResult.Errors);
+            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
+                : new ValidationError(validationResult.ToDictionary());
             return Result<Order>.Failure(error);
         }
 
@@ -122,13 +182,11 @@ public class OrderRepository : IOrderRepository
         if (result > 0)
         {
             var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return updatedEntity is not null ? updatedEntity
-                : Result<Order>.Failure(new DbError("There was the database error"));
+            return updatedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<Order>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 }

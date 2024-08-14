@@ -1,5 +1,4 @@
 ﻿using Domain.Entities;
-using Domain.Validation;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +8,6 @@ namespace Infrastructure.Validation.Orders.Update;
 public sealed class UpdateOrderValidator : AbstractValidator<UpdateOrderValidationModel>
 {
     private readonly StoreDbContext _context;
-
     private readonly UserManager<ApplicationUser> _userManager;
 
     public UpdateOrderValidator(StoreDbContext context, UserManager<ApplicationUser> userManager)
@@ -17,9 +15,10 @@ public sealed class UpdateOrderValidator : AbstractValidator<UpdateOrderValidati
         _context = context;
         _userManager = userManager;
 
-        RuleFor(x => x).NotNull().WithMessage("The passed order is null")
+        RuleFor(x => x)
             .MustAsync(OrderToUpdateExists)
-            .WithState(_ => new ValidationFailureState { IsNotFound = true })
+            .WithName("order")
+            .WithErrorCode("404")
             .WithMessage("There is no order with this ID in the database")
             .DependentRules(() =>
             {

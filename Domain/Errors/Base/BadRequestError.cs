@@ -2,11 +2,11 @@
 
 public class BadRequestError : Error
 {
-    public BadRequestError(List<string> errors) : base(errors)
+    public BadRequestError(IDictionary<string, string[]> errors) : base(errors)
     {
     }
 
-    public BadRequestError(string error) : base(error)
+    public BadRequestError(string objectName, string error) : base(objectName, error)
     {
     }
 }

@@ -2,15 +2,15 @@
 
 public class Error
 {
-    public List<string> Errors { get; set; }
+    public IDictionary<string, string[]> Errors { get; set; }
 
-    public Error(List<string> errors)
+    public Error(IDictionary<string, string[]> errors)
     {
         Errors = errors;
     }
 
-    public Error(string error)
+    public Error(string objectName, string error)
     {
-        Errors = [error];
+        Errors = new Dictionary<string, string[]>() { [objectName] = [error] };
     }
 }

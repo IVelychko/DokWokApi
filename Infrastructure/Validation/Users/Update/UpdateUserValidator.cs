@@ -1,5 +1,4 @@
 ﻿using Domain.Entities;
-using Domain.Validation;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,16 +14,26 @@ public sealed class UpdateUserValidator : AbstractValidator<UpdateUserValidation
         _userManager = userManager;
 
         RuleFor(x => x)
-            .NotNull()
-            .WithMessage("The passed user is null")
             .MustAsync(UserToUpdateExists)
-            .WithState(_ => new ValidationFailureState { IsNotFound = true })
+            .WithName("user")
+            .WithErrorCode("404")
             .WithMessage("There is no user with this ID in the database")
             .DependentRules(() =>
             {
                 RuleFor(x => x)
                     .MustAsync(IsPhoneNumberNotTaken)
+                    .WithName("phoneNumber")
                     .WithMessage("The phone number is already taken");
+
+                RuleFor(x => x)
+                    .MustAsync(IsUserNameNotTaken)
+                    .WithName("userName")
+                    .WithMessage("The user name is already taken");
+
+                RuleFor(x => x)
+                    .MustAsync(IsEmailNotTaken)
+                    .WithName("email")
+                    .WithMessage("The email is already taken");
             });
     }
 
@@ -41,6 +50,46 @@ public sealed class UpdateUserValidator : AbstractValidator<UpdateUserValidation
             return false;
         }
 
-        return !await _userManager.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == user.PhoneNumber, cancellationToken);
+        if (user.PhoneNumber != existingEntity.PhoneNumber
+            && await _userManager.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == user.PhoneNumber, cancellationToken))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<bool> IsUserNameNotTaken(UpdateUserValidationModel user, CancellationToken cancellationToken)
+    {
+        var existingEntity = await _userManager.FindByIdAsync(user.Id);
+        if (existingEntity is null)
+        {
+            return false;
+        }
+
+        if (user.UserName != existingEntity.UserName
+            && await _userManager.Users.AsNoTracking().AnyAsync(u => u.UserName == user.UserName, cancellationToken))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<bool> IsEmailNotTaken(UpdateUserValidationModel user, CancellationToken cancellationToken)
+    {
+        var existingEntity = await _userManager.FindByIdAsync(user.Id);
+        if (existingEntity is null)
+        {
+            return false;
+        }
+
+        if (user.Email != existingEntity.Email
+            && await _userManager.Users.AsNoTracking().AnyAsync(u => u.Email == user.Email, cancellationToken))
+        {
+            return false;
+        }
+
+        return true;
     }
 }

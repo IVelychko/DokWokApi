@@ -1,68 +1,43 @@
 ﻿using Domain.Abstractions.Validation;
 using Domain.Entities;
-using Domain.Validation;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using FluentValidation;
+using FluentValidation.Results;
+using Infrastructure.Validation.RefreshTokens.Add;
+using Infrastructure.Validation.RefreshTokens.Update;
 
 namespace Infrastructure.Validation;
 
 public class RefreshTokenRepositoryValidator : IRefreshTokenRepositoryValidator
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly StoreDbContext _context;
+    private readonly IValidator<AddRefreshTokenValidationModel> _addValidator;
+    private readonly IValidator<UpdateRefreshTokenValidationModel> _updateValidator;
 
-    public RefreshTokenRepositoryValidator(UserManager<ApplicationUser> userManager, StoreDbContext context)
+    public RefreshTokenRepositoryValidator(IValidator<AddRefreshTokenValidationModel> addValidator,
+        IValidator<UpdateRefreshTokenValidationModel> updateValidator)
     {
-        _userManager = userManager;
-        _context = context;
+        _addValidator = addValidator;
+        _updateValidator = updateValidator;
     }
 
-    public async Task<ValidationResult> ValidateAddAsync(RefreshToken? model)
+    public async Task<ValidationResult> ValidateAddAsync(RefreshToken model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed product is null");
-            return result;
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        var userExists = await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId);
-        if (!userExists)
-        {
-            result.IsValid = false;
-            result.Errors.Add("There is no user with the ID specified in the UserId property of the RefreshToken entity");
-        }
-
-        return result;
+        return await _addValidator.ValidateAsync(new(model.UserId));
     }
 
-    public async Task<ValidationResult> ValidateUpdateAsync(RefreshToken? model)
+    public async Task<ValidationResult> ValidateUpdateAsync(RefreshToken model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed product is null");
-            return result;
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        var entityToUpdate = await _context.RefreshTokens.AsNoTracking().FirstOrDefaultAsync(rt => rt.Id == model.Id);
-        if (entityToUpdate is null)
-        {
-            result.IsValid = false;
-            result.IsNotFound = true;
-            result.Errors.Add("There is no refresh token with this ID in the database");
-            return result;
-        }
-
-        var userExists = await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == model.UserId);
-        if (!userExists)
-        {
-            result.IsValid = false;
-            result.Errors.Add("There is no user with the ID specified in the UserId property of the RefreshToken entity");
-        }
-
-        return result;
+        return await _updateValidator.ValidateAsync(new(model.Id, model.UserId));
     }
 }

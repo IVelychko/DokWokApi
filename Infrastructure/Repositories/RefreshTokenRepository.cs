@@ -3,6 +3,7 @@ using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Errors.Base;
+using Domain.Exceptions;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,7 +25,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         var validationResult = await _validator.ValidateAddAsync(entity);
         if (!validationResult.IsValid)
         {
-            var error = new ValidationError(validationResult.Errors);
+            var error = new ValidationError(validationResult.ToDictionary());
             return Result<RefreshToken>.Failure(error);
         }
 
@@ -34,13 +35,11 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         if (result > 0)
         {
             var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return addedEntity is not null ? addedEntity
-                : Result<RefreshToken>.Failure(new DbError("There was the database error"));
+            return addedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<RefreshToken>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 
@@ -62,56 +61,92 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         return await _context.RefreshTokens.AsNoTracking().ToListAsync();
     }
 
+    public async Task<IEnumerable<RefreshToken>> GetAllByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.RefreshTokens
+            .AsNoTracking()
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
     public async Task<IEnumerable<RefreshToken>> GetAllWithDetailsAsync()
     {
-        return await _context.RefreshTokens.Include(rt => rt.User).AsNoTracking().ToListAsync();
+        return await _context.RefreshTokens
+            .AsNoTracking()
+            .Include(rt => rt.User)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<RefreshToken>> GetAllWithDetailsByPageAsync(int pageNumber, int pageSize)
+    {
+        var itemsToSkip = (pageNumber - 1) * pageSize;
+        return await _context.RefreshTokens
+            .AsNoTracking()
+            .Include(rt => rt.User)
+            .Skip(itemsToSkip)
+            .Take(pageSize)
+            .ToListAsync();
     }
 
     public async Task<RefreshToken?> GetByIdAsync(long id)
     {
-        return await _context.RefreshTokens.AsNoTracking()
+        return await _context.RefreshTokens
+            .AsNoTracking()
             .FirstOrDefaultAsync(rt => rt.Id == id);
     }
 
     public async Task<RefreshToken?> GetByIdWithDetailsAsync(long id)
     {
-        return await _context.RefreshTokens.Include(rt => rt.User).AsNoTracking()
+        return await _context.RefreshTokens
+            .AsNoTracking()
+            .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.Id == id);
     }
 
     public async Task<RefreshToken?> GetByJwtIdAsync(string jwtId)
     {
-        return await _context.RefreshTokens.AsNoTracking()
+        return await _context.RefreshTokens
+            .AsNoTracking()
             .FirstOrDefaultAsync(rt => rt.JwtId == jwtId);
     }
 
     public async Task<RefreshToken?> GetByJwtIdWithDetailsAsync(string jwtId)
     {
-        return await _context.RefreshTokens.Include(rt => rt.User).AsNoTracking()
+        return await _context.RefreshTokens
+            .AsNoTracking()
+            .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.JwtId == jwtId);
     }
 
     public async Task<RefreshToken?> GetByTokenAsync(string token)
     {
-        return await _context.RefreshTokens.AsNoTracking()
+        return await _context.RefreshTokens
+            .AsNoTracking()
             .FirstOrDefaultAsync(rt => rt.Token == token);
     }
 
     public async Task<RefreshToken?> GetByTokenWithDetailsAsync(string token)
     {
-        return await _context.RefreshTokens.Include(rt => rt.User).AsNoTracking()
+        return await _context.RefreshTokens
+            .AsNoTracking()
+            .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.Token == token);
     }
 
     public async Task<RefreshToken?> GetByUserIdAsync(string userId)
     {
-        return await _context.RefreshTokens.AsNoTracking()
+        return await _context.RefreshTokens
+            .AsNoTracking()
             .FirstOrDefaultAsync(rt => rt.UserId == userId);
     }
 
     public async Task<RefreshToken?> GetByUserIdWithDetailsAsync(string userId)
     {
-        return await _context.RefreshTokens.Include(rt => rt.User).AsNoTracking()
+        return await _context.RefreshTokens
+            .AsNoTracking()
+            .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.UserId == userId);
     }
 
@@ -120,8 +155,8 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         var validationResult = await _validator.ValidateUpdateAsync(entity);
         if (!validationResult.IsValid)
         {
-            Error error = validationResult.IsNotFound ? new EntityNotFoundError(validationResult.Errors)
-                : new ValidationError(validationResult.Errors);
+            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
+                : new ValidationError(validationResult.ToDictionary());
             return Result<RefreshToken>.Failure(error);
         }
 
@@ -131,13 +166,11 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         if (result > 0)
         {
             var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return updatedEntity is not null ? updatedEntity
-                : Result<RefreshToken>.Failure(new DbError("There was the database error"));
+            return updatedEntity ?? throw new DbException("There was the database error");
         }
         else
         {
-            var error = new DbError("There was the database error");
-            return Result<RefreshToken>.Failure(error);
+            throw new DbException("There was the database error");
         }
     }
 }

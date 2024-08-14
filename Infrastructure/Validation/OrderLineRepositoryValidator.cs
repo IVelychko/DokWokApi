@@ -1,111 +1,44 @@
 ﻿using Domain.Abstractions.Validation;
 using Domain.Entities;
-using Domain.Validation;
-using Microsoft.EntityFrameworkCore;
+using FluentValidation;
+using FluentValidation.Results;
+using Infrastructure.Mapping.Extensions;
+using Infrastructure.Validation.OrderLines.Add;
+using Infrastructure.Validation.OrderLines.Update;
 
 namespace Infrastructure.Validation;
 
 public class OrderLineRepositoryValidator : IOrderLineRepositoryValidator
 {
-    private readonly StoreDbContext _context;
+    private readonly IValidator<AddOrderLineValidationModel> _addValidator;
+    private readonly IValidator<UpdateOrderLineValidationModel> _updateValidator;
 
-    public OrderLineRepositoryValidator(StoreDbContext context)
+    public OrderLineRepositoryValidator(IValidator<AddOrderLineValidationModel> addValidator,
+        IValidator<UpdateOrderLineValidationModel> updateValidator)
     {
-        _context = context;
+        _addValidator = addValidator;
+        _updateValidator = updateValidator;
     }
 
-    public async Task<ValidationResult> ValidateAddAsync(OrderLine? model)
+    public async Task<ValidationResult> ValidateAddAsync(OrderLine model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed order line is null");
-            return result;
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        if (model.Quantity < 1)
-        {
-            result.IsValid = false;
-            result.Errors.Add("The quantity must be greater than zero");
-        }
-
-        var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == model.OrderId);
-        if (order is null)
-        {
-            result.IsValid = false;
-            result.Errors.Add("There is no order with the ID specified in the OrderId property of the OrderLine entity");
-        }
-
-        var product = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == model.ProductId);
-        if (product is null)
-        {
-            result.IsValid = false;
-            result.Errors.Add("There is no product with the ID specified in the ProductId property of the OrderLine entity");
-        }
-
-        if (order is not null && product is not null)
-        {
-            var isExisting = await _context.OrderLines.AnyAsync(ol => ol.OrderId == model.OrderId && ol.ProductId == model.ProductId);
-            if (isExisting)
-            {
-                result.IsValid = false;
-                result.Errors.Add("The order line with the same orderID and productID already exists");
-            }
-        }
-
-        return result;
+        return await _addValidator.ValidateAsync(model.ToAddValidationModel());
     }
 
-    public async Task<ValidationResult> ValidateUpdateAsync(OrderLine? model)
+    public async Task<ValidationResult> ValidateUpdateAsync(OrderLine model)
     {
-        ValidationResult result = new(true);
         if (model is null)
         {
-            result.IsValid = false;
-            result.Errors.Add("The passed order line is null");
-            return result;
+            ValidationFailure[] failures = [new ValidationFailure(nameof(model), "The passed model is null")];
+            return new(failures);
         }
 
-        if (model.Quantity < 1)
-        {
-            result.IsValid = false;
-            result.Errors.Add("The quantity must be greater than zero");
-        }
-
-        var entityToUpdate = await _context.OrderLines.AsNoTracking().FirstOrDefaultAsync(ol => ol.Id == model.Id);
-        if (entityToUpdate is null)
-        {
-            result.IsValid = false;
-            result.IsNotFound = true;
-            result.Errors.Add("There is no order line with this ID in the database");
-            return result;
-        }
-
-        var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == model.OrderId);
-        if (order is null)
-        {
-            result.IsValid = false;
-            result.Errors.Add("There is no order with the ID specified in the OrderId property of the OrderLine entity");
-        }
-
-        var product = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == model.ProductId);
-        if (product is null)
-        {
-            result.IsValid = false;
-            result.Errors.Add("There is no product with the ID specified in the ProductId property of the OrderLine entity");
-        }
-
-        if (model.OrderId != entityToUpdate.OrderId || model.ProductId != entityToUpdate.ProductId)
-        {
-            var isExisting = await _context.OrderLines.AnyAsync(ol => ol.OrderId == model.OrderId && ol.ProductId == model.ProductId);
-            if (isExisting)
-            {
-                result.IsValid = false;
-                result.Errors.Add("The order line with the same orderID and productID already exists");
-            }
-        }
-
-        return result;
+        return await _updateValidator.ValidateAsync(model.ToUpdateValidationModel());
     }
 }

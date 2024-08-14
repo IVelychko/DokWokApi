@@ -6,6 +6,8 @@ public interface ICrud<TModel> where TModel : class
 {
     Task<IEnumerable<TModel>> GetAllAsync();
 
+    Task<IEnumerable<TModel>> GetAllByPageAsync(int pageNumber, int pageSize);
+
     Task<TModel?> GetByIdAsync(long id);
 
     Task<Result<TModel>> AddAsync(TModel model);

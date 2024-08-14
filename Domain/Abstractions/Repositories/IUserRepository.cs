@@ -7,7 +7,11 @@ public interface IUserRepository
 {
     Task<IEnumerable<ApplicationUser>> GetAllUsersAsync();
 
+    Task<IEnumerable<ApplicationUser>> GetAllUsersByPageAsync(int pageNumber, int pageSize);
+
     Task<IEnumerable<ApplicationUser>> GetAllCustomersAsync();
+
+    Task<IEnumerable<ApplicationUser>> GetAllCustomersByPageAsync(int pageNumber, int pageSize);
 
     Task<ApplicationUser?> GetUserByUserNameAsync(string userName);
 

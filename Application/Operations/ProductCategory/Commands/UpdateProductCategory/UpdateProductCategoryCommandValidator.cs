@@ -9,6 +9,6 @@ public sealed class UpdateProductCategoryCommandValidator : AbstractValidator<Up
     {
         RuleFor(x => x.Id).NotEmpty();
 
-        RuleFor(x => x.Name).NotEmpty().Matches(RegularExpressions.RegularString);
+        RuleFor(x => x.Name).NotEmpty().Matches(RegularExpressions.RegularString).MinimumLength(3);
     }
 }

@@ -40,7 +40,7 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
             .SelectMany(x => x.ToDictionary())
             .ToDictionary();
 
-        if (errorsDictionary.Any())
+        if (errorsDictionary.Count > 0)
         {
             throw new ValidationException(errorsDictionary);
         }
