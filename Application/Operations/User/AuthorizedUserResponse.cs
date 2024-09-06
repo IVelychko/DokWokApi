@@ -17,4 +17,6 @@ public sealed class AuthorizedUserResponse : BaseResponse<string>
 
     [JsonIgnore]
     public RefreshToken? RefreshToken { get; set; }
+
+    public required IEnumerable<string> Roles { get; set; }
 }

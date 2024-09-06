@@ -325,94 +325,22 @@ public class UserService : IUserService
         }
     }
 
-    public async Task<UserModel?> IsCustomerTokenValidAsync(string token)
+    public async Task<bool> LogOutAsync(string refreshToken)
     {
-        if (token is null)
+        if (string.IsNullOrEmpty(refreshToken))
         {
-            return null;
+            return false;
         }
 
-        try
+        var storedRefreshToken = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+        if (storedRefreshToken is null)
         {
-            var jwtSecurityToken = _securityTokenService.ValidateToken(token, _tokenValidationParametersAccessor.Regular);
-            var idClaim = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == "id");
-            var userId = idClaim?.Value;
-            if (userId is null)
-            {
-                return null;
-            }
-
-            var user = await _userRepository.GetUserByIdAsync(userId);
-            if (user is null)
-            {
-                return null;
-            }
-
-            var isCustomerResult = await _userRepository.IsInRoleAsync(user, UserRoles.Customer);
-            if (isCustomerResult.IsFaulted)
-            {
-                return null;
-            }
-
-            var isAdminResult = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
-            if (isAdminResult.IsFaulted)
-            {
-                return null;
-            }
-
-            if (!isCustomerResult.Value && !isAdminResult.Value)
-            {
-                return null;
-            }
-
-            return user.ToModel();
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    public async Task<UserModel?> IsAdminTokenValidAsync(string token)
-    {
-        if (token is null)
-        {
-            return null;
+            return false;
         }
 
-        try
-        {
-            var jwtSecurityToken = _securityTokenService.ValidateToken(token, _tokenValidationParametersAccessor.Regular);
-            var idClaim = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == "id");
-            var userId = idClaim?.Value;
-            if (userId is null)
-            {
-                return null;
-            }
-
-            var user = await _userRepository.GetUserByIdAsync(userId);
-            if (user is null)
-            {
-                return null;
-            }
-
-            var isAdminResult = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
-            if (isAdminResult.IsFaulted)
-            {
-                return null;
-            }
-
-            if (!isAdminResult.Value)
-            {
-                return null;
-            }
-
-            return user.ToModel();
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        storedRefreshToken.Used = true;
+        await _refreshTokenRepository.UpdateAsync(storedRefreshToken);
+        return true;
     }
 
     public async Task<Result<bool>> IsUserNameTakenAsync(string userName)
@@ -479,7 +407,7 @@ public class UserService : IUserService
             return Result<AuthorizedUserModel>.Failure(refreshTokenAddResult.Error);
         }
 
-        var authorizedUser = userModel.ToAuthorizedModel(serializedJwtToken, refreshToken);
+        var authorizedUser = userModel.ToAuthorizedModel(serializedJwtToken, refreshToken, roles);
         return authorizedUser;
     }
 

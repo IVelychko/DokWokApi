@@ -34,18 +34,21 @@ public static class ProductCategoriesEndpoints
         group.MapPost("/", AddCategory)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces<ProductCategoryResponse>(StatusCodes.Status201Created)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapPut("/", UpdateCategory)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces<ProductCategoryResponse>()
             .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapDelete(ApiRoutes.ProductCategories.DeleteById, DeleteCategory)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet(ApiRoutes.ProductCategories.IsNameTaken, IsCategoryNameTaken)
             .Produces<IsTakenResponse>()

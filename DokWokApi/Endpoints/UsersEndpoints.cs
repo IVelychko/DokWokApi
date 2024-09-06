@@ -5,6 +5,7 @@ using Application.Operations.User.Commands.AddUser;
 using Application.Operations.User.Commands.DeleteUser;
 using Application.Operations.User.Commands.LoginAdmin;
 using Application.Operations.User.Commands.LoginCustomer;
+using Application.Operations.User.Commands.LogOutUser;
 using Application.Operations.User.Commands.RefreshToken;
 using Application.Operations.User.Commands.RegisterUser;
 using Application.Operations.User.Commands.UpdatePassword;
@@ -41,55 +42,64 @@ public static class UsersEndpoints
         var group = app.MapGroup(ApiRoutes.Users.Group).WithTags("Users");
 
         group.MapGet("/", GetAllUsers)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet(ApiRoutes.Users.GetAllCustomers, GetAllCustomers)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin);
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet(ApiRoutes.Users.GetUserByUserName, GetUserByUserName)
             .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
             .Produces<UserResponse>()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet(ApiRoutes.Users.GetUserById, GetUserById)
             .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
             .Produces<UserResponse>()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet(ApiRoutes.Users.GetCustomerById, GetCustomerById)
             .WithName(GetByIdRouteName)
             .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
             .Produces<UserResponse>()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapPost("/", AddUser)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces<UserResponse>(StatusCodes.Status201Created)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapPut("/", UpdateUser)
             .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
             .Produces<UserResponse>()
             .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapPut(ApiRoutes.Users.UpdateCustomerPassword, UpdateCustomerPassword)
             .RequireAuthorization(AuthorizationPolicyNames.Customer)
             .Produces(StatusCodes.Status200OK)
             .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapPut(ApiRoutes.Users.UpdateCustomerPasswordAsAdmin, UpdateCustomerPasswordAsAdmin)
-            //.RequireAuthorization(AuthorizationPolicyNames.Admin)
-            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
+            .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces(StatusCodes.Status200OK)
             .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapDelete(ApiRoutes.Users.DeleteUserById, DeleteUserById)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapPost(ApiRoutes.Users.LoginCustomer, LoginCustomer)
             .Produces<AuthorizedUserResponse>()
@@ -109,20 +119,15 @@ public static class UsersEndpoints
             .Produces<AuthorizedUserResponse>()
             .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
 
-        group.MapGet(ApiRoutes.Users.IsCustomerTokenValid, IsCustomerTokenValid)
-            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
-            .Produces<UserResponse>()
-            .Produces(StatusCodes.Status401Unauthorized);
-
-        group.MapGet(ApiRoutes.Users.IsAdminTokenValid, IsAdminTokenValid)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin)
-            .Produces<UserResponse>()
-            .Produces(StatusCodes.Status401Unauthorized);
+        group.MapGet(ApiRoutes.Users.LogOut, LogOutUser)
+            .Produces(StatusCodes.Status200OK)
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
 
         group.MapGet(ApiRoutes.Users.GetUserRoles, GetUserRoles)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces<IEnumerable<string>>()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet(ApiRoutes.Users.IsCustomerUserNameTaken, IsUserNameTaken)
             .Produces<IsTakenResponse>()
@@ -260,7 +265,7 @@ public static class UsersEndpoints
 
     public static async Task<IResult> RefreshToken(ISender sender, HttpContext httpContext, RefreshTokenRequest request)
     {
-        var refreshToken = httpContext.Request.Cookies["RefreshToken"];
+        var refreshToken = httpContext.Request.Cookies[CookieNames.RefreshToken];
         if (refreshToken is null)
         {
             Dictionary<string, string[]> errors = new() { [nameof(refreshToken)] = ["There was no refresh token provided"] };
@@ -276,14 +281,22 @@ public static class UsersEndpoints
         return result.ToOkResult(httpContext);
     }
 
-    public static async Task<IResult> IsCustomerTokenValid(ISender sender, HttpContext httpContext)
+    public static async Task<IResult> LogOutUser(ISender sender, HttpContext httpContext)
     {
-        return await ValidateToken(sender, httpContext);
-    }
+        var refreshToken = httpContext.Request.Cookies[CookieNames.RefreshToken];
+        if (string.IsNullOrEmpty(refreshToken))
+        {
+            Dictionary<string, string[]> errors = new() { [nameof(refreshToken)] = ["There was no refresh token provided"] };
+            return Results.BadRequest(new ProblemDetailsModel
+            {
+                Errors = errors,
+                StatusCode = StatusCodes.Status400BadRequest,
+                Title = "Bad Request"
+            });
+        }
 
-    public static async Task<IResult> IsAdminTokenValid(ISender sender, HttpContext httpContext)
-    {
-        return await ValidateToken(sender, httpContext);
+        var result = await sender.Send(new LogOutUserCommand(refreshToken));
+        return result ? Results.Ok() : Results.BadRequest();
     }
 
     public static async Task<IResult> GetUserRoles(ISender sender, string userId)
@@ -386,22 +399,5 @@ public static class UsersEndpoints
         }
 
         return Results.Ok(user);
-    }
-
-    private static async Task<IResult> ValidateToken(ISender sender, HttpContext context)
-    {
-        var userId = context.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
-        if (userId is null)
-        {
-            return Results.Unauthorized();
-        }
-
-        var authorizedUser = await sender.Send(new GetUserByIdQuery(userId));
-        if (authorizedUser is null)
-        {
-            return Results.Unauthorized();
-        }
-
-        return Results.Ok(authorizedUser);
     }
 }

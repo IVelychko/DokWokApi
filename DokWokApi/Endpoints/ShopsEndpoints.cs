@@ -32,23 +32,28 @@ public static class ShopsEndpoints
             .Produces<ShopResponse>()
             .Produces(StatusCodes.Status404NotFound);
 
-        group.MapGet(ApiRoutes.Shops.GetByAddress, GetShopByAddress);
+        group.MapGet(ApiRoutes.Shops.GetByAddress, GetShopByAddress)
+            .Produces<ShopResponse>()
+            .Produces(StatusCodes.Status404NotFound);
 
         group.MapPost("/", AddShop)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces<ShopResponse>(StatusCodes.Status201Created)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapPut("/", UpdateShop)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces<ShopResponse>()
             .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapDelete(ApiRoutes.Shops.DeleteById, DeleteShop)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet(ApiRoutes.Shops.IsAddressTaken, IsShopAddressTaken)
             .Produces<IsTakenResponse>()

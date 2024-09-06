@@ -36,18 +36,21 @@ public static class ProductsEndpoints
         group.MapPost("/", AddProduct)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces<ProductResponse>(StatusCodes.Status201Created)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapPut("/", UpdateProduct)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces<ProductResponse>()
             .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapDelete(ApiRoutes.Products.DeleteById, DeleteProduct)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet(ApiRoutes.Products.IsNameTaken, IsProductNameTaken)
             .Produces<IsTakenResponse>()

@@ -26,34 +26,40 @@ public static class OrderLinesEndpoints
         var group = app.MapGroup(ApiRoutes.OrderLines.Group).WithTags("OrderLines");
 
         group.MapGet("/", GetAllOrderLines)
-            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
+            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet(ApiRoutes.OrderLines.GetById, GetOrderLineById)
             .WithName(GetByIdRouteName)
             .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
             .Produces<OrderLineResponse>()
+            .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound);
 
         group.MapGet(ApiRoutes.OrderLines.GetByOrderAndProductIds, GetOrderLineByOrderAndProductIds)
             .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
             .Produces<OrderLineResponse>()
+            .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound);
 
         group.MapPost("/", AddOrderLine)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces<OrderLineResponse>(StatusCodes.Status201Created)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapPut("/", UpdateOrderLine)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces<OrderLineResponse>()
             .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapDelete(ApiRoutes.OrderLines.DeleteById, DeleteOrderLine)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized);
     }
 
     public static async Task<Ok<IEnumerable<OrderLineResponse>>> GetAllOrderLines(ISender sender,

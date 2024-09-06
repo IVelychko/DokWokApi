@@ -26,12 +26,14 @@ public static class OrdersEndpoints
         var group = app.MapGroup(ApiRoutes.Orders.Group).WithTags("Orders");
 
         group.MapGet("/", GetAllOrders)
-            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer);
+            .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet(ApiRoutes.Orders.GetById, GetOrderById)
             .WithName(GetByIdRouteName)
             .RequireAuthorization(AuthorizationPolicyNames.AdminAndCustomer)
             .Produces<OrderResponse>()
+            .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound);
 
         group.MapPost(ApiRoutes.Orders.AddDelivery, AddDeliveryOrder)
@@ -46,12 +48,14 @@ public static class OrdersEndpoints
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces<OrderResponse>()
             .Produces<ProblemDetailsModel>(StatusCodes.Status404NotFound)
-            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapDelete(ApiRoutes.Orders.DeleteById, DeleteOrder)
             .RequireAuthorization(AuthorizationPolicyNames.Admin)
             .Produces(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status401Unauthorized);
     }
 
     public static async Task<Ok<IEnumerable<OrderResponse>>> GetAllOrders(ISender sender,

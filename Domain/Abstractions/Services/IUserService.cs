@@ -37,9 +37,7 @@ public interface IUserService
 
     Task<Result<AuthorizedUserModel>> RegisterAsync(UserModel model, string password);
 
-    Task<UserModel?> IsCustomerTokenValidAsync(string token);
-
-    Task<UserModel?> IsAdminTokenValidAsync(string token);
+    Task<bool> LogOutAsync(string refreshToken);
 
     Task<Result<bool>> IsUserNameTakenAsync(string userName);
 

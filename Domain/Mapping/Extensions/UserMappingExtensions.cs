@@ -17,7 +17,7 @@ public static class UserMappingExtensions
         };
     }
 
-    public static AuthorizedUserModel ToAuthorizedModel(this UserModel model, string token, RefreshToken refreshToken)
+    public static AuthorizedUserModel ToAuthorizedModel(this UserModel model, string token, RefreshToken refreshToken, IEnumerable<string> roles)
     {
         return new()
         {
@@ -27,11 +27,12 @@ public static class UserMappingExtensions
             Id = model.Id,
             UserName = model.UserName,
             Token = token,
-            RefreshToken = refreshToken
+            RefreshToken = refreshToken,
+            Roles = roles
         };
     }
 
-    public static AuthorizedUserModel ToAuthorizedModel(this ApplicationUser entity, string token, RefreshToken refreshToken)
+    public static AuthorizedUserModel ToAuthorizedModel(this ApplicationUser entity, string token, RefreshToken refreshToken, IEnumerable<string> roles)
     {
         return new()
         {
@@ -41,7 +42,8 @@ public static class UserMappingExtensions
             Id = entity.Id,
             UserName = entity.UserName,
             Token = token,
-            RefreshToken = refreshToken
+            RefreshToken = refreshToken,
+            Roles = roles
         };
     }
 

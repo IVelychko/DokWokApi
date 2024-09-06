@@ -17,4 +17,6 @@ public class AuthorizedUserModel
     public required string Token { get; set; }
 
     public required RefreshToken RefreshToken { get; set; }
+
+    public required IEnumerable<string> Roles { get; set; }
 }

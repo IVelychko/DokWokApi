@@ -1,5 +1,6 @@
 ﻿using Application.Operations;
 using Application.Operations.User;
+using DokWokApi.Helpers;
 using Domain.Errors.Base;
 using Domain.Models;
 using Domain.ResultType;
@@ -23,9 +24,11 @@ public static class ResultExtensions
             HttpOnly = true,
             Expires = new DateTimeOffset(user.RefreshToken!.ExpiryDate),
             IsEssential = true,
-            Path = "/api/users/authorization"
+            Path = "/api/users/authorization",
+            SameSite = SameSiteMode.None,
+            Secure = true,
         };
-        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken!.Token, cookieOptions);
+        context.Response.Cookies.Append(CookieNames.RefreshToken, result.Value.RefreshToken!.Token, cookieOptions);
         return new OkObjectResult(user);
     }
 
@@ -70,9 +73,11 @@ public static class ResultExtensions
             HttpOnly = true,
             Expires = new DateTimeOffset(user.RefreshToken!.ExpiryDate),
             IsEssential = true,
-            Path = "/api/users/authorization"
+            Path = "/api/users/authorization",
+            SameSite = SameSiteMode.None,
+            Secure = true,
         };
-        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken!.Token, cookieOptions);
+        context.Response.Cookies.Append(CookieNames.RefreshToken, result.Value.RefreshToken!.Token, cookieOptions);
         return new CreatedAtActionResult(actionName, controllerName, new { id = user.Id }, user);
     }
 
@@ -120,9 +125,11 @@ public static class ResultExtensions
             HttpOnly = true,
             Expires = new DateTimeOffset(user.RefreshToken!.ExpiryDate),
             IsEssential = true,
-            Path = "/api/users/authorization"
+            Path = "/api/users/authorization",
+            SameSite = SameSiteMode.None,
+            Secure = true,
         };
-        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken!.Token, cookieOptions);
+        context.Response.Cookies.Append(CookieNames.RefreshToken, result.Value.RefreshToken!.Token, cookieOptions);
         return Results.Ok(user);
     }
 
@@ -167,9 +174,11 @@ public static class ResultExtensions
             HttpOnly = true,
             Expires = new DateTimeOffset(user.RefreshToken!.ExpiryDate),
             IsEssential = true,
-            Path = "/api/users/authorization"
+            Path = "/api/users/authorization",
+            SameSite = SameSiteMode.None,
+            Secure = true,
         };
-        context.Response.Cookies.Append("RefreshToken", result.Value.RefreshToken!.Token, cookieOptions);
+        context.Response.Cookies.Append(CookieNames.RefreshToken, result.Value.RefreshToken!.Token, cookieOptions);
         return Results.CreatedAtRoute(routeName, new { id = user.Id }, user);
     }
 

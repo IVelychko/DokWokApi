@@ -73,7 +73,8 @@ public static class UserMappingExtensions
             PhoneNumber = model.PhoneNumber,
             UserName = model.UserName,
             Token = model.Token,
-            RefreshToken = model.RefreshToken
+            RefreshToken = model.RefreshToken,
+            Roles = model.Roles
         };
     }
 }
