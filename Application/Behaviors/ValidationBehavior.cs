@@ -1,5 +1,9 @@
 ﻿using Application.Abstractions.Messaging;
+using Domain.Errors;
+using Domain.Errors.Base;
+using Domain.ResultType;
 using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
 using ValidationException = Domain.Exceptions.ValidationException;
 
@@ -35,16 +39,66 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         //        })
         //    .ToDictionary(x => x.Key, x => x.Values);
 
-        var errorsDictionary = _validators
-            .Select(x => x.Validate(context))
+        //var validationResults = _validators
+        //    .Select(x => x.ValidateAsync(context));
+
+        List<ValidationResult> validationResults = [];
+        foreach (var validatior in _validators)
+        {
+            var result = await validatior.ValidateAsync(context, cancellationToken);
+            validationResults.Add(result);
+        }
+
+        bool isNotFound = false;
+        foreach (var validationResult in validationResults)
+        {
+            var notFoundErrorCodeExists = validationResult.Errors.Exists(x => x.ErrorCode == "404");
+            if (notFoundErrorCodeExists)
+            {
+                isNotFound = true;
+                break;
+            }
+        }
+
+        var errorsDictionary = validationResults
             .SelectMany(x => x.ToDictionary())
             .ToDictionary();
 
         if (errorsDictionary.Count > 0)
         {
-            throw new ValidationException(errorsDictionary);
+            Error error = isNotFound ? new EntityNotFoundError(errorsDictionary)
+                : new ValidationError(errorsDictionary);
+            var response = CreateFailureResult(error);
+            return response;
         }
 
         return await next();
+    }
+
+    private static TResponse CreateFailureResult(Error error)
+    {
+        if (typeof(TResponse).IsGenericType &&
+            typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
+        {
+            // Get the TValue type argument for Result<TValue>
+            var valueType = typeof(TResponse).GetGenericArguments()[0];
+
+            // Create the specific Result<TValue> type
+            var resultType = typeof(Result<>).MakeGenericType(valueType);
+
+            // Find the constructor or static Failure method to create a faulted Result<TValue>
+            var failureMethod = resultType.GetMethod(nameof(Result<object>.Failure), [typeof(Error)]);
+
+            if (failureMethod is not null)
+            {
+                // Invoke the Failure method to construct a faulted result
+                var resultInstance = failureMethod.Invoke(null, [error]);
+
+                // Cast and return the result as TResponse
+                return (TResponse)resultInstance!;
+            }
+        }
+
+        throw new ValidationException(error.Errors);
     }
 }

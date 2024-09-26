@@ -34,30 +34,16 @@ public class ProductService : IProductService
         return await _productRepository.DeleteByIdAsync(id);
     }
 
-    public async Task<IEnumerable<ProductModel>> GetAllAsync()
+    public async Task<IEnumerable<ProductModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _productRepository.GetAllWithDetailsAsync();
+        var entities = await _productRepository.GetAllWithDetailsAsync(pageInfo);
         var models = entities.Select(p => p.ToModel());
         return models;
     }
 
-    public async Task<IEnumerable<ProductModel>> GetAllByCategoryIdAsync(long categoryId)
+    public async Task<IEnumerable<ProductModel>> GetAllByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
     {
-        var entities = await _productRepository.GetAllWithDetailsByCategoryIdAsync(categoryId);
-        var models = entities.Select(p => p.ToModel());
-        return models;
-    }
-
-    public async Task<IEnumerable<ProductModel>> GetAllByPageAsync(int pageNumber, int pageSize)
-    {
-        var entities = await _productRepository.GetAllWithDetailsByPageAsync(pageNumber, pageSize);
-        var models = entities.Select(p => p.ToModel());
-        return models;
-    }
-
-    public async Task<IEnumerable<ProductModel>> GetAllByCategoryIdAndPageAsync(long categoryId, int pageNumber, int pageSize)
-    {
-        var entities = await _productRepository.GetAllWithDetailsByCategoryIdAndPageAsync(categoryId, pageNumber, pageSize);
+        var entities = await _productRepository.GetAllWithDetailsByCategoryIdAsync(categoryId, pageInfo);
         var models = entities.Select(p => p.ToModel());
         return models;
     }

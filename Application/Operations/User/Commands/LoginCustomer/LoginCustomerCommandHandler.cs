@@ -9,7 +9,7 @@ public class LoginCustomerCommandHandler(IUserService userService) : ICommandHan
 {
     public async Task<Result<AuthorizedUserResponse>> Handle(LoginCustomerCommand request, CancellationToken cancellationToken)
     {
-        var result = await userService.CustomerLoginAsync(request.UserName, request.Password);
+        var result = await userService.LoginAsync(request.UserName, request.Password);
         return result.Match(au => au.ToResponse(), Result<AuthorizedUserResponse>.Failure);
     }
 }

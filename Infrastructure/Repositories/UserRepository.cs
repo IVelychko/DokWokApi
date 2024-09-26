@@ -1,10 +1,9 @@
 ﻿using Domain.Abstractions.Repositories;
-using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Errors.Base;
 using Domain.Exceptions;
 using Domain.Helpers;
+using Domain.Models;
 using Domain.ResultType;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,20 +14,17 @@ namespace Infrastructure.Repositories;
 public class UserRepository : IUserRepository
 {
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IUserRepositoryValidator _validator;
 
-    public UserRepository(UserManager<ApplicationUser> userManager, IUserRepositoryValidator validator)
+    public UserRepository(UserManager<ApplicationUser> userManager)
     {
         _userManager = userManager;
-        _validator = validator;
     }
 
     public async Task<Result<ApplicationUser>> AddAsync(ApplicationUser entity, string password)
     {
-        var validationResult = await _validator.ValidateAddAsync(entity);
-        if (!validationResult.IsValid)
+        if (entity is null)
         {
-            var error = new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("user", "The passed entity is null");
             return Result<ApplicationUser>.Failure(error);
         }
         else if (string.IsNullOrEmpty(password))
@@ -119,31 +115,30 @@ public class UserRepository : IUserRepository
         return false;
     }
 
-    public async Task<IEnumerable<ApplicationUser>> GetAllCustomersAsync()
+    public async Task<IEnumerable<ApplicationUser>> GetAllCustomersAsync(PageInfo? pageInfo = null)
     {
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            var customers = await _userManager.GetUsersInRoleAsync(UserRoles.Customer);
+            return customers.Skip(itemsToSkip).Take(pageInfo.PageSize);
+        }
+
         return await _userManager.GetUsersInRoleAsync(UserRoles.Customer);
     }
 
-    public async Task<IEnumerable<ApplicationUser>> GetAllCustomersByPageAsync(int pageNumber, int pageSize)
+    public async Task<IEnumerable<ApplicationUser>> GetAllUsersAsync(PageInfo? pageInfo = null)
     {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        var customers = await _userManager.GetUsersInRoleAsync(UserRoles.Customer);
-        return customers.Skip(itemsToSkip).Take(pageSize);
-    }
+        var query = _userManager.Users.AsNoTracking();
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
 
-    public async Task<IEnumerable<ApplicationUser>> GetAllUsersAsync()
-    {
-        return await _userManager.Users.AsNoTracking().ToListAsync();
-    }
-
-    public async Task<IEnumerable<ApplicationUser>> GetAllUsersByPageAsync(int pageNumber, int pageSize)
-    {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _userManager.Users
-            .AsNoTracking()
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
+        return await query.ToListAsync();
     }
 
     public async Task<ApplicationUser?> GetCustomerByIdAsync(string id)
@@ -242,11 +237,9 @@ public class UserRepository : IUserRepository
 
     public async Task<Result<ApplicationUser>> UpdateAsync(ApplicationUser entity)
     {
-        var validationResult = await _validator.ValidateUpdateAsync(entity);
-        if (!validationResult.IsValid)
+        if (entity is null)
         {
-            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
-                : new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("user", "The passed entity is null");
             return Result<ApplicationUser>.Failure(error);
         }
 
@@ -271,11 +264,9 @@ public class UserRepository : IUserRepository
 
     public async Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(string userId, string newPassword)
     {
-        var validationResult = await _validator.ValidateUpdateCustomerPasswordAsAdminAsync(userId, newPassword);
-        if (!validationResult.IsValid)
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(newPassword))
         {
-            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
-                : new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("userData", "The passed userId or newPassword is null");
             return Result<bool>.Failure(error);
         }
 
@@ -307,11 +298,9 @@ public class UserRepository : IUserRepository
 
     public async Task<Result<bool>> UpdateCustomerPasswordAsync(string userId, string oldPassword, string newPassword)
     {
-        var validationResult = await _validator.ValidateUpdateCustomerPasswordAsync(userId, oldPassword, newPassword);
-        if (!validationResult.IsValid)
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword))
         {
-            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
-                : new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("userData", "The passed userId, oldPassword or newPassword is null");
             return Result<bool>.Failure(error);
         }
 

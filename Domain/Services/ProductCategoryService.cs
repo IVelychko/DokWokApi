@@ -35,16 +35,9 @@ public class ProductCategoryService : IProductCategoryService
         return await _productCategoryRepository.DeleteByIdAsync(id);
     }
 
-    public async Task<IEnumerable<ProductCategoryModel>> GetAllAsync()
+    public async Task<IEnumerable<ProductCategoryModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _productCategoryRepository.GetAllAsync();
-        var models = entities.Select(c => c.ToModel());
-        return models;
-    }
-
-    public async Task<IEnumerable<ProductCategoryModel>> GetAllByPageAsync(int pageNumber, int pageSize)
-    {
-        var entities = await _productCategoryRepository.GetAllByPageAsync(pageNumber, pageSize);
+        var entities = await _productCategoryRepository.GetAllAsync(pageInfo);
         var models = entities.Select(c => c.ToModel());
         return models;
     }

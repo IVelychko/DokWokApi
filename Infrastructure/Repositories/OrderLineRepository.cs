@@ -1,9 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
-using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Errors.Base;
 using Domain.Exceptions;
+using Domain.Models;
 using Domain.ResultType;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -13,20 +12,17 @@ namespace Infrastructure.Repositories;
 public class OrderLineRepository : IOrderLineRepository
 {
     private readonly StoreDbContext _context;
-    private readonly IOrderLineRepositoryValidator _validator;
 
-    public OrderLineRepository(StoreDbContext context, IOrderLineRepositoryValidator validator)
+    public OrderLineRepository(StoreDbContext context)
     {
         _context = context;
-        _validator = validator;
     }
 
     public async Task<Result<OrderLine>> AddAsync(OrderLine entity)
     {
-        var validationResult = await _validator.ValidateAddAsync(entity);
-        if (!validationResult.IsValid)
+        if (entity is null)
         {
-            var error = new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("orderLine", "The passed entity is null");
             return Result<OrderLine>.Failure(error);
         }
 
@@ -57,83 +53,75 @@ public class OrderLineRepository : IOrderLineRepository
         return result > 0;
     }
 
-    public async Task<IEnumerable<OrderLine>> GetAllAsync()
+    public async Task<IEnumerable<OrderLine>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        return await _context.OrderLines.AsNoTracking().ToListAsync();
+        var query = _context.OrderLines.AsNoTracking();
+
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
+
+        return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<OrderLine>> GetAllByOrderIdAndPageAsync(long orderId, int pageNumber, int pageSize)
+    public async Task<IEnumerable<OrderLine>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
     {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _context.OrderLines
+        var query = _context.OrderLines
             .AsNoTracking()
-            .Where(ol => ol.OrderId == orderId)
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
+            .Where(ol => ol.OrderId == orderId);
+
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
+
+        return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<OrderLine>> GetAllByOrderIdAsync(long orderId)
+    public async Task<IEnumerable<OrderLine>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
-        return await _context.OrderLines.AsNoTracking().Where(ol => ol.OrderId == orderId).ToListAsync();
-    }
-
-    public async Task<IEnumerable<OrderLine>> GetAllByPageAsync(int pageNumber, int pageSize)
-    {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _context.OrderLines
+        IQueryable<OrderLine> query = _context.OrderLines
             .AsNoTracking()
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
+            .Include(ol => ol.Order)
+            .Include(ol => ol.Product)
+                .ThenInclude(p => p!.Category);
+
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
+
+        return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<OrderLine>> GetAllWithDetailsAsync()
+    public async Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
     {
-        return await _context.OrderLines
+        var query = _context.OrderLines
             .AsNoTracking()
             .Include(ol => ol.Order)
             .Include(ol => ol.Product)
                 .ThenInclude(p => p!.Category)
-            .ToListAsync();
-    }
+            .Where(ol => ol.OrderId == orderId);
 
-    public async Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAndPageAsync(long orderId, int pageNumber, int pageSize)
-    {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _context.OrderLines
-            .AsNoTracking()
-            .Include(ol => ol.Order)
-            .Include(ol => ol.Product)
-                .ThenInclude(p => p!.Category)
-            .Where(ol => ol.OrderId == orderId)
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
-    }
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
 
-    public async Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId)
-    {
-        return await _context.OrderLines
-            .AsNoTracking()
-            .Include(ol => ol.Order)
-            .Include(ol => ol.Product)
-                .ThenInclude(p => p!.Category)
-            .Where(ol => ol.OrderId == orderId)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<OrderLine>> GetAllWithDetailsByPageAsync(int pageNumber, int pageSize)
-    {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _context.OrderLines
-            .AsNoTracking()
-            .Include(ol => ol.Order)
-            .Include(ol => ol.Product)
-                .ThenInclude(p => p!.Category)
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
+        return await query.ToListAsync();
     }
 
     public async Task<OrderLine?> GetByIdAsync(long id)
@@ -170,11 +158,9 @@ public class OrderLineRepository : IOrderLineRepository
 
     public async Task<Result<OrderLine>> UpdateAsync(OrderLine entity)
     {
-        var validationResult = await _validator.ValidateUpdateAsync(entity);
-        if (!validationResult.IsValid)
+        if (entity is null)
         {
-            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
-                : new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("orderLine", "The passed entity is null");
             return Result<OrderLine>.Failure(error);
         }
 

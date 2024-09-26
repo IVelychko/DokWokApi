@@ -50,30 +50,16 @@ public class OrderService : IOrderService
         return await _orderRepository.DeleteByIdAsync(id);
     }
 
-    public async Task<IEnumerable<OrderModel>> GetAllAsync()
+    public async Task<IEnumerable<OrderModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _orderRepository.GetAllWithDetailsAsync();
+        var entities = await _orderRepository.GetAllWithDetailsAsync(pageInfo);
         var models = entities.Select(o => o.ToModel());
         return models;
     }
 
-    public async Task<IEnumerable<OrderModel>> GetAllByPageAsync(int pageNumber, int pageSize)
+    public async Task<IEnumerable<OrderModel>> GetAllByUserIdAsync(string userId, PageInfo? pageInfo = null)
     {
-        var entities = await _orderRepository.GetAllWithDetailsByPageAsync(pageNumber, pageSize);
-        var models = entities.Select(o => o.ToModel());
-        return models;
-    }
-
-    public async Task<IEnumerable<OrderModel>> GetAllByUserIdAndPageAsync(string userId, int pageNumber, int pageSize)
-    {
-        var entities = await _orderRepository.GetAllWithDetailsByUserIdAndPageAsync(userId, pageNumber, pageSize);
-        var models = entities.Select(o => o.ToModel());
-        return models;
-    }
-
-    public async Task<IEnumerable<OrderModel>> GetAllByUserIdAsync(string userId)
-    {
-        var entities = await _orderRepository.GetAllWithDetailsByUserIdAsync(userId);
+        var entities = await _orderRepository.GetAllWithDetailsByUserIdAsync(userId, pageInfo);
         var models = entities.Select(o => o.ToModel());
         return models;
     }

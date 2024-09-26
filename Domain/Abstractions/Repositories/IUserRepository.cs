@@ -1,17 +1,14 @@
 ﻿using Domain.Entities;
+using Domain.Models;
 using Domain.ResultType;
 
 namespace Domain.Abstractions.Repositories;
 
 public interface IUserRepository
 {
-    Task<IEnumerable<ApplicationUser>> GetAllUsersAsync();
+    Task<IEnumerable<ApplicationUser>> GetAllUsersAsync(PageInfo? pageInfo = null);
 
-    Task<IEnumerable<ApplicationUser>> GetAllUsersByPageAsync(int pageNumber, int pageSize);
-
-    Task<IEnumerable<ApplicationUser>> GetAllCustomersAsync();
-
-    Task<IEnumerable<ApplicationUser>> GetAllCustomersByPageAsync(int pageNumber, int pageSize);
+    Task<IEnumerable<ApplicationUser>> GetAllCustomersAsync(PageInfo? pageInfo = null);
 
     Task<ApplicationUser?> GetUserByUserNameAsync(string userName);
 

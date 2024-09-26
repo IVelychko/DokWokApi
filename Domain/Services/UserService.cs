@@ -3,9 +3,9 @@ using Domain.Abstractions.Services;
 using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Errors.Base;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
+using Domain.Models;
 using Domain.Models.User;
 using Domain.ResultType;
 using System.IdentityModel.Tokens.Jwt;
@@ -63,30 +63,16 @@ public class UserService : IUserService
         return await _userRepository.DeleteAsync(id);
     }
 
-    public async Task<IEnumerable<UserModel>> GetAllUsersAsync()
+    public async Task<IEnumerable<UserModel>> GetAllUsersAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _userRepository.GetAllUsersAsync();
+        var entities = await _userRepository.GetAllUsersAsync(pageInfo);
         var models = entities.Select(u => u.ToModel());
         return models;
     }
 
-    public async Task<IEnumerable<UserModel>> GetAllCustomersAsync()
+    public async Task<IEnumerable<UserModel>> GetAllCustomersAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _userRepository.GetAllCustomersAsync();
-        var models = entities.Select(u => u.ToModel());
-        return models;
-    }
-
-    public async Task<IEnumerable<UserModel>> GetAllUsersByPageAsync(int pageNumber, int pageSize)
-    {
-        var entities = await _userRepository.GetAllUsersByPageAsync(pageNumber, pageSize);
-        var models = entities.Select(u => u.ToModel());
-        return models;
-    }
-
-    public async Task<IEnumerable<UserModel>> GetAllCustomersByPageAsync(int pageNumber, int pageSize)
-    {
-        var entities = await _userRepository.GetAllCustomersByPageAsync(pageNumber, pageSize);
+        var entities = await _userRepository.GetAllCustomersAsync(pageInfo);
         var models = entities.Select(u => u.ToModel());
         return models;
     }
@@ -184,37 +170,11 @@ public class UserService : IUserService
         return result;
     }
 
-    public async Task<Result<AuthorizedUserModel>> CustomerLoginAsync(string userName, string password)
+    public async Task<Result<AuthorizedUserModel>> LoginAsync(string userName, string password)
     {
-        var validationResult = await _validator.ValidateCustomerLoginAsync(userName, password);
-        if (!validationResult.IsValid)
+        if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
         {
-            var errors = validationResult.Errors;
-            Error error = errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary()) :
-                new ValidationError(validationResult.ToDictionary());
-            return Result<AuthorizedUserModel>.Failure(error);
-        }
-
-        var user = await _userRepository.GetUserByUserNameAsync(userName);
-        if (user is null)
-        {
-            var error = new EntityNotFoundError(nameof(user), "The user was not found");
-            return Result<AuthorizedUserModel>.Failure(error);
-        }
-
-        var userModel = user.ToModel();
-        var authorizedUserResult = await CreateAuthorizedUserModel(userModel);
-        return authorizedUserResult;
-    }
-
-    public async Task<Result<AuthorizedUserModel>> AdminLoginAsync(string userName, string password)
-    {
-        var validationResult = await _validator.ValidateAdminLoginAsync(userName, password);
-        if (!validationResult.IsValid)
-        {
-            var errors = validationResult.Errors;
-            Error error = errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary()) :
-                new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("userData", "The passed userName or password is null");
             return Result<AuthorizedUserModel>.Failure(error);
         }
 

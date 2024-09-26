@@ -1,12 +1,11 @@
-﻿using Domain.ResultType;
+﻿using Domain.Models;
+using Domain.ResultType;
 
 namespace Domain.Abstractions.Services;
 
 public interface ICrud<TModel> where TModel : class
 {
-    Task<IEnumerable<TModel>> GetAllAsync();
-
-    Task<IEnumerable<TModel>> GetAllByPageAsync(int pageNumber, int pageSize);
+    Task<IEnumerable<TModel>> GetAllAsync(PageInfo? pageInfo = null);
 
     Task<TModel?> GetByIdAsync(long id);
 

@@ -1,12 +1,11 @@
 ﻿using Domain.Entities;
+using Domain.Models;
 
 namespace Domain.Abstractions.Repositories;
 
 public interface IRefreshTokenRepository : IRepository<RefreshToken>
 {
-    Task<IEnumerable<RefreshToken>> GetAllWithDetailsAsync();
-
-    Task<IEnumerable<RefreshToken>> GetAllWithDetailsByPageAsync(int pageNumber, int pageSize);
+    Task<IEnumerable<RefreshToken>> GetAllWithDetailsAsync(PageInfo? pageInfo = null);
 
     Task<RefreshToken?> GetByTokenAsync(string token);
 

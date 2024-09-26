@@ -1,21 +1,16 @@
 ﻿using Domain.Entities;
+using Domain.Models;
 using Domain.ResultType;
 
 namespace Domain.Abstractions.Repositories;
 
 public interface IProductRepository : IRepository<Product>
 {
-    Task<IEnumerable<Product>> GetAllWithDetailsAsync();
+    Task<IEnumerable<Product>> GetAllWithDetailsAsync(PageInfo? pageInfo = null);
 
-    Task<IEnumerable<Product>> GetAllWithDetailsByPageAsync(int pageNumber, int pageSize);
+    Task<IEnumerable<Product>> GetAllByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null);
 
-    Task<IEnumerable<Product>> GetAllByCategoryIdAsync(long categoryId);
-
-    Task<IEnumerable<Product>> GetAllByCategoryIdAndPageAsync(long categoryId, int pageNumber, int pageSize);
-
-    Task<IEnumerable<Product>> GetAllWithDetailsByCategoryIdAsync(long categoryId);
-
-    Task<IEnumerable<Product>> GetAllWithDetailsByCategoryIdAndPageAsync(long categoryId, int pageNumber, int pageSize);
+    Task<IEnumerable<Product>> GetAllWithDetailsByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null);
 
     Task<Product?> GetByIdWithDetailsAsync(long id);
 

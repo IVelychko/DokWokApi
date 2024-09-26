@@ -1,9 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
-using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Errors.Base;
 using Domain.Exceptions;
+using Domain.Models;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,20 +11,17 @@ namespace Infrastructure.Repositories;
 public class RefreshTokenRepository : IRefreshTokenRepository
 {
     private readonly StoreDbContext _context;
-    private readonly IRefreshTokenRepositoryValidator _validator;
 
-    public RefreshTokenRepository(StoreDbContext context, IRefreshTokenRepositoryValidator validator)
+    public RefreshTokenRepository(StoreDbContext context)
     {
         _context = context;
-        _validator = validator;
     }
 
     public async Task<Result<RefreshToken>> AddAsync(RefreshToken entity)
     {
-        var validationResult = await _validator.ValidateAddAsync(entity);
-        if (!validationResult.IsValid)
+        if (entity is null)
         {
-            var error = new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("refreshToken", "The passed entity is null");
             return Result<RefreshToken>.Failure(error);
         }
 
@@ -56,38 +52,35 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         return result > 0;
     }
 
-    public async Task<IEnumerable<RefreshToken>> GetAllAsync()
+    public async Task<IEnumerable<RefreshToken>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        return await _context.RefreshTokens.AsNoTracking().ToListAsync();
+        var query = _context.RefreshTokens.AsNoTracking();
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
+
+        return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<RefreshToken>> GetAllByPageAsync(int pageNumber, int pageSize)
+    public async Task<IEnumerable<RefreshToken>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _context.RefreshTokens
+        IQueryable<RefreshToken> query = _context.RefreshTokens
             .AsNoTracking()
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
-    }
+            .Include(rt => rt.User);
 
-    public async Task<IEnumerable<RefreshToken>> GetAllWithDetailsAsync()
-    {
-        return await _context.RefreshTokens
-            .AsNoTracking()
-            .Include(rt => rt.User)
-            .ToListAsync();
-    }
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
 
-    public async Task<IEnumerable<RefreshToken>> GetAllWithDetailsByPageAsync(int pageNumber, int pageSize)
-    {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _context.RefreshTokens
-            .AsNoTracking()
-            .Include(rt => rt.User)
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
+        return await query.ToListAsync();
     }
 
     public async Task<RefreshToken?> GetByIdAsync(long id)
@@ -152,11 +145,9 @@ public class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<Result<RefreshToken>> UpdateAsync(RefreshToken entity)
     {
-        var validationResult = await _validator.ValidateUpdateAsync(entity);
-        if (!validationResult.IsValid)
+        if (entity is null)
         {
-            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
-                : new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("refreshToken", "The passed entity is null");
             return Result<RefreshToken>.Failure(error);
         }
 

@@ -1,13 +1,25 @@
-﻿using FluentValidation;
+﻿using Domain.Abstractions.Repositories;
+using FluentValidation;
 
 namespace Application.Operations.Order.Commands.AddTakeawayOrder;
 
 public class AddTakeawayOrderLineRequestValidator : AbstractValidator<AddTakeawayOrderLineRequest>
 {
-    public AddTakeawayOrderLineRequestValidator()
+    private readonly IProductRepository _productRepository;
+
+    public AddTakeawayOrderLineRequestValidator(IProductRepository productRepository)
     {
-        RuleFor(x => x.ProductId).NotEmpty();
+        _productRepository = productRepository;
+
+        RuleFor(x => x.ProductId)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+            .MustAsync(ProductExists)
+            .WithMessage("There is no product with the ID specified in the ProductId property of the OrderLine entity");
 
         RuleFor(x => x.Quantity).GreaterThan(0);
     }
+
+    private async Task<bool> ProductExists(long productId, CancellationToken token) =>
+        (await _productRepository.GetByIdAsync(productId)) is not null;
 }

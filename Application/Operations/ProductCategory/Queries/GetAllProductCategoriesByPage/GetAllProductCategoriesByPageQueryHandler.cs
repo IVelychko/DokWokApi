@@ -1,6 +1,7 @@
 ﻿using Application.Abstractions.Messaging;
 using Application.Mapping.Extensions;
 using Domain.Abstractions.Services;
+using Domain.Models;
 
 namespace Application.Operations.ProductCategory.Queries.GetAllProductCategoriesByPage;
 
@@ -9,7 +10,8 @@ public sealed class GetAllProductCategoriesByPageQueryHandler(IProductCategorySe
 {
     public async Task<IEnumerable<ProductCategoryResponse>> Handle(GetAllProductCategoriesByPageQuery request, CancellationToken cancellationToken)
     {
-        var categories = await productCategoryService.GetAllByPageAsync(request.PageNumber, request.PageSize);
+        PageInfo pageInfo = new() { PageNumber = request.PageNumber, PageSize = request.PageSize };
+        var categories = await productCategoryService.GetAllAsync(pageInfo);
         return categories.Select(c => c.ToResponse());
     }
 }

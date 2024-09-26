@@ -34,16 +34,9 @@ public class ShopService : IShopService
         return await _shopRepository.DeleteByIdAsync(id);
     }
 
-    public async Task<IEnumerable<ShopModel>> GetAllAsync()
+    public async Task<IEnumerable<ShopModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _shopRepository.GetAllAsync();
-        var models = entities.Select(s => s.ToModel());
-        return models;
-    }
-
-    public async Task<IEnumerable<ShopModel>> GetAllByPageAsync(int pageNumber, int pageSize)
-    {
-        var entities = await _shopRepository.GetAllByPageAsync(pageNumber, pageSize);
+        var entities = await _shopRepository.GetAllAsync(pageInfo);
         var models = entities.Select(s => s.ToModel());
         return models;
     }

@@ -1,9 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
-using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Errors.Base;
 using Domain.Exceptions;
+using Domain.Models;
 using Domain.ResultType;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -13,20 +12,17 @@ namespace Infrastructure.Repositories;
 public class ProductRepository : IProductRepository
 {
     private readonly StoreDbContext _context;
-    private readonly IProductRepositoryValidator _validator;
 
-    public ProductRepository(StoreDbContext context, IProductRepositoryValidator validator)
+    public ProductRepository(StoreDbContext context)
     {
         _context = context;
-        _validator = validator;
     }
 
     public async Task<Result<Product>> AddAsync(Product entity)
     {
-        var validationResult = await _validator.ValidateAddAsync(entity);
-        if (!validationResult.IsValid)
+        if (entity is null)
         {
-            var error = new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("product", "The passed entity is null");
             return Result<Product>.Failure(error);
         }
 
@@ -57,78 +53,70 @@ public class ProductRepository : IProductRepository
         return result > 0;
     }
 
-    public async Task<IEnumerable<Product>> GetAllAsync()
+    public async Task<IEnumerable<Product>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        return await _context.Products.AsNoTracking().ToListAsync();
+        var query = _context.Products.AsNoTracking();
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
+
+        return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<Product>> GetAllByCategoryIdAndPageAsync(long categoryId, int pageNumber, int pageSize)
+    public async Task<IEnumerable<Product>> GetAllByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
     {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _context.Products
+        var query = _context.Products
             .AsNoTracking()
-            .Where(p => p.CategoryId == categoryId)
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
+            .Where(p => p.CategoryId == categoryId);
+
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
+
+        return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<Product>> GetAllByCategoryIdAsync(long categoryId)
+    public async Task<IEnumerable<Product>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
-        return await _context.Products
+        IQueryable<Product> query = _context.Products
             .AsNoTracking()
-            .Where(p => p.CategoryId == categoryId)
-            .ToListAsync();
+            .Include(p => p.Category);
+
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
+
+        return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<Product>> GetAllByPageAsync(int pageNumber, int pageSize)
+    public async Task<IEnumerable<Product>> GetAllWithDetailsByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
     {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _context.Products
-            .AsNoTracking()
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<Product>> GetAllWithDetailsAsync()
-    {
-        return await _context.Products
-            .AsNoTracking()
-            .Include(p => p.Category)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<Product>> GetAllWithDetailsByCategoryIdAndPageAsync(long categoryId, int pageNumber, int pageSize)
-    {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _context.Products
-            .AsNoTracking()
-            .Include(p => p.Category)
-            .Where(p => p.CategoryId == categoryId)
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<Product>> GetAllWithDetailsByCategoryIdAsync(long categoryId)
-    {
-        return await _context.Products
+        var query = _context.Products
             .AsNoTracking()
             .Include(p => p.Category)
-            .Where(p => p.CategoryId == categoryId)
-            .ToListAsync();
-    }
+            .Where(p => p.CategoryId == categoryId);
 
-    public async Task<IEnumerable<Product>> GetAllWithDetailsByPageAsync(int pageNumber, int pageSize)
-    {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _context.Products
-            .AsNoTracking()
-            .Include(p => p.Category)
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
+
+        return await query.ToListAsync();
     }
 
     public async Task<Product?> GetByIdAsync(long id)
@@ -160,11 +148,9 @@ public class ProductRepository : IProductRepository
 
     public async Task<Result<Product>> UpdateAsync(Product entity)
     {
-        var validationResult = await _validator.ValidateUpdateAsync(entity);
-        if (!validationResult.IsValid)
+        if (entity is null)
         {
-            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
-                : new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("product", "The passed entity is null");
             return Result<Product>.Failure(error);
         }
 

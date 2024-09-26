@@ -1,17 +1,14 @@
-﻿using Domain.Models.User;
+﻿using Domain.Models;
+using Domain.Models.User;
 using Domain.ResultType;
 
 namespace Domain.Abstractions.Services;
 
 public interface IUserService
 {
-    Task<IEnumerable<UserModel>> GetAllUsersAsync();
+    Task<IEnumerable<UserModel>> GetAllUsersAsync(PageInfo? pageInfo = null);
 
-    Task<IEnumerable<UserModel>> GetAllUsersByPageAsync(int pageNumber, int pageSize);
-
-    Task<IEnumerable<UserModel>> GetAllCustomersAsync();
-
-    Task<IEnumerable<UserModel>> GetAllCustomersByPageAsync(int pageNumber, int pageSize);
+    Task<IEnumerable<UserModel>> GetAllCustomersAsync(PageInfo? pageInfo = null);
 
     Task<UserModel?> GetUserByUserNameAsync(string userName);
 
@@ -31,9 +28,7 @@ public interface IUserService
 
     Task<Result<IEnumerable<string>>> GetUserRolesAsync(string userId);
 
-    Task<Result<AuthorizedUserModel>> CustomerLoginAsync(string userName, string password);
-
-    Task<Result<AuthorizedUserModel>> AdminLoginAsync(string userName, string password);
+    Task<Result<AuthorizedUserModel>> LoginAsync(string userName, string password);
 
     Task<Result<AuthorizedUserModel>> RegisterAsync(UserModel model, string password);
 

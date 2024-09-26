@@ -13,7 +13,6 @@ using Domain.Validation;
 using FluentValidation;
 using Infrastructure;
 using Infrastructure.Repositories;
-using Infrastructure.Validation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
@@ -44,17 +43,10 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddValidators(this IServiceCollection services)
     {
-        services.AddValidatorsFromAssembly(DomainAssemblyReference.Assembly);
-        services.AddValidatorsFromAssembly(ApplicationAssemblyReference.Assembly);
-        services.AddValidatorsFromAssembly(InfrastructureAssemblyReference.Assembly);
+        services.AddValidatorsFromAssemblies([DomainAssemblyReference.Assembly,
+            ApplicationAssemblyReference.Assembly,
+            InfrastructureAssemblyReference.Assembly]);
 
-        services.AddScoped<IProductCategoryRepositoryValidator, ProductCategoryRepositoryValidator>();
-        services.AddScoped<IProductRepositoryValidator, ProductRepositoryValidator>();
-        services.AddScoped<IOrderRepositoryValidator, OrderRepositoryValidator>();
-        services.AddScoped<IOrderLineRepositoryValidator, OrderLineRepositoryValidator>();
-        services.AddScoped<IShopRepositoryValidator, ShopRepositoryValidator>();
-        services.AddScoped<IRefreshTokenRepositoryValidator, RefreshTokenRepositoryValidator>();
-        services.AddScoped<IUserRepositoryValidator, UserRepositoryValidator>();
         services.AddScoped<IUserServiceValidator, UserServiceValidator>();
 
         return services;

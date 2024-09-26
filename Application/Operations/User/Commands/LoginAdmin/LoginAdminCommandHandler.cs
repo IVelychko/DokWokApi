@@ -10,7 +10,7 @@ public class LoginAdminCommandHandler(IUserService userService)
 {
     public async Task<Result<AuthorizedUserResponse>> Handle(LoginAdminCommand request, CancellationToken cancellationToken)
     {
-        var result = await userService.AdminLoginAsync(request.UserName, request.Password);
+        var result = await userService.LoginAsync(request.UserName, request.Password);
         return result.Match(au => au.ToResponse(), Result<AuthorizedUserResponse>.Failure);
     }
 }

@@ -1,20 +1,15 @@
 ﻿using Domain.Entities;
+using Domain.Models;
 
 namespace Domain.Abstractions.Repositories;
 
 public interface IOrderLineRepository : IRepository<OrderLine>
 {
-    Task<IEnumerable<OrderLine>> GetAllWithDetailsAsync();
+    Task<IEnumerable<OrderLine>> GetAllWithDetailsAsync(PageInfo? pageInfo = null);
 
-    Task<IEnumerable<OrderLine>> GetAllWithDetailsByPageAsync(int pageNumber, int pageSize);
+    Task<IEnumerable<OrderLine>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null);
 
-    Task<IEnumerable<OrderLine>> GetAllByOrderIdAsync(long orderId);
-
-    Task<IEnumerable<OrderLine>> GetAllByOrderIdAndPageAsync(long orderId, int pageNumber, int pageSize);
-
-    Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId);
-
-    Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAndPageAsync(long orderId, int pageNumber, int pageSize);
+    Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId, PageInfo? pageInfo = null);
 
     Task<OrderLine?> GetByIdWithDetailsAsync(long id);
 

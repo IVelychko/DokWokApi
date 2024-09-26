@@ -7,8 +7,12 @@ public sealed class RefreshTokenCommandValidator : AbstractValidator<RefreshToke
 {
     public RefreshTokenCommandValidator()
     {
-        RuleFor(x => x.Token).NotEmpty();
+        RuleFor(x => x.Token)
+            .NotEmpty();
 
-        RuleFor(x => x.RefreshToken).NotEmpty().Matches(RegularExpressions.Guid);
+        RuleFor(x => x.RefreshToken)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+            .Matches(RegularExpressions.Guid);
     }
 }

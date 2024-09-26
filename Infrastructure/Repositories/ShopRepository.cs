@@ -1,9 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
-using Domain.Abstractions.Validation;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Errors.Base;
 using Domain.Exceptions;
+using Domain.Models;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,20 +11,17 @@ namespace Infrastructure.Repositories;
 public class ShopRepository : IShopRepository
 {
     private readonly StoreDbContext _context;
-    private readonly IShopRepositoryValidator _validator;
 
-    public ShopRepository(StoreDbContext context, IShopRepositoryValidator validator)
+    public ShopRepository(StoreDbContext context)
     {
         _context = context;
-        _validator = validator;
     }
 
     public async Task<Result<Shop>> AddAsync(Shop entity)
     {
-        var validationResult = await _validator.ValidateAddAsync(entity);
-        if (!validationResult.IsValid)
+        if (entity is null)
         {
-            var error = new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("shop", "The passed entity is null");
             return Result<Shop>.Failure(error);
         }
 
@@ -56,9 +52,18 @@ public class ShopRepository : IShopRepository
         return result > 0;
     }
 
-    public async Task<IEnumerable<Shop>> GetAllAsync()
+    public async Task<IEnumerable<Shop>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        return await _context.Shops.AsNoTracking().ToListAsync();
+        var query = _context.Shops.AsNoTracking();
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query
+                .Skip(itemsToSkip)
+                .Take(pageInfo.PageSize);
+        }
+
+        return await query.ToListAsync();
     }
 
     public async Task<Shop?> GetByIdAsync(long id)
@@ -73,11 +78,9 @@ public class ShopRepository : IShopRepository
 
     public async Task<Result<Shop>> UpdateAsync(Shop entity)
     {
-        var validationResult = await _validator.ValidateUpdateAsync(entity);
-        if (!validationResult.IsValid)
+        if (entity is null)
         {
-            Error error = validationResult.Errors.Exists(x => x.ErrorCode == "404") ? new EntityNotFoundError(validationResult.ToDictionary())
-                : new ValidationError(validationResult.ToDictionary());
+            var error = new ValidationError("shop", "The passed entity is null");
             return Result<Shop>.Failure(error);
         }
 
@@ -110,15 +113,5 @@ public class ShopRepository : IShopRepository
 
         var isTaken = await _context.Shops.AnyAsync(s => s.Street == street && s.Building == building);
         return isTaken;
-    }
-
-    public async Task<IEnumerable<Shop>> GetAllByPageAsync(int pageNumber, int pageSize)
-    {
-        var itemsToSkip = (pageNumber - 1) * pageSize;
-        return await _context.Shops
-            .AsNoTracking()
-            .Skip(itemsToSkip)
-            .Take(pageSize)
-            .ToListAsync();
     }
 }
