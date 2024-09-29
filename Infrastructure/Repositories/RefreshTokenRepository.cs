@@ -26,22 +26,14 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         }
 
         await _context.AddAsync(entity);
-        var result = await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
-        if (result > 0)
-        {
-            var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return addedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 
     public async Task<bool?> DeleteByIdAsync(long id)
     {
-        var entity = await _context.FindAsync<RefreshToken>(id);
+        var entity = await GetByIdAsync(id);
         if (entity is null)
         {
             return null;
@@ -54,7 +46,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<IEnumerable<RefreshToken>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var query = _context.RefreshTokens.AsNoTracking();
+        IQueryable<RefreshToken> query = _context.RefreshTokens;
         if (pageInfo is not null)
         {
             var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
@@ -68,9 +60,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<IEnumerable<RefreshToken>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
-        IQueryable<RefreshToken> query = _context.RefreshTokens
-            .AsNoTracking()
-            .Include(rt => rt.User);
+        IQueryable<RefreshToken> query = _context.RefreshTokens.Include(rt => rt.User);
 
         if (pageInfo is not null)
         {
@@ -85,60 +75,48 @@ public class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<RefreshToken?> GetByIdAsync(long id)
     {
-        return await _context.RefreshTokens
-            .AsNoTracking()
-            .FirstOrDefaultAsync(rt => rt.Id == id);
+        return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Id == id);
     }
 
     public async Task<RefreshToken?> GetByIdWithDetailsAsync(long id)
     {
         return await _context.RefreshTokens
-            .AsNoTracking()
             .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.Id == id);
     }
 
     public async Task<RefreshToken?> GetByJwtIdAsync(string jwtId)
     {
-        return await _context.RefreshTokens
-            .AsNoTracking()
-            .FirstOrDefaultAsync(rt => rt.JwtId == jwtId);
+        return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.JwtId == jwtId);
     }
 
     public async Task<RefreshToken?> GetByJwtIdWithDetailsAsync(string jwtId)
     {
         return await _context.RefreshTokens
-            .AsNoTracking()
             .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.JwtId == jwtId);
     }
 
     public async Task<RefreshToken?> GetByTokenAsync(string token)
     {
-        return await _context.RefreshTokens
-            .AsNoTracking()
-            .FirstOrDefaultAsync(rt => rt.Token == token);
+        return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token);
     }
 
     public async Task<RefreshToken?> GetByTokenWithDetailsAsync(string token)
     {
         return await _context.RefreshTokens
-            .AsNoTracking()
             .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.Token == token);
     }
 
-    public async Task<RefreshToken?> GetByUserIdAsync(string userId)
+    public async Task<RefreshToken?> GetByUserIdAsync(long userId)
     {
-        return await _context.RefreshTokens
-            .AsNoTracking()
-            .FirstOrDefaultAsync(rt => rt.UserId == userId);
+        return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.UserId == userId);
     }
 
-    public async Task<RefreshToken?> GetByUserIdWithDetailsAsync(string userId)
+    public async Task<RefreshToken?> GetByUserIdWithDetailsAsync(long userId)
     {
         return await _context.RefreshTokens
-            .AsNoTracking()
             .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.UserId == userId);
     }
@@ -152,16 +130,8 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         }
 
         _context.Update(entity);
-        var result = await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
-        if (result > 0)
-        {
-            var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return updatedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 }

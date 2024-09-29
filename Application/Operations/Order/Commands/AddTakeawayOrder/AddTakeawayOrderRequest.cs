@@ -5,7 +5,7 @@ public sealed record AddTakeawayOrderRequest(
     string PhoneNumber,
     string Email,
     string PaymentType,
-    string? UserId,
+    long? UserId,
     long ShopId,
     List<AddTakeawayOrderLineRequest> OrderLines
 );

@@ -61,7 +61,6 @@ public class UpdateOrderCommandValidator : AbstractValidator<UpdateOrderCommand>
 
         RuleFor(x => x.UserId)
             .NotEmpty()
-            .Matches(RegularExpressions.Guid)
             .MustAsync(UserExists)
             .WithMessage("There is no user with the ID specified in the UserId property of the Order entity")
             .When(x => x.UserId is not null);
@@ -76,8 +75,8 @@ public class UpdateOrderCommandValidator : AbstractValidator<UpdateOrderCommand>
     private async Task<bool> OrderToUpdateExists(long orderId, CancellationToken cancellationToken) =>
         (await _orderRepository.GetByIdAsync(orderId)) is not null;
 
-    private async Task<bool> UserExists(string? userId, CancellationToken cancellationToken) =>
-        (await _userRepository.GetUserByIdAsync(userId!)) is not null;
+    private async Task<bool> UserExists(long? userId, CancellationToken cancellationToken) =>
+        (await _userRepository.GetUserByIdAsync(userId.GetValueOrDefault())) is not null;
 
     private async Task<bool> ShopExists(long? shopId, CancellationToken cancellationToken) =>
         (await _shopRepository.GetByIdAsync(shopId.GetValueOrDefault())) is not null;

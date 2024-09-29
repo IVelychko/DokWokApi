@@ -2,7 +2,7 @@
 
 namespace Application.Operations.OrderLine;
 
-public class OrderLineResponse : BaseResponse<long>
+public class OrderLineResponse : BaseResponse
 {
     public required long OrderId { get; set; }
 

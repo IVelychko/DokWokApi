@@ -95,7 +95,7 @@ public static class ShopsEndpoints
     public static async Task<IResult> AddShop(ISender sender, AddShopRequest request)
     {
         var result = await sender.Send(request.ToCommand());
-        return result.ToCreatedAtRouteResult<ShopResponse, long>(GetByIdRouteName);
+        return result.ToCreatedAtRouteResult(GetByIdRouteName);
     }
 
     public static async Task<IResult> UpdateShop(ISender sender, UpdateShopRequest request)
@@ -122,6 +122,6 @@ public static class ShopsEndpoints
     public static async Task<IResult> IsShopAddressTaken(ISender sender, string street, string building)
     {
         var result = await sender.Send(new IsShopAddressTakenQuery(street, building));
-        return result.ToOkIsTakenResult();
+        return result.ToOkResult();
     }
 }

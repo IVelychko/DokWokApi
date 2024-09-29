@@ -2,10 +2,8 @@
 
 namespace Application.Operations.Order;
 
-public class OrderResponse : BaseResponse<long>
+public class OrderResponse : BaseResponse
 {
-    //public required long Id { get; set; }
-
     public required string CustomerName { get; set; }
 
     public required string PhoneNumber { get; set; }
@@ -22,7 +20,7 @@ public class OrderResponse : BaseResponse<long>
 
     public required string Status { get; set; }
 
-    public required string? UserId { get; set; }
+    public required long? UserId { get; set; }
 
     public required long? ShopId { get; set; }
 

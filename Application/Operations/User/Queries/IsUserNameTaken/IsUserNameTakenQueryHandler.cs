@@ -4,8 +4,14 @@ using Domain.ResultType;
 
 namespace Application.Operations.User.Queries.IsUserNameTaken;
 
-public class IsUserNameTakenQueryHandler(IUserService userService) : IQueryHandler<IsUserNameTakenQuery, Result<bool>>
+public class IsUserNameTakenQueryHandler(IUserService userService) : IQueryHandler<IsUserNameTakenQuery, Result<IsTakenResponse>>
 {
-    public async Task<Result<bool>> Handle(IsUserNameTakenQuery request, CancellationToken cancellationToken) =>
-        await userService.IsUserNameTakenAsync(request.UserName);
+    public async Task<Result<IsTakenResponse>> Handle(IsUserNameTakenQuery request, CancellationToken cancellationToken)
+    {
+        var result = await userService.IsUserNameTakenAsync(request.UserName);
+        Result<IsTakenResponse> isTakenResponseResult = result.Match(isTaken => new IsTakenResponse(isTaken),
+            Result<IsTakenResponse>.Failure);
+
+        return isTakenResponseResult;
+    }
 }

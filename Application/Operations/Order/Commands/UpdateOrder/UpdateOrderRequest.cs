@@ -10,6 +10,6 @@ public sealed record UpdateOrderRequest(
     decimal TotalOrderPrice,
     DateTime CreationDate,
     string Status,
-    string? UserId,
+    long? UserId,
     long? ShopId
 );

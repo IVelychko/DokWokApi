@@ -1,9 +1,10 @@
 ﻿namespace Application.Operations.User.Commands.UpdateUser;
 
 public sealed record UpdateUserRequest(
-    string Id,
+    long Id,
     string FirstName,
     string UserName,
     string Email,
-    string PhoneNumber
+    string PhoneNumber,
+    long UserRoleId
 );

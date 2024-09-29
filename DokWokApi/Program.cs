@@ -1,11 +1,10 @@
 using Application.Behaviors;
 using DokWokApi.Extensions;
 using DokWokApi.Services;
-using Domain.Entities;
 using Domain.Helpers;
+using Domain.Services;
 using Infrastructure;
 using MediatR;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -30,9 +29,8 @@ builder.Services.AddDbContext<StoreDbContext>(opts =>
 {
     var connectionString = builder.Configuration.GetConnectionString("FoodStoreConnection");
     opts.UseNpgsql(connectionString);
+    opts.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
-
-builder.Services.AddIdentityConfiguration();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -72,8 +70,7 @@ if (app.Environment.IsDevelopment())
 }
 
 var context = app.Services.CreateScope().ServiceProvider.GetRequiredService<StoreDbContext>();
-var roleManager = app.Services.CreateScope().ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-var userManager = app.Services.CreateScope().ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-await SeedData.SeedDatabaseAsync(context, roleManager, userManager);
+var passwordHasher = app.Services.GetRequiredService<PasswordHasher>();
+await SeedData.SeedDatabaseAsync(context, passwordHasher);
 
 await app.RunAsync();

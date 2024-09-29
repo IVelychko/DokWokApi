@@ -6,33 +6,39 @@ namespace Domain.Abstractions.Repositories;
 
 public interface IUserRepository
 {
-    Task<IEnumerable<ApplicationUser>> GetAllUsersAsync(PageInfo? pageInfo = null);
+    Task<IEnumerable<User>> GetAllUsersAsync(PageInfo? pageInfo = null);
 
-    Task<IEnumerable<ApplicationUser>> GetAllCustomersAsync(PageInfo? pageInfo = null);
+    Task<IEnumerable<User>> GetAllUsersWithDetailsAsync(PageInfo? pageInfo = null);
 
-    Task<ApplicationUser?> GetUserByUserNameAsync(string userName);
+    Task<IEnumerable<User>> GetAllCustomersAsync(PageInfo? pageInfo = null);
 
-    Task<ApplicationUser?> GetUserByIdAsync(string id);
+    Task<IEnumerable<User>> GetAllCustomersWithDetailsAsync(PageInfo? pageInfo = null);
 
-    Task<ApplicationUser?> GetCustomerByIdAsync(string id);
+    Task<User?> GetUserByUserNameAsync(string userName);
 
-    Task<Result<ApplicationUser>> AddAsync(ApplicationUser entity, string password);
+    Task<User?> GetUserByUserNameWithDetailsAsync(string userName);
 
-    Task<Result<ApplicationUser>> UpdateAsync(ApplicationUser entity);
+    Task<User?> GetUserByIdAsync(long id);
 
-    Task<Result<bool>> UpdateCustomerPasswordAsync(string userId, string oldPassword, string newPassword);
+    Task<User?> GetUserByIdWithDetailsAsync(long id);
 
-    Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(string userId, string newPassword);
+    Task<User?> GetCustomerByIdAsync(long id);
 
-    Task<bool?> DeleteAsync(string id);
+    Task<User?> GetCustomerByIdWithDetailsAsync(long id);
 
-    Task<Result<IEnumerable<string>>> GetUserRolesAsync(string userId);
+    Task<Result<User>> AddAsync(User entity, string password);
 
-    Task<Result<bool>> IsInRoleAsync(ApplicationUser entity, string role);
+    Task<Result<User>> UpdateAsync(User entity);
 
-    Task<Result<bool>> AddToRoleAsync(ApplicationUser entity, string role);
+    Task<Result<bool>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword);
 
-    Task<bool> CheckUserPasswordAsync(ApplicationUser entity, string password);
+    Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword);
+
+    Task<bool?> DeleteAsync(long id);
+
+    Task<bool> CheckUserPasswordAsync(long userId, string password);
+
+    bool CheckUserPassword(User user, string password);
 
     Task<Result<bool>> IsUserNameTakenAsync(string userName);
 

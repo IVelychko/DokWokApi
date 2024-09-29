@@ -42,7 +42,6 @@ public class AddTakeawayOrderCommandValidator : AbstractValidator<AddTakeawayOrd
 
         RuleFor(x => x.UserId)
             .NotEmpty()
-            .Matches(RegularExpressions.Guid)
             .MustAsync(UserExists)
             .WithMessage("There is no user with the ID specified in the UserId property of the Order entity")
             .When(x => x.UserId is not null);
@@ -54,6 +53,6 @@ public class AddTakeawayOrderCommandValidator : AbstractValidator<AddTakeawayOrd
     private async Task<bool> ShopExists(long shopId, CancellationToken token) =>
         (await _shopRepository.GetByIdAsync(shopId)) is not null;
 
-    private async Task<bool> UserExists(string? userId, CancellationToken token) =>
-        (await _userRepository.GetUserByIdAsync(userId!)) is not null;
+    private async Task<bool> UserExists(long? userId, CancellationToken token) =>
+        (await _userRepository.GetUserByIdAsync(userId.GetValueOrDefault())) is not null;
 }

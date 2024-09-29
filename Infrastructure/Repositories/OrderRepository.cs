@@ -27,22 +27,14 @@ public class OrderRepository : IOrderRepository
         }
 
         await _context.AddAsync(entity);
-        var result = await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
-        if (result > 0)
-        {
-            var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return addedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 
     public async Task<bool?> DeleteByIdAsync(long id)
     {
-        var entity = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id);
+        var entity = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
         if (entity is null)
         {
             return null;
@@ -55,7 +47,7 @@ public class OrderRepository : IOrderRepository
 
     public async Task<IEnumerable<Order>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var query = _context.Orders.AsNoTracking();
+        IQueryable<Order> query = _context.Orders;
 
         if (pageInfo is not null)
         {
@@ -68,11 +60,9 @@ public class OrderRepository : IOrderRepository
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<Order>> GetAllByUserIdAsync(string userId, PageInfo? pageInfo = null)
+    public async Task<IEnumerable<Order>> GetAllByUserIdAsync(long userId, PageInfo? pageInfo = null)
     {
-        var query = _context.Orders
-            .AsNoTracking()
-            .Where(o => o.UserId == userId);
+        var query = _context.Orders.Where(o => o.UserId == userId);
 
         if (pageInfo is not null)
         {
@@ -88,7 +78,6 @@ public class OrderRepository : IOrderRepository
     public async Task<IEnumerable<Order>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
         IQueryable<Order> query = _context.Orders
-            .AsNoTracking()
             .Include(o => o.User)
             .Include(o => o.Shop)
             .Include(o => o.OrderLines)
@@ -106,10 +95,9 @@ public class OrderRepository : IOrderRepository
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<Order>> GetAllWithDetailsByUserIdAsync(string userId, PageInfo? pageInfo = null)
+    public async Task<IEnumerable<Order>> GetAllWithDetailsByUserIdAsync(long userId, PageInfo? pageInfo = null)
     {
         var query = _context.Orders
-            .AsNoTracking()
             .Include(o => o.User)
             .Include(o => o.Shop)
             .Include(o => o.OrderLines)
@@ -130,15 +118,12 @@ public class OrderRepository : IOrderRepository
 
     public async Task<Order?> GetByIdAsync(long id)
     {
-        return await _context.Orders
-            .AsNoTracking()
-            .FirstOrDefaultAsync(o => o.Id == id);
+        return await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
     }
 
     public async Task<Order?> GetByIdWithDetailsAsync(long id)
     {
         return await _context.Orders
-            .AsNoTracking()
             .Include(o => o.User)
             .Include(o => o.Shop)
             .Include(o => o.OrderLines)
@@ -156,16 +141,8 @@ public class OrderRepository : IOrderRepository
         }
 
         _context.Update(entity);
-        var result = await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
-        if (result > 0)
-        {
-            var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return updatedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 }

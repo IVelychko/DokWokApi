@@ -1,6 +1,6 @@
 ﻿namespace Application.Operations;
 
-public class BaseResponse<TKey>
+public class BaseResponse
 {
-    public required TKey Id { get; set; }
+    public required long Id { get; set; }
 }

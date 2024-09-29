@@ -16,7 +16,6 @@ public sealed class UpdatePasswordCommandValidator : AbstractValidator<UpdatePas
 
         RuleFor(x => x.UserId)
             .NotEmpty()
-            .Matches(RegularExpressions.Guid)
             .MustAsync(UserToUpdateExists)
             .WithErrorCode("404")
             .WithMessage("There is no user with this ID in the database")
@@ -28,9 +27,7 @@ public sealed class UpdatePasswordCommandValidator : AbstractValidator<UpdatePas
                 RuleFor(x => x.OldPassword)
                     .NotEmpty()
                     .Matches(RegularExpressions.Password)
-                    .MinimumLength(6)
-                    .MustAsync(IsOldPasswordValid)
-                    .WithMessage("The old password is not valid");
+                    .MinimumLength(6);
 
                 RuleFor(x => x.NewPassword)
                     .NotEmpty()
@@ -39,32 +36,20 @@ public sealed class UpdatePasswordCommandValidator : AbstractValidator<UpdatePas
             });
     }
 
-    private async Task<bool> UserToUpdateExists(string userId, CancellationToken cancellationToken)
+    private async Task<bool> UserToUpdateExists(long userId, CancellationToken cancellationToken)
     {
         return (await _userRepository.GetUserByIdAsync(userId)) is not null;
     }
 
-    private async Task<bool> IsNotAdmin(string userId, CancellationToken cancellationToken)
+    private async Task<bool> IsNotAdmin(long userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetUserByIdAsync(userId);
+        var user = await _userRepository.GetUserByIdWithDetailsAsync(userId);
         if (user is null)
         {
             return false;
         }
 
-        var result = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
-        return result.Match(inRole => !inRole, error => false);
-    }
-
-    private async Task<bool> IsOldPasswordValid(UpdatePasswordCommand updateUserPassword,
-        string oldPassword, CancellationToken cancellationToken)
-    {
-        var user = await _userRepository.GetUserByIdAsync(updateUserPassword.UserId);
-        if (user is null)
-        {
-            return false;
-        }
-
-        return await _userRepository.CheckUserPasswordAsync(user, updateUserPassword.OldPassword);
+        var isNotAdmin = user.UserRole?.Name != UserRoles.Admin;
+        return isNotAdmin;
     }
 }

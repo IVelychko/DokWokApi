@@ -3,4 +3,4 @@ using Domain.ResultType;
 
 namespace Application.Operations.User.Queries.IsUserEmailTaken;
 
-public sealed record IsUserEmailTakenQuery(string Email) : IQuery<Result<bool>>;
+public sealed record IsUserEmailTakenQuery(string Email) : IQuery<Result<IsTakenResponse>>;

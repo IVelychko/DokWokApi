@@ -11,7 +11,7 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken>
 
     Task<RefreshToken?> GetByJwtIdAsync(string jwtId);
 
-    Task<RefreshToken?> GetByUserIdAsync(string userId);
+    Task<RefreshToken?> GetByUserIdAsync(long userId);
 
     Task<RefreshToken?> GetByIdWithDetailsAsync(long id);
 
@@ -19,5 +19,5 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken>
 
     Task<RefreshToken?> GetByJwtIdWithDetailsAsync(string jwtId);
 
-    Task<RefreshToken?> GetByUserIdWithDetailsAsync(string userId);
+    Task<RefreshToken?> GetByUserIdWithDetailsAsync(long userId);
 }

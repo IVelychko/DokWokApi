@@ -59,20 +59,20 @@ public static class OrdersEndpoints
     }
 
     public static async Task<Ok<IEnumerable<OrderResponse>>> GetAllOrders(ISender sender,
-        string? userId, int? pageNumber, int? pageSize)
+        long? userId, int? pageNumber, int? pageSize)
     {
         IEnumerable<OrderResponse> orders;
         if (pageNumber.HasValue && pageSize.HasValue)
         {
-            orders = userId is null ?
+            orders = !userId.HasValue ?
                 await sender.Send(new GetAllOrdersByPageQuery(pageNumber.Value, pageSize.Value)) :
-                await sender.Send(new GetAllOrdersByUserIdAndPageQuery(userId, pageNumber.Value, pageSize.Value));
+                await sender.Send(new GetAllOrdersByUserIdAndPageQuery(userId.Value, pageNumber.Value, pageSize.Value));
         }
         else
         {
-            orders = userId is null ?
+            orders = !userId.HasValue ?
                 await sender.Send(new GetAllOrdersQuery()) :
-                await sender.Send(new GetAllOrdersByUserIdQuery(userId));
+                await sender.Send(new GetAllOrdersByUserIdQuery(userId.Value));
         }
 
         return TypedResults.Ok(orders);
@@ -92,13 +92,13 @@ public static class OrdersEndpoints
     public static async Task<IResult> AddDeliveryOrder(ISender sender, AddDeliveryOrderRequest request)
     {
         var result = await sender.Send(request.ToCommand());
-        return result.ToCreatedAtRouteResult<OrderResponse, long>(GetByIdRouteName);
+        return result.ToCreatedAtRouteResult(GetByIdRouteName);
     }
 
     public static async Task<IResult> AddTakeawayOrder(ISender sender, AddTakeawayOrderRequest request)
     {
         var result = await sender.Send(request.ToCommand());
-        return result.ToCreatedAtRouteResult<OrderResponse, long>(GetByIdRouteName);
+        return result.ToCreatedAtRouteResult(GetByIdRouteName);
     }
 
     public static async Task<IResult> UpdateOrder(ISender sender, UpdateOrderRequest request)

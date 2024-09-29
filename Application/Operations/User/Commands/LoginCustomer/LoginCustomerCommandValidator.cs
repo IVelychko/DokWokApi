@@ -28,10 +28,7 @@ public sealed class LoginCustomerCommandValidator : AbstractValidator<LoginCusto
                 RuleFor(x => x.Password)
                     .NotEmpty()
                     .Matches(RegularExpressions.Password)
-                    .MinimumLength(6)
-                    .MustAsync(IsValidPassword)
-                    .WithName("user")
-                    .WithMessage("The credentials are wrong");
+                    .MinimumLength(6);
             });
     }
 
@@ -43,27 +40,13 @@ public sealed class LoginCustomerCommandValidator : AbstractValidator<LoginCusto
 
     private async Task<bool> IsCustomerOrAdmin(string userName, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetUserByUserNameAsync(userName);
+        var user = await _userRepository.GetUserByUserNameWithDetailsAsync(userName);
         if (user is null)
         {
             return false;
         }
 
-        var isCustomerResult = await _userRepository.IsInRoleAsync(user, UserRoles.Customer);
-        var isCustomer = isCustomerResult.Match(x => x, e => false);
-        var isAdminResult = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
-        var isAdmin = isAdminResult.Match(x => x, e => false);
-        return isCustomer || isAdmin;
-    }
-
-    private async Task<bool> IsValidPassword(LoginCustomerCommand customerLogin, string password, CancellationToken cancellationToken)
-    {
-        var user = await _userRepository.GetUserByUserNameAsync(customerLogin.UserName);
-        if (user is null)
-        {
-            return false;
-        }
-
-        return await _userRepository.CheckUserPasswordAsync(user, password);
+        var isCustomerOrAdmin = user.UserRole?.Name == UserRoles.Admin || user.UserRole?.Name == UserRoles.Customer;
+        return isCustomerOrAdmin;
     }
 }

@@ -1,11 +1,11 @@
 ﻿using Domain.Abstractions.Repositories;
+using Domain.Abstractions.Services;
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Models;
 using Domain.ResultType;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 
@@ -13,167 +13,162 @@ namespace Infrastructure.Repositories;
 
 public class UserRepository : IUserRepository
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly StoreDbContext _context;
+    private readonly IPasswordHasher _passwordHasher;
 
-    public UserRepository(UserManager<ApplicationUser> userManager)
+    public UserRepository(StoreDbContext context, IPasswordHasher passwordHasher)
     {
-        _userManager = userManager;
+        _context = context;
+        _passwordHasher = passwordHasher;
     }
 
-    public async Task<Result<ApplicationUser>> AddAsync(ApplicationUser entity, string password)
+    public async Task<Result<User>> AddAsync(User entity, string password)
     {
         if (entity is null)
         {
             var error = new ValidationError("user", "The passed entity is null");
-            return Result<ApplicationUser>.Failure(error);
+            return Result<User>.Failure(error);
         }
         else if (string.IsNullOrEmpty(password))
         {
             var error = new ValidationError(nameof(password), "The passed password is null or empty");
-            return Result<ApplicationUser>.Failure(error);
+            return Result<User>.Failure(error);
         }
 
-        var result = await _userManager.CreateAsync(entity, password);
-        if (!result.Succeeded)
-        {
-            Dictionary<string, string[]> errors = new() { [nameof(result)] = result.Errors.Select(e => e.Description).ToArray() };
-            var error = new ValidationError(errors);
-            return Result<ApplicationUser>.Failure(error);
-        }
-
-        var addedUser = await _userManager.FindByIdAsync(entity.Id);
-        if (addedUser is not null)
-        {
-            await _userManager.AddToRoleAsync(addedUser, UserRoles.Customer);
-            return addedUser;
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        var hashedPassword = _passwordHasher.Hash(password);
+        entity.PasswordHash = hashedPassword;
+        await _context.AddAsync(entity);
+        await _context.SaveChangesAsync();
+        _context.Entry(entity).State = EntityState.Detached;
+        return await GetUserByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 
-    public async Task<Result<bool>> AddToRoleAsync(ApplicationUser entity, string role)
+    public async Task<bool> CheckUserPasswordAsync(long userId, string password)
     {
-        if (entity is null || string.IsNullOrEmpty(role))
-        {
-            Dictionary<string, string[]> errors = [];
-            if (entity is null)
-            {
-                errors.Add(nameof(entity), ["The passed entity is null"]);
-            }
-
-            if (string.IsNullOrEmpty(role))
-            {
-                errors.Add(nameof(role), ["The passed role is null or empty"]);
-            }
-
-            var error = new ValidationError(errors);
-            return Result<bool>.Failure(error);
-        }
-
-        var result = await _userManager.AddToRoleAsync(entity, role);
-        if (!result.Succeeded)
+        if (string.IsNullOrEmpty(password))
         {
             return false;
         }
 
-        return true;
-    }
-
-    public async Task<bool> CheckUserPasswordAsync(ApplicationUser entity, string password)
-    {
-        if (entity is null || string.IsNullOrEmpty(password))
+        var user = await GetUserByIdAsync(userId);
+        if (user is null)
         {
             return false;
         }
 
-        var result = await _userManager.CheckPasswordAsync(entity, password);
-        return result;
+        return _passwordHasher.Verify(password, user.PasswordHash);
     }
 
-    public async Task<bool?> DeleteAsync(string id)
+    public bool CheckUserPassword(User user, string password)
     {
-        var user = await _userManager.FindByIdAsync(id);
+        if (user is null || string.IsNullOrEmpty(password))
+        {
+            return false;
+        }
+
+        return _passwordHasher.Verify(password, user.PasswordHash);
+    }
+
+    public async Task<bool?> DeleteAsync(long id)
+    {
+        var user = await GetCustomerByIdAsync(id);
         if (user is null)
         {
             return null;
         }
 
-        var isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-        if (isAdmin)
-        {
-            return false;
-        }
-
-        var result = await _userManager.DeleteAsync(user);
-        if (result.Succeeded)
-        {
-            return true;
-        }
-
-        return false;
+        _context.Remove(user);
+        var result = await _context.SaveChangesAsync();
+        return result > 0;
     }
 
-    public async Task<IEnumerable<ApplicationUser>> GetAllCustomersAsync(PageInfo? pageInfo = null)
+    public async Task<IEnumerable<User>> GetAllCustomersAsync(PageInfo? pageInfo = null)
     {
+        var query = _context.Users.Where(u => u.UserRole!.Name == UserRoles.Customer);
         if (pageInfo is not null)
         {
             var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            var customers = await _userManager.GetUsersInRoleAsync(UserRoles.Customer);
-            return customers.Skip(itemsToSkip).Take(pageInfo.PageSize);
-        }
-
-        return await _userManager.GetUsersInRoleAsync(UserRoles.Customer);
-    }
-
-    public async Task<IEnumerable<ApplicationUser>> GetAllUsersAsync(PageInfo? pageInfo = null)
-    {
-        var query = _userManager.Users.AsNoTracking();
-        if (pageInfo is not null)
-        {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            return await query.Skip(itemsToSkip).Take(pageInfo.PageSize).ToListAsync();
         }
 
         return await query.ToListAsync();
     }
 
-    public async Task<ApplicationUser?> GetCustomerByIdAsync(string id)
+    public async Task<IEnumerable<User>> GetAllCustomersWithDetailsAsync(PageInfo? pageInfo = null)
     {
-        var entity = await _userManager.FindByIdAsync(id);
-        if (entity is null)
+        var query = _context.Users
+            .Include(u => u.UserRole)
+            .Where(u => u.UserRole!.Name == UserRoles.Customer);
+
+        if (pageInfo is not null)
         {
-            return null;
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            return await query.Skip(itemsToSkip).Take(pageInfo.PageSize).ToListAsync();
         }
 
-        var isCustomer = await _userManager.IsInRoleAsync(entity, UserRoles.Customer);
-        return isCustomer ? entity : null;
+        return await query.ToListAsync();
     }
 
-    public async Task<ApplicationUser?> GetUserByIdAsync(string id)
+    public async Task<IEnumerable<User>> GetAllUsersAsync(PageInfo? pageInfo = null)
     {
-        return await _userManager.FindByIdAsync(id);
-    }
-
-    public async Task<ApplicationUser?> GetUserByUserNameAsync(string userName)
-    {
-        return await _userManager.FindByNameAsync(userName);
-    }
-
-    public async Task<Result<IEnumerable<string>>> GetUserRolesAsync(string userId)
-    {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user is null)
+        IQueryable<User> query = _context.Users;
+        if (pageInfo is not null)
         {
-            var error = new EntityNotFoundError(nameof(user), "There is no user with this id.");
-            return Result<IEnumerable<string>>.Failure(error);
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query.Skip(itemsToSkip).Take(pageInfo.PageSize);
         }
 
-        var roles = await _userManager.GetRolesAsync(user);
-        return new Result<IEnumerable<string>>(roles);
+        return await query.ToListAsync();
+    }
+
+    public async Task<IEnumerable<User>> GetAllUsersWithDetailsAsync(PageInfo? pageInfo = null)
+    {
+        IQueryable<User> query = _context.Users.Include(u => u.UserRole);
+
+        if (pageInfo is not null)
+        {
+            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
+            query = query.Skip(itemsToSkip).Take(pageInfo.PageSize);
+        }
+
+        return await query.ToListAsync();
+    }
+
+    public async Task<User?> GetCustomerByIdAsync(long id)
+    {
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == id && u.UserRole!.Name == UserRoles.Customer);
+    }
+
+    public async Task<User?> GetCustomerByIdWithDetailsAsync(long id)
+    {
+        return await _context.Users
+            .Include(u => u.UserRole)
+            .FirstOrDefaultAsync(u => u.Id == id && u.UserRole!.Name == UserRoles.Customer);
+    }
+
+    public async Task<User?> GetUserByIdAsync(long id)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+    }
+
+    public async Task<User?> GetUserByIdWithDetailsAsync(long id)
+    {
+        return await _context.Users
+            .Include(u => u.UserRole)
+            .FirstOrDefaultAsync(u => u.Id == id);
+    }
+
+    public async Task<User?> GetUserByUserNameAsync(string userName)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
+    }
+
+    public async Task<User?> GetUserByUserNameWithDetailsAsync(string userName)
+    {
+        return await _context.Users
+            .Include(u => u.UserRole)
+            .FirstOrDefaultAsync(u => u.UserName == userName);
     }
 
     public async Task<Result<bool>> IsEmailTakenAsync(string email)
@@ -184,31 +179,8 @@ public class UserRepository : IUserRepository
             return Result<bool>.Failure(error);
         }
 
-        var isTaken = await _userManager.Users.AsNoTracking().AnyAsync(u => u.Email == email);
+        var isTaken = await _context.Users.AnyAsync(u => u.Email == email);
         return isTaken;
-    }
-
-    public async Task<Result<bool>> IsInRoleAsync(ApplicationUser entity, string role)
-    {
-        if (entity is null || string.IsNullOrEmpty(role))
-        {
-            Dictionary<string, string[]> errors = [];
-            if (entity is null)
-            {
-                errors.Add(nameof(entity), ["The passed entity is null"]);
-            }
-
-            if (string.IsNullOrEmpty(role))
-            {
-                errors.Add(nameof(role), ["The passed role is null or empty"]);
-            }
-
-            var error = new ValidationError(errors);
-            return Result<bool>.Failure(error);
-        }
-
-        var result = await _userManager.IsInRoleAsync(entity, role);
-        return result;
     }
 
     public async Task<Result<bool>> IsPhoneNumberTakenAsync(string phoneNumber)
@@ -219,7 +191,7 @@ public class UserRepository : IUserRepository
             return Result<bool>.Failure(error);
         }
 
-        var isTaken = await _userManager.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == phoneNumber);
+        var isTaken = await _context.Users.AnyAsync(u => u.PhoneNumber == phoneNumber);
         return isTaken;
     }
 
@@ -231,101 +203,71 @@ public class UserRepository : IUserRepository
             return Result<bool>.Failure(error);
         }
 
-        var isTaken = await _userManager.Users.AsNoTracking().AnyAsync(u => u.UserName == userName);
+        var isTaken = await _context.Users.AnyAsync(u => u.UserName == userName);
         return isTaken;
     }
 
-    public async Task<Result<ApplicationUser>> UpdateAsync(ApplicationUser entity)
+    public async Task<Result<User>> UpdateAsync(User entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("user", "The passed entity is null");
-            return Result<ApplicationUser>.Failure(error);
+            return Result<User>.Failure(error);
         }
 
-        var result = await _userManager.UpdateAsync(entity);
-        if (!result.Succeeded)
-        {
-            Dictionary<string, string[]> errors = new() { [nameof(result)] = result.Errors.Select(e => e.Description).ToArray() };
-            var error = new ValidationError(errors);
-            return Result<ApplicationUser>.Failure(error);
-        }
-
-        var updatedUser = await _userManager.FindByIdAsync(entity.Id);
-        if (updatedUser is not null)
-        {
-            return updatedUser;
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        _context.Update(entity);
+        await _context.SaveChangesAsync();
+        _context.Entry(entity).State = EntityState.Detached;
+        return await GetUserByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 
-    public async Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(string userId, string newPassword)
+    public async Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(newPassword))
+        if (string.IsNullOrEmpty(newPassword))
         {
             var error = new ValidationError("userData", "The passed userId or newPassword is null");
             return Result<bool>.Failure(error);
         }
 
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await GetUserByIdAsync(userId);
         if (user is null)
         {
             var error = new EntityNotFoundError(nameof(user), "The user was not found");
             return Result<bool>.Failure(error);
         }
 
-        var oldPasswordResult = await _userManager.RemovePasswordAsync(user);
-        if (!oldPasswordResult.Succeeded)
-        {
-            Dictionary<string, string[]> errors = new() { [nameof(oldPasswordResult)] = oldPasswordResult.Errors.Select(e => e.Description).ToArray() };
-            var error = new ValidationError(errors);
-            return Result<bool>.Failure(error);
-        }
-
-        var newPasswordResult = await _userManager.AddPasswordAsync(user, newPassword);
-        if (!newPasswordResult.Succeeded)
-        {
-            Dictionary<string, string[]> errors = new() { [nameof(oldPasswordResult)] = newPasswordResult.Errors.Select(e => e.Description).ToArray() };
-            var error = new ValidationError(errors);
-            return Result<bool>.Failure(error);
-        }
+        var hashedPassword = _passwordHasher.Hash(newPassword);
+        user.PasswordHash = hashedPassword;
+        await UpdateAsync(user);
 
         return true;
     }
 
-    public async Task<Result<bool>> UpdateCustomerPasswordAsync(string userId, string oldPassword, string newPassword)
+    public async Task<Result<bool>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword))
+        if (string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword))
         {
             var error = new ValidationError("userData", "The passed userId, oldPassword or newPassword is null");
             return Result<bool>.Failure(error);
         }
 
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await GetUserByIdAsync(userId);
         if (user is null)
         {
             var error = new EntityNotFoundError(nameof(user), "The user was not found");
             return Result<bool>.Failure(error);
         }
 
-        var oldPasswordResult = await _userManager.RemovePasswordAsync(user);
-        if (!oldPasswordResult.Succeeded)
+        var isOldPasswordValid = CheckUserPassword(user, oldPassword);
+        if (!isOldPasswordValid)
         {
-            Dictionary<string, string[]> errors = new() { [nameof(oldPasswordResult)] = oldPasswordResult.Errors.Select(e => e.Description).ToArray() };
-            var error = new ValidationError(errors);
+            var error = new ValidationError("userData", "The passed credentials are not valid");
             return Result<bool>.Failure(error);
         }
 
-        var newPasswordResult = await _userManager.AddPasswordAsync(user, newPassword);
-        if (!newPasswordResult.Succeeded)
-        {
-            Dictionary<string, string[]> errors = new() { [nameof(oldPasswordResult)] = newPasswordResult.Errors.Select(e => e.Description).ToArray() };
-            var error = new ValidationError(errors);
-            return Result<bool>.Failure(error);
-        }
+        var hashedPassword = _passwordHasher.Hash(newPassword);
+        user.PasswordHash = hashedPassword;
+        await UpdateAsync(user);
 
         return true;
     }

@@ -30,10 +30,7 @@ public sealed class LoginAdminCommandValidator : AbstractValidator<LoginAdminCom
                 RuleFor(x => x.Password)
                     .NotEmpty()
                     .Matches(RegularExpressions.Password)
-                    .MinimumLength(6)
-                    .MustAsync(IsValidPassword)
-                    .WithName("user")
-                    .WithMessage("The credentials are wrong");
+                    .MinimumLength(6);
             });
     }
 
@@ -45,24 +42,12 @@ public sealed class LoginAdminCommandValidator : AbstractValidator<LoginAdminCom
 
     private async Task<bool> IsAdmin(string userName, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetUserByUserNameAsync(userName);
+        var user = await _userRepository.GetUserByUserNameWithDetailsAsync(userName);
         if (user is null)
         {
             return false;
         }
 
-        var result = await _userRepository.IsInRoleAsync(user, UserRoles.Admin);
-        return result.Match(x => x, e => false);
-    }
-
-    private async Task<bool> IsValidPassword(LoginAdminCommand adminLogin, string password, CancellationToken cancellationToken)
-    {
-        var user = await _userRepository.GetUserByUserNameAsync(adminLogin.UserName);
-        if (user is null)
-        {
-            return false;
-        }
-
-        return await _userRepository.CheckUserPasswordAsync(user, password);
+        return user.UserRole?.Name == UserRoles.Admin;
     }
 }

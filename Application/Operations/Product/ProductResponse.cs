@@ -1,9 +1,7 @@
 ﻿namespace Application.Operations.Product;
 
-public class ProductResponse : BaseResponse<long>
+public class ProductResponse : BaseResponse
 {
-    //public required long Id { get; set; }
-
     public required string Name { get; set; }
 
     public required decimal Price { get; set; }

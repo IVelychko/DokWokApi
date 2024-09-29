@@ -1,12 +1,17 @@
-﻿using Domain.Entities;
+﻿using Domain.Abstractions.Services;
+using Domain.Entities;
 using Domain.Helpers;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure;
 
 public static class SeedData
 {
+    private readonly static string[] roles = [
+            UserRoles.Admin,
+            UserRoles.Customer
+    ];
+
     private static Product[] GetProductsToAdd()
     {
         ProductCategory[] categories = [
@@ -46,11 +51,6 @@ public static class SeedData
         return products;
     }
 
-    private readonly static IdentityRole[] roles = [
-            new() { Name = UserRoles.Admin },
-            new() { Name = UserRoles.Customer }
-        ];
-
     private readonly static Shop[] shops = [
             new() { Street = "Олександра Поля", Building = "36", OpeningTime = "10:00", ClosingTime = "22:00" },
             new() { Street = "Незалежності", Building = "42", OpeningTime = "09:00", ClosingTime = "21:00" },
@@ -58,33 +58,37 @@ public static class SeedData
             new() { Street = "Робоча", Building = "54", OpeningTime = "10:00", ClosingTime = "22:00" },
         ];
 
-    public static async Task SeedDatabaseAsync(
-        StoreDbContext context,
-        RoleManager<IdentityRole> roleManager,
-        UserManager<ApplicationUser> userManager)
+    public static async Task SeedDatabaseAsync(StoreDbContext context, IPasswordHasher passwordHasher)
     {
         await context.Database.MigrateAsync();
 
-        if (!await roleManager.Roles.AnyAsync())
+        if (!await context.UserRoles.AnyAsync())
         {
+            List<UserRole> userRoles = [];
             foreach (var role in roles)
             {
-                await roleManager.CreateAsync(role);
+                userRoles.Add(new() { Name = role });
             }
+
+            await context.AddRangeAsync(userRoles);
+            await context.SaveChangesAsync();
         }
 
-        var admins = await userManager.GetUsersInRoleAsync(UserRoles.Admin);
-        if (admins.Count < 1)
+        var adminExists = await context.Users.AnyAsync(u => u.UserRole!.Name == UserRoles.Admin);
+        if (!adminExists)
         {
-            await userManager.CreateAsync(new ApplicationUser
+            var adminRole = await context.UserRoles.FirstOrDefaultAsync(r => r.Name == UserRoles.Admin);
+            var hashedPassword = passwordHasher.Hash("AdminPassword1");
+            await context.AddAsync(new User
             {
                 FirstName = "Ihor",
                 UserName = "Admin1",
                 Email = "admin@example.com",
-                PhoneNumber = "1234567890"
-            }, "AdminPassword1");
-            var admin = await userManager.FindByNameAsync("Admin1");
-            await userManager.AddToRoleAsync(admin!, UserRoles.Admin);
+                PhoneNumber = "1234567890",
+                UserRoleId = adminRole!.Id,
+                PasswordHash = hashedPassword
+            });
+            await context.SaveChangesAsync();
         }
 
         if (!await context.ProductCategories.AnyAsync() && !await context.Products.AnyAsync())

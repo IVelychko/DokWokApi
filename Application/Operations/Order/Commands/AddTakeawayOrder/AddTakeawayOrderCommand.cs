@@ -8,7 +8,7 @@ public sealed record AddTakeawayOrderCommand(
     string PhoneNumber,
     string Email,
     string PaymentType,
-    string? UserId,
+    long? UserId,
     long ShopId,
     List<AddTakeawayOrderLineRequest> OrderLines
 ) : ICommand<Result<OrderResponse>>;

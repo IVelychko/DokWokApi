@@ -13,6 +13,6 @@ public sealed record UpdateOrderCommand(
     decimal TotalOrderPrice,
     DateTime CreationDate,
     string Status,
-    string? UserId,
+    long? UserId,
     long? ShopId
 ) : ICommand<Result<OrderResponse>>;

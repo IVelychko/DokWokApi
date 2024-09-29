@@ -2,4 +2,4 @@
 
 namespace Application.Operations.User.Queries.GetCustomerById;
 
-public sealed record GetCustomerByIdQuery(string Id) : IQuery<UserResponse?>;
+public sealed record GetCustomerByIdQuery(long Id) : IQuery<UserResponse?>;

@@ -27,22 +27,14 @@ public class OrderLineRepository : IOrderLineRepository
         }
 
         await _context.AddAsync(entity);
-        var result = await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
-        if (result > 0)
-        {
-            var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return addedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 
     public async Task<bool?> DeleteByIdAsync(long id)
     {
-        var entity = await _context.FindAsync<OrderLine>(id);
+        var entity = await _context.OrderLines.FirstOrDefaultAsync(ol => ol.Id == id);
         if (entity is null)
         {
             return null;
@@ -55,7 +47,7 @@ public class OrderLineRepository : IOrderLineRepository
 
     public async Task<IEnumerable<OrderLine>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var query = _context.OrderLines.AsNoTracking();
+        IQueryable<OrderLine> query = _context.OrderLines;
 
         if (pageInfo is not null)
         {
@@ -70,9 +62,7 @@ public class OrderLineRepository : IOrderLineRepository
 
     public async Task<IEnumerable<OrderLine>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
     {
-        var query = _context.OrderLines
-            .AsNoTracking()
-            .Where(ol => ol.OrderId == orderId);
+        var query = _context.OrderLines.Where(ol => ol.OrderId == orderId);
 
         if (pageInfo is not null)
         {
@@ -88,7 +78,6 @@ public class OrderLineRepository : IOrderLineRepository
     public async Task<IEnumerable<OrderLine>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
         IQueryable<OrderLine> query = _context.OrderLines
-            .AsNoTracking()
             .Include(ol => ol.Order)
             .Include(ol => ol.Product)
                 .ThenInclude(p => p!.Category);
@@ -107,7 +96,6 @@ public class OrderLineRepository : IOrderLineRepository
     public async Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
     {
         var query = _context.OrderLines
-            .AsNoTracking()
             .Include(ol => ol.Order)
             .Include(ol => ol.Product)
                 .ThenInclude(p => p!.Category)
@@ -126,13 +114,12 @@ public class OrderLineRepository : IOrderLineRepository
 
     public async Task<OrderLine?> GetByIdAsync(long id)
     {
-        return await _context.OrderLines.AsNoTracking().FirstOrDefaultAsync(ol => ol.Id == id);
+        return await _context.OrderLines.FirstOrDefaultAsync(ol => ol.Id == id);
     }
 
     public async Task<OrderLine?> GetByIdWithDetailsAsync(long id)
     {
         return await _context.OrderLines
-            .AsNoTracking()
             .Include(ol => ol.Order)
             .Include(ol => ol.Product)
                 .ThenInclude(p => p!.Category)
@@ -142,14 +129,12 @@ public class OrderLineRepository : IOrderLineRepository
     public async Task<OrderLine?> GetByOrderAndProductIdsAsync(long orderId, long productId)
     {
         return await _context.OrderLines
-            .AsNoTracking()
             .FirstOrDefaultAsync(ol => ol.OrderId == orderId && ol.ProductId == productId);
     }
 
     public async Task<OrderLine?> GetByOrderAndProductIdsWithDetailsAsync(long orderId, long productId)
     {
         return await _context.OrderLines
-            .AsNoTracking()
             .Include(ol => ol.Order)
             .Include(ol => ol.Product)
                 .ThenInclude(p => p!.Category)
@@ -165,16 +150,8 @@ public class OrderLineRepository : IOrderLineRepository
         }
 
         _context.Update(entity);
-        var result = await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
-        if (result > 0)
-        {
-            var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return updatedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 }

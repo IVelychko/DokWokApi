@@ -5,8 +5,14 @@ using Domain.ResultType;
 namespace Application.Operations.Product.Queries.IsProductNameTaken;
 
 public class IsProductNameTakenQueryHandler(IProductService productService)
-    : IQueryHandler<IsProductNameTakenQuery, Result<bool>>
+    : IQueryHandler<IsProductNameTakenQuery, Result<IsTakenResponse>>
 {
-    public async Task<Result<bool>> Handle(IsProductNameTakenQuery request, CancellationToken cancellationToken) =>
-        await productService.IsNameTakenAsync(request.Name);
+    public async Task<Result<IsTakenResponse>> Handle(IsProductNameTakenQuery request, CancellationToken cancellationToken)
+    {
+        var result = await productService.IsNameTakenAsync(request.Name);
+        Result<IsTakenResponse> isTakenResponseResult = result.Match(isTaken => new IsTakenResponse(isTaken),
+            Result<IsTakenResponse>.Failure);
+
+        return isTakenResponseResult;
+    }
 }

@@ -27,22 +27,14 @@ public class ProductRepository : IProductRepository
         }
 
         await _context.AddAsync(entity);
-        var result = await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
-        if (result > 0)
-        {
-            var addedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return addedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 
     public async Task<bool?> DeleteByIdAsync(long id)
     {
-        var entity = await _context.FindAsync<Product>(id);
+        var entity = await GetByIdAsync(id);
         if (entity is null)
         {
             return null;
@@ -55,7 +47,7 @@ public class ProductRepository : IProductRepository
 
     public async Task<IEnumerable<Product>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var query = _context.Products.AsNoTracking();
+        IQueryable<Product> query = _context.Products;
         if (pageInfo is not null)
         {
             var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
@@ -69,9 +61,7 @@ public class ProductRepository : IProductRepository
 
     public async Task<IEnumerable<Product>> GetAllByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
     {
-        var query = _context.Products
-            .AsNoTracking()
-            .Where(p => p.CategoryId == categoryId);
+        var query = _context.Products.Where(p => p.CategoryId == categoryId);
 
         if (pageInfo is not null)
         {
@@ -86,9 +76,7 @@ public class ProductRepository : IProductRepository
 
     public async Task<IEnumerable<Product>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
-        IQueryable<Product> query = _context.Products
-            .AsNoTracking()
-            .Include(p => p.Category);
+        IQueryable<Product> query = _context.Products.Include(p => p.Category);
 
         if (pageInfo is not null)
         {
@@ -104,7 +92,6 @@ public class ProductRepository : IProductRepository
     public async Task<IEnumerable<Product>> GetAllWithDetailsByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
     {
         var query = _context.Products
-            .AsNoTracking()
             .Include(p => p.Category)
             .Where(p => p.CategoryId == categoryId);
 
@@ -121,15 +108,12 @@ public class ProductRepository : IProductRepository
 
     public async Task<Product?> GetByIdAsync(long id)
     {
-        return await _context.Products
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == id);
+        return await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
     }
 
     public async Task<Product?> GetByIdWithDetailsAsync(long id)
     {
         return await _context.Products
-            .AsNoTracking()
             .Include(p => p.Category)
             .FirstOrDefaultAsync(p => p.Id == id);
     }
@@ -155,15 +139,8 @@ public class ProductRepository : IProductRepository
         }
 
         _context.Update(entity);
-        var result = await _context.SaveChangesAsync();
-        if (result > 0)
-        {
-            var updatedEntity = await GetByIdWithDetailsAsync(entity.Id);
-            return updatedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        await _context.SaveChangesAsync();
+        _context.Entry(entity).State = EntityState.Detached;
+        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 }

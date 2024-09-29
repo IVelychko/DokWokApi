@@ -18,13 +18,11 @@ using Application.Operations.User.Queries.GetAllUsersByPage;
 using Application.Operations.User.Queries.GetCustomerById;
 using Application.Operations.User.Queries.GetUserById;
 using Application.Operations.User.Queries.GetUserByUserName;
-using Application.Operations.User.Queries.GetUserRoles;
 using Application.Operations.User.Queries.IsUserEmailTaken;
 using Application.Operations.User.Queries.IsUserNameTaken;
 using Application.Operations.User.Queries.IsUserPhoneNumberTaken;
 using DokWokApi.Extensions;
 using DokWokApi.Helpers;
-using Domain.Errors.Base;
 using Domain.Helpers;
 using Domain.Models;
 using MediatR;
@@ -123,12 +121,6 @@ public static class UsersEndpoints
             .Produces(StatusCodes.Status200OK)
             .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
 
-        group.MapGet(ApiRoutes.Users.GetUserRoles, GetUserRoles)
-            .RequireAuthorization(AuthorizationPolicyNames.Admin)
-            .Produces<IEnumerable<string>>()
-            .Produces(StatusCodes.Status404NotFound)
-            .Produces(StatusCodes.Status401Unauthorized);
-
         group.MapGet(ApiRoutes.Users.IsCustomerUserNameTaken, IsUserNameTaken)
             .Produces<IsTakenResponse>()
             .Produces<ProblemDetailsModel>(StatusCodes.Status400BadRequest);
@@ -168,13 +160,13 @@ public static class UsersEndpoints
         return result;
     }
 
-    public static async Task<IResult> GetUserById(ISender sender, HttpContext httpContext, string id)
+    public static async Task<IResult> GetUserById(ISender sender, HttpContext httpContext, long id)
     {
         var result = await AuthenticateAndGetUserById(sender, httpContext, id, false);
         return result;
     }
 
-    public static async Task<IResult> GetCustomerById(ISender sender, HttpContext httpContext, string id)
+    public static async Task<IResult> GetCustomerById(ISender sender, HttpContext httpContext, long id)
     {
         var result = await AuthenticateAndGetUserById(sender, httpContext, id, true);
         return result;
@@ -183,7 +175,7 @@ public static class UsersEndpoints
     public static async Task<IResult> AddUser(ISender sender, AddUserRequest request)
     {
         var result = await sender.Send(request.ToCommand());
-        return result.ToCreatedAtRouteResult<UserResponse, string>(GetByIdRouteName);
+        return result.ToCreatedAtRouteResult(GetByIdRouteName);
     }
 
     public static async Task<IResult> UpdateUser(ISender sender, HttpContext httpContext, UpdateUserRequest request)
@@ -228,7 +220,7 @@ public static class UsersEndpoints
         return result.ToOkPasswordUpdateResult();
     }
 
-    public static async Task<IResult> DeleteUserById(ISender sender, string id)
+    public static async Task<IResult> DeleteUserById(ISender sender, long id)
     {
         var result = await sender.Send(new DeleteUserCommand(id));
         if (result is null)
@@ -299,42 +291,28 @@ public static class UsersEndpoints
         return result ? Results.Ok() : Results.BadRequest();
     }
 
-    public static async Task<IResult> GetUserRoles(ISender sender, string userId)
-    {
-        var result = await sender.Send(new GetUserRolesQuery(userId));
-        return result.Match(roles => Results.Ok(roles), error =>
-        {
-            if (error is NotFoundError)
-            {
-                return Results.NotFound();
-            }
-
-            return Results.StatusCode(StatusCodes.Status500InternalServerError);
-        });
-    }
-
     public static async Task<IResult> IsUserNameTaken(ISender sender, string userName)
     {
         var result = await sender.Send(new IsUserNameTakenQuery(userName));
-        return result.ToOkIsTakenResult();
+        return result.ToOkResult();
     }
 
     public static async Task<IResult> IsEmailTaken(ISender sender, string email)
     {
         var result = await sender.Send(new IsUserEmailTakenQuery(email));
-        return result.ToOkIsTakenResult();
+        return result.ToOkResult();
     }
 
     public static async Task<IResult> IsPhoneNumberTaken(ISender sender, string phoneNumber)
     {
         var result = await sender.Send(new IsUserPhoneNumberTakenQuery(phoneNumber));
-        return result.ToOkIsTakenResult();
+        return result.ToOkResult();
     }
 
     private static async Task<UserResponse?> AuthenticateUser(ISender sender, HttpContext httpContext)
     {
-        var userId = httpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
-        if (userId is null)
+        var result = long.TryParse(httpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value, out long userId);
+        if (!result)
         {
             return null;
         }
@@ -355,7 +333,7 @@ public static class UsersEndpoints
         return isAdmin;
     }
 
-    private static async Task<IResult> AuthenticateAndGetUserById(ISender sender, HttpContext httpContext, string id, bool isCustomer)
+    private static async Task<IResult> AuthenticateAndGetUserById(ISender sender, HttpContext httpContext, long id, bool isCustomer)
     {
         var authorizedUser = await AuthenticateUser(sender, httpContext);
         if (authorizedUser is null)
@@ -369,7 +347,8 @@ public static class UsersEndpoints
             return Results.Forbid();
         }
 
-        var user = await sender.Send(isCustomer ? new GetCustomerByIdQuery(id) : new GetUserByIdQuery(id));
+        var user = isCustomer ? await sender.Send(new GetCustomerByIdQuery(id)) :
+            await sender.Send(new GetUserByIdQuery(id));
         if (user is null)
         {
             return Results.NotFound();

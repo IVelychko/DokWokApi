@@ -21,11 +21,11 @@ public class Order : BaseEntity
 
     public string Status { get; set; } = string.Empty;
 
-    public string? UserId { get; set; }
+    public long? UserId { get; set; }
 
     public long? ShopId { get; set; }
 
-    public ApplicationUser? User { get; set; }
+    public User? User { get; set; }
 
     public Shop? Shop { get; set; }
 

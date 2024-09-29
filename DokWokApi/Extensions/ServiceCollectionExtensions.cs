@@ -4,7 +4,6 @@ using Domain;
 using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Abstractions.Validation;
-using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Models.User;
@@ -14,7 +13,6 @@ using FluentValidation;
 using Infrastructure;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 
@@ -61,6 +59,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IShopRepository, ShopRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserRoleRepository, UserRoleRepository>();
 
         return services;
     }
@@ -74,21 +73,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IShopService, ShopService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ISecurityTokenService<UserModel, JwtSecurityToken>, JwtService>();
-
-        return services;
-    }
-
-    public static IServiceCollection AddIdentityConfiguration(this IServiceCollection services)
-    {
-        services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
-        {
-            opts.Password.RequiredLength = 6;
-            opts.Password.RequireNonAlphanumeric = false;
-            opts.Password.RequireLowercase = false;
-            opts.Password.RequireUppercase = true;
-            opts.Password.RequireDigit = true;
-            opts.User.RequireUniqueEmail = true;
-        }).AddEntityFrameworkStores<StoreDbContext>();
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         return services;
     }

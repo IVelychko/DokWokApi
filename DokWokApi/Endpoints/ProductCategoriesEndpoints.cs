@@ -79,7 +79,7 @@ public static class ProductCategoriesEndpoints
     public static async Task<IResult> AddCategory(ISender sender, AddProductCategoryRequest request)
     {
         var result = await sender.Send(request.ToCommand());
-        return result.ToCreatedAtRouteResult<ProductCategoryResponse, long>(GetByIdRouteName);
+        return result.ToCreatedAtRouteResult(GetByIdRouteName);
     }
 
     public static async Task<IResult> UpdateCategory(ISender sender, UpdateProductCategoryRequest request)
@@ -106,6 +106,6 @@ public static class ProductCategoriesEndpoints
     public static async Task<IResult> IsCategoryNameTaken(ISender sender, string name)
     {
         var result = await sender.Send(new IsProductCategoryNameTakenQuery(name));
-        return result.ToOkIsTakenResult();
+        return result.ToOkResult();
     }
 }

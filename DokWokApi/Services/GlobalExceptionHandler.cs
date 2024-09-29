@@ -1,4 +1,5 @@
 ﻿using Domain.Exceptions;
+using Domain.Models;
 using Microsoft.AspNetCore.Diagnostics;
 using System.Net;
 
@@ -17,8 +18,10 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         if (exception is ValidationException validationException)
         {
-            httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-            await httpContext.Response.WriteAsJsonAsync(validationException.Errors, cancellationToken);
+            int statusCode = (int)HttpStatusCode.BadRequest;
+            httpContext.Response.StatusCode = statusCode;
+            ProblemDetailsModel problem = new() { StatusCode = statusCode, Title = "Bad Request", Errors = validationException.Errors };
+            await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
             return true;
         }
 

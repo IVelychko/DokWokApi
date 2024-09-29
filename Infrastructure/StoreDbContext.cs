@@ -1,13 +1,10 @@
 ﻿using Domain.Entities;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure;
 
-public class StoreDbContext : IdentityDbContext<ApplicationUser>
+public class StoreDbContext(DbContextOptions<StoreDbContext> options) : DbContext(options)
 {
-    public StoreDbContext(DbContextOptions<StoreDbContext> options) : base(options) { }
-
     public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
 
     public DbSet<Product> Products => Set<Product>();
@@ -20,61 +17,83 @@ public class StoreDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
-    protected override void OnModelCreating(ModelBuilder builder)
-    {
-        base.OnModelCreating(builder);
+    public DbSet<User> Users => Set<User>();
 
-        builder.Entity<ApplicationUser>()
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.UserName)
+            .IsUnique();
+
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<User>()
             .HasIndex(u => u.PhoneNumber)
             .IsUnique();
 
-        builder.Entity<ProductCategory>()
+        modelBuilder.Entity<UserRole>()
+            .HasIndex(r => r.Name)
+            .IsUnique();
+
+        modelBuilder.Entity<ProductCategory>()
             .HasIndex(c => c.Name)
             .IsUnique();
 
-        builder.Entity<Product>()
+        modelBuilder.Entity<Product>()
             .HasIndex(p => p.Name)
             .IsUnique();
 
-        builder.Entity<OrderLine>()
+        modelBuilder.Entity<OrderLine>()
             .HasIndex(ol => new { ol.OrderId, ol.ProductId })
             .IsUnique();
 
-        builder.Entity<Shop>()
+        modelBuilder.Entity<Shop>()
             .HasIndex(s => new { s.Street, s.Building })
             .IsUnique();
 
-        builder.Entity<Product>()
+        modelBuilder.Entity<UserRole>()
+            .HasMany(r => r.Users)
+            .WithOne(u => u.UserRole)
+            .HasForeignKey(u => u.UserRoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Product>()
             .HasMany(p => p.OrderLines)
             .WithOne(ol => ol.Product)
             .HasForeignKey(ol => ol.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Entity<ProductCategory>()
+        modelBuilder.Entity<ProductCategory>()
             .HasMany(c => c.Products)
             .WithOne(p => p.Category)
             .HasForeignKey(p => p.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Entity<Order>()
+        modelBuilder.Entity<Order>()
             .HasMany(o => o.OrderLines)
             .WithOne(ol => ol.Order)
             .HasForeignKey(ol => ol.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Entity<ApplicationUser>()
+        modelBuilder.Entity<User>()
             .HasMany(u => u.Orders)
             .WithOne(o => o.User)
             .HasForeignKey(o => o.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Entity<ApplicationUser>()
+        modelBuilder.Entity<User>()
             .HasMany(u => u.RefreshTokens)
             .WithOne(rt => rt.User)
             .HasForeignKey(rt => rt.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Entity<Shop>()
+        modelBuilder.Entity<Shop>()
             .HasMany(s => s.Orders)
             .WithOne(o => o.Shop)
             .HasForeignKey(o => o.ShopId)

@@ -26,7 +26,6 @@ public sealed class AddDeliveryOrderCommandValidator : AbstractValidator<AddDeli
 
         RuleFor(x => x.UserId)
             .NotEmpty()
-            .Matches(RegularExpressions.Guid)
             .MustAsync(UserExists)
             .WithMessage("There is no user with the ID specified in the UserId property of the Order entity")
             .When(x => x.UserId is not null);
@@ -35,6 +34,6 @@ public sealed class AddDeliveryOrderCommandValidator : AbstractValidator<AddDeli
             .When(x => x.OrderLines is not null && x.OrderLines.Count > 0);
     }
 
-    private async Task<bool> UserExists(string userId, CancellationToken token) =>
-        (await _userRepository.GetUserByIdAsync(userId!)) is not null;
+    private async Task<bool> UserExists(long? userId, CancellationToken token) =>
+        (await _userRepository.GetUserByIdAsync(userId.GetValueOrDefault())) is not null;
 }

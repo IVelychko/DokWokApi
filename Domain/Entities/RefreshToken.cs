@@ -14,7 +14,7 @@ public class RefreshToken : BaseEntity
 
     public bool Invalidated { get; set; }
 
-    public string UserId { get; set; } = string.Empty;
+    public long UserId { get; set; }
 
-    public ApplicationUser? User { get; set; }
+    public User? User { get; set; }
 }

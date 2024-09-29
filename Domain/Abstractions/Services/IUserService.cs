@@ -12,21 +12,19 @@ public interface IUserService
 
     Task<UserModel?> GetUserByUserNameAsync(string userName);
 
-    Task<UserModel?> GetUserByIdAsync(string id);
+    Task<UserModel?> GetUserByIdAsync(long id);
 
-    Task<UserModel?> GetCustomerByIdAsync(string id);
+    Task<UserModel?> GetCustomerByIdAsync(long id);
 
     Task<Result<UserModel>> AddAsync(UserModel model, string password);
 
     Task<Result<UserModel>> UpdateAsync(UserModel model);
 
-    Task<Result<bool>> UpdateCustomerPasswordAsync(string userId, string oldPassword, string newPassword);
+    Task<Result<bool>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword);
 
-    Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(string userId, string newPassword);
+    Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword);
 
-    Task<bool?> DeleteAsync(string id);
-
-    Task<Result<IEnumerable<string>>> GetUserRolesAsync(string userId);
+    Task<bool?> DeleteAsync(long id);
 
     Task<Result<AuthorizedUserModel>> LoginAsync(string userName, string password);
 

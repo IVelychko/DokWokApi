@@ -57,7 +57,7 @@ public class OrderService : IOrderService
         return models;
     }
 
-    public async Task<IEnumerable<OrderModel>> GetAllByUserIdAsync(string userId, PageInfo? pageInfo = null)
+    public async Task<IEnumerable<OrderModel>> GetAllByUserIdAsync(long userId, PageInfo? pageInfo = null)
     {
         var entities = await _orderRepository.GetAllWithDetailsByUserIdAsync(userId, pageInfo);
         var models = entities.Select(o => o.ToModel());

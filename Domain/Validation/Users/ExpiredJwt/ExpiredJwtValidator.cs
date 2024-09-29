@@ -22,7 +22,7 @@ public sealed class ExpiredJwtValidator : AbstractValidator<ExpiredJwtValidation
             });
     }
 
-    private bool IsTokenExpired(JwtSecurityToken expiredJwt)
+    private static bool IsTokenExpired(JwtSecurityToken expiredJwt)
     {
         return expiredJwt.ValidTo < DateTime.UtcNow;
     }

@@ -26,22 +26,14 @@ public class ProductCategoryRepository : IProductCategoryRepository
         }
 
         await _context.AddAsync(entity);
-        var result = await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
-        if (result > 0)
-        {
-            var addedEntity = await GetByIdAsync(entity.Id);
-            return addedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        return await GetByIdAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 
     public async Task<bool?> DeleteByIdAsync(long id)
     {
-        var entity = await _context.FindAsync<ProductCategory>(id);
+        var entity = await _context.ProductCategories.FirstOrDefaultAsync(c => c.Id == id);
         if (entity is null)
         {
             return null;
@@ -54,7 +46,7 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public async Task<IEnumerable<ProductCategory>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var query = _context.ProductCategories.AsNoTracking();
+        IQueryable<ProductCategory> query = _context.ProductCategories;
         if (pageInfo is not null)
         {
             var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
@@ -68,7 +60,7 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public async Task<ProductCategory?> GetByIdAsync(long id)
     {
-        return await _context.ProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+        return await _context.ProductCategories.FirstOrDefaultAsync(c => c.Id == id);
     }
 
     public async Task<Result<bool>> IsNameTakenAsync(string name)
@@ -92,16 +84,8 @@ public class ProductCategoryRepository : IProductCategoryRepository
         }
 
         _context.Update(entity);
-        var result = await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
-        if (result > 0)
-        {
-            var updatedEntity = await GetByIdAsync(entity.Id);
-            return updatedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        return await GetByIdAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 }

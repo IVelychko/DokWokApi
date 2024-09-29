@@ -42,24 +42,6 @@ public static class ResultExtensions
         return result.Match(isUpdated => new OkResult(), GetActionResultFromError);
     }
 
-    public static IActionResult ToOkIsTakenActionResult(this Result<bool> result)
-    {
-        return result.Match<IActionResult>(isTaken => new OkObjectResult(new { isTaken }), error =>
-        {
-            if (error is BadRequestError badRequestError)
-            {
-                return new BadRequestObjectResult(new ProblemDetailsModel
-                {
-                    Errors = badRequestError.Errors,
-                    StatusCode = StatusCodes.Status400BadRequest,
-                    Title = "Bad Request"
-                });
-            }
-
-            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
-        });
-    }
-
     public static IActionResult ToCreatedAtActionResult(this Result<AuthorizedUserResponse> result, HttpContext context, string actionName, string controllerName)
     {
         if (result.IsFaulted)
@@ -81,7 +63,7 @@ public static class ResultExtensions
         return new CreatedAtActionResult(actionName, controllerName, new { id = user.Id }, user);
     }
 
-    public static IActionResult ToCreatedAtActionResult<TResponse, TKey>(this Result<TResponse> result, string actionName, string controllerName) where TResponse : BaseResponse<TKey>
+    public static IActionResult ToCreatedAtActionResult<TResponse>(this Result<TResponse> result, string actionName, string controllerName) where TResponse : BaseResponse
     {
         return result.Match(response => new CreatedAtActionResult(actionName, controllerName, new { id = response.Id }, response),
             GetActionResultFromError);
@@ -143,24 +125,6 @@ public static class ResultExtensions
         return result.Match(isUpdated => Results.Ok(), GetResultFromError);
     }
 
-    public static IResult ToOkIsTakenResult(this Result<bool> result)
-    {
-        return result.Match(isTaken => Results.Ok(new IsTakenResponse(isTaken)), error =>
-        {
-            if (error is BadRequestError badRequestError)
-            {
-                return Results.BadRequest(new ProblemDetailsModel
-                {
-                    StatusCode = StatusCodes.Status400BadRequest,
-                    Title = "Bad Request",
-                    Errors = badRequestError.Errors
-                });
-            }
-
-            return Results.StatusCode(StatusCodes.Status500InternalServerError);
-        });
-    }
-
     public static IResult ToCreatedAtRouteResult(this Result<AuthorizedUserResponse> result, HttpContext context, string routeName)
     {
         if (result.IsFaulted)
@@ -182,7 +146,7 @@ public static class ResultExtensions
         return Results.CreatedAtRoute(routeName, new { id = user.Id }, user);
     }
 
-    public static IResult ToCreatedAtRouteResult<TResponse, TKey>(this Result<TResponse> result, string routeName) where TResponse : BaseResponse<TKey>
+    public static IResult ToCreatedAtRouteResult<TResponse>(this Result<TResponse> result, string routeName) where TResponse : BaseResponse
     {
         return result.Match(response => Results.CreatedAtRoute(routeName, new { id = response.Id }, response),
             GetResultFromError);

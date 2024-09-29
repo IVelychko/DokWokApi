@@ -9,6 +9,6 @@ public sealed record AddDeliveryOrderCommand(
     string Email,
     string DeliveryAddress,
     string PaymentType,
-    string? UserId,
+    long? UserId,
     List<AddDeliveryOrderLineRequest> OrderLines
 ) : ICommand<Result<OrderResponse>>;

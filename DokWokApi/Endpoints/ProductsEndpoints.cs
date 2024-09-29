@@ -91,7 +91,7 @@ public static class ProductsEndpoints
     public static async Task<IResult> AddProduct(ISender sender, AddProductRequest request)
     {
         var result = await sender.Send(request.ToCommand());
-        return result.ToCreatedAtRouteResult<ProductResponse, long>(GetByIdRouteName);
+        return result.ToCreatedAtRouteResult(GetByIdRouteName);
     }
 
     public static async Task<IResult> UpdateProduct(ISender sender, UpdateProductRequest request)
@@ -118,6 +118,6 @@ public static class ProductsEndpoints
     public static async Task<IResult> IsProductNameTaken(ISender sender, string name)
     {
         var result = await sender.Send(new IsProductNameTakenQuery(name));
-        return result.ToOkIsTakenResult();
+        return result.ToOkResult();
     }
 }

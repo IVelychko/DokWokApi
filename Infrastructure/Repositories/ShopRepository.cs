@@ -26,22 +26,14 @@ public class ShopRepository : IShopRepository
         }
 
         await _context.AddAsync(entity);
-        var result = await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
-        if (result > 0)
-        {
-            var addedEntity = await GetByIdAsync(entity.Id);
-            return addedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        return await GetByIdAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 
     public async Task<bool?> DeleteByIdAsync(long id)
     {
-        var entity = await _context.FindAsync<Shop>(id);
+        var entity = await GetByIdAsync(id);
         if (entity is null)
         {
             return null;
@@ -54,7 +46,7 @@ public class ShopRepository : IShopRepository
 
     public async Task<IEnumerable<Shop>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var query = _context.Shops.AsNoTracking();
+        IQueryable<Shop> query = _context.Shops;
         if (pageInfo is not null)
         {
             var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
@@ -68,12 +60,12 @@ public class ShopRepository : IShopRepository
 
     public async Task<Shop?> GetByIdAsync(long id)
     {
-        return await _context.Shops.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id);
+        return await _context.Shops.FirstOrDefaultAsync(s => s.Id == id);
     }
 
     public async Task<Shop?> GetByAddressAsync(string street, string building)
     {
-        return await _context.Shops.AsNoTracking().FirstOrDefaultAsync(s => s.Street == street && s.Building == building);
+        return await _context.Shops.FirstOrDefaultAsync(s => s.Street == street && s.Building == building);
     }
 
     public async Task<Result<Shop>> UpdateAsync(Shop entity)
@@ -85,17 +77,9 @@ public class ShopRepository : IShopRepository
         }
 
         _context.Update(entity);
-        var result = await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
-        if (result > 0)
-        {
-            var updatedEntity = await GetByIdAsync(entity.Id);
-            return updatedEntity ?? throw new DbException("There was the database error");
-        }
-        else
-        {
-            throw new DbException("There was the database error");
-        }
+        return await GetByIdAsync(entity.Id) ?? throw new DbException("There was the database error");
     }
 
     public async Task<Result<bool>> IsAddressTakenAsync(string street, string building)

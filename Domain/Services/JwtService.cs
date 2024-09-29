@@ -33,16 +33,16 @@ public class JwtService : ISecurityTokenService<UserModel, JwtSecurityToken>
         return securityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
     }
 
-    public string CreateSerializedToken(UserModel user, IEnumerable<string> roles)
+    public string CreateSerializedToken(UserModel user, string role)
     {
-        var token = CreateToken(user, roles);
+        var token = CreateToken(user, role);
 
         var tokenHandler = new JwtSecurityTokenHandler();
         return tokenHandler.WriteToken(token);
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "The secret is not visible")]
-    public JwtSecurityToken CreateToken(UserModel user, IEnumerable<string> roles)
+    public JwtSecurityToken CreateToken(UserModel user, string role)
     {
         var errorMessage = "Unable to get data from configuration";
         var tokenLifeTime = _configuration["Jwt:TokenLifeTime"]?.Split(':')
@@ -61,16 +61,13 @@ public class JwtService : ISecurityTokenService<UserModel, JwtSecurityToken>
         SigningCredentials tokenSigningCredentials = new(securityKey, SecurityAlgorithms.HmacSha256);
 
         var subject = _configuration["Jwt:Subject"] ?? throw new ConfigurationException(errorMessage);
-        List<Claim> claims = [
+        Claim[] claims = [
             new(JwtRegisteredClaimNames.Sub, subject),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(DateTime.UtcNow).ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64),
-            new("id", user.Id)
+            new("id", user.Id.ToString()),
+            new(ClaimTypes.Role, role)
         ];
-        foreach (var role in roles)
-        {
-            claims.Add(new(ClaimTypes.Role, role));
-        }
 
         var issuer = _configuration["Jwt:Issuer"] ?? throw new ConfigurationException(errorMessage);
         var audience = _configuration["Jwt:Audience"] ?? throw new ConfigurationException(errorMessage);

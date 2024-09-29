@@ -107,7 +107,7 @@ public static class OrderLinesEndpoints
     public static async Task<IResult> AddOrderLine(ISender sender, AddOrderLineRequest request)
     {
         var result = await sender.Send(request.ToCommand());
-        return result.ToCreatedAtRouteResult<OrderLineResponse, long>(GetByIdRouteName);
+        return result.ToCreatedAtRouteResult(GetByIdRouteName);
     }
 
     public static async Task<IResult> UpdateOrderLine(ISender sender, UpdateOrderLineRequest request)
