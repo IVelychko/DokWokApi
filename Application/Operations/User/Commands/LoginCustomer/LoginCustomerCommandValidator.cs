@@ -12,16 +12,16 @@ public sealed class LoginCustomerCommandValidator : AbstractValidator<LoginCusto
     {
         _userRepository = userRepository;
 
+        RuleLevelCascadeMode = CascadeMode.Stop;
+
         RuleFor(x => x.UserName)
             .NotEmpty()
             .Matches(RegularExpressions.UserName)
             .MinimumLength(5)
             .MustAsync(UserExists)
-            .WithName("user")
             .WithErrorCode("404")
             .WithMessage("The credentials are wrong.")
             .MustAsync(IsCustomerOrAdmin)
-            .WithName("user")
             .WithMessage("The authorization is denied")
             .DependentRules(() =>
             {

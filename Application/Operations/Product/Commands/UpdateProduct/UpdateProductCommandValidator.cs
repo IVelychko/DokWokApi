@@ -20,15 +20,16 @@ public sealed class UpdateProductCommandValidator : AbstractValidator<UpdateProd
             .NotEmpty()
             .MustAsync(ProductExists)
             .WithErrorCode("404")
-            .WithMessage("There is no entity with this ID in the database");
-
-        RuleFor(x => x.Name)
-            .NotEmpty()
-            .Matches(RegularExpressions.RegularString)
-            .MinimumLength(3)
-            .MustAsync(IsNameUnique)
-            .WithMessage("The product with the same Name value is already present in the database")
-            .When(x => x.Id != 0, ApplyConditionTo.CurrentValidator);
+            .WithMessage("There is no entity with this ID in the database")
+            .DependentRules(() =>
+            {
+                RuleFor(x => x.Name)
+                    .NotEmpty()
+                    .Matches(RegularExpressions.RegularString)
+                    .MinimumLength(3)
+                    .MustAsync(IsNameUnique)
+                    .WithMessage("The product with the same Name value is already present in the database");
+            });
 
         RuleFor(x => x.Price)
             .GreaterThan(0);

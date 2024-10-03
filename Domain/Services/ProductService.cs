@@ -4,16 +4,20 @@ using Domain.Errors;
 using Domain.Mapping.Extensions;
 using Domain.Models;
 using Domain.ResultType;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace Domain.Services;
 
 public class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
+    private readonly IDistributedCache _distributedCache;
 
-    public ProductService(IProductRepository productRepository)
+    public ProductService(IProductRepository productRepository, IDistributedCache distributedCache)
     {
         _productRepository = productRepository;
+        _distributedCache = distributedCache;
     }
 
     public async Task<Result<ProductModel>> AddAsync(ProductModel model)
@@ -36,8 +40,23 @@ public class ProductService : IProductService
 
     public async Task<IEnumerable<ProductModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _productRepository.GetAllWithDetailsAsync(pageInfo);
-        var models = entities.Select(p => p.ToModel());
+        string key = "allProducts";
+        var cachedSerializedModels = await _distributedCache.GetStringAsync(key);
+        IEnumerable<ProductModel> models;
+        if (string.IsNullOrEmpty(cachedSerializedModels))
+        {
+            var entities = await _productRepository.GetAllWithDetailsAsync(pageInfo);
+            models = entities.Select(p => p.ToModel());
+            if (models.Any())
+            {
+                await _distributedCache.SetStringAsync(key, JsonSerializer.Serialize(models));
+                return models;
+            }
+
+            return models;
+        }
+
+        models = JsonSerializer.Deserialize<IEnumerable<ProductModel>>(cachedSerializedModels)!;
         return models;
     }
 

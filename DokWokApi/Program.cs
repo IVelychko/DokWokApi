@@ -1,8 +1,8 @@
 using Application.Behaviors;
 using DokWokApi.Extensions;
 using DokWokApi.Services;
+using Domain.Abstractions.Services;
 using Domain.Helpers;
-using Domain.Services;
 using Infrastructure;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +23,12 @@ builder.Services.AddMediatR(opts =>
 {
     opts.RegisterServicesFromAssembly(Application.ApplicationAssemblyReference.Assembly);
     opts.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+});
+
+builder.Services.AddStackExchangeRedisCache(opts =>
+{
+    var connection = builder.Configuration.GetConnectionString("RedisConnection");
+    opts.Configuration = connection;
 });
 
 builder.Services.AddDbContext<StoreDbContext>(opts =>
@@ -70,7 +76,7 @@ if (app.Environment.IsDevelopment())
 }
 
 var context = app.Services.CreateScope().ServiceProvider.GetRequiredService<StoreDbContext>();
-var passwordHasher = app.Services.GetRequiredService<PasswordHasher>();
+var passwordHasher = app.Services.GetRequiredService<IPasswordHasher>();
 await SeedData.SeedDatabaseAsync(context, passwordHasher);
 
 await app.RunAsync();

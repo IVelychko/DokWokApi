@@ -18,25 +18,26 @@ public sealed class UpdateShopCommandValidator : AbstractValidator<UpdateShopCom
             .NotEmpty()
             .MustAsync(ShopToUpdateExists)
             .WithErrorCode("404")
-            .WithMessage("There is no entity with this ID in the database");
-
-        RuleFor(x => x.Street)
-            .NotEmpty()
-            .Matches(RegularExpressions.Street)
-            .MinimumLength(3)
+            .WithMessage("There is no entity with this ID in the database")
             .DependentRules(() =>
             {
-                RuleFor(x => x.Building)
+                RuleFor(x => x.Street)
                     .NotEmpty()
-                    .Matches(RegularExpressions.Building)
-                    .MaximumLength(6)
+                    .Matches(RegularExpressions.Street)
+                    .MinimumLength(3)
                     .DependentRules(() =>
                     {
-                        RuleFor(x => x)
-                            .MustAsync(IsAddressTaken)
-                            .WithName("address")
-                            .WithMessage("The shop with the same Street and Building values is already present in the database")
-                            .When(x => x.Id != 0);
+                        RuleFor(x => x.Building)
+                            .NotEmpty()
+                            .Matches(RegularExpressions.Building)
+                            .MaximumLength(6)
+                            .DependentRules(() =>
+                            {
+                                RuleFor(x => x)
+                                    .MustAsync(IsAddressTaken)
+                                    .WithName("address")
+                                    .WithMessage("The shop with the same Street and Building values is already present in the database");
+                            });
                     });
             });
 

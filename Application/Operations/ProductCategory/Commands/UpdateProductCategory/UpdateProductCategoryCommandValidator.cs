@@ -18,15 +18,16 @@ public sealed class UpdateProductCategoryCommandValidator : AbstractValidator<Up
             .NotEmpty()
             .MustAsync(CategoryExists)
             .WithErrorCode("404")
-            .WithMessage("There is no entity with this ID to update in the database");
-
-        RuleFor(x => x.Name)
-            .NotEmpty()
-            .Matches(RegularExpressions.RegularString)
-            .MinimumLength(3)
-            .MustAsync(IsNameNotTaken)
-            .WithMessage("The product category with the same Name value is already present in the database")
-            .When(x => x.Id != 0);
+            .WithMessage("There is no entity with this ID to update in the database")
+            .DependentRules(() =>
+            {
+                RuleFor(x => x.Name)
+                    .NotEmpty()
+                    .Matches(RegularExpressions.RegularString)
+                    .MinimumLength(3)
+                    .MustAsync(IsNameNotTaken)
+                    .WithMessage("The product category with the same Name value is already present in the database");
+            });
     }
 
     private async Task<bool> CategoryExists(long categoryId, CancellationToken cancellationToken)

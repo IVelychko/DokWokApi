@@ -19,11 +19,9 @@ public sealed class LoginAdminCommandValidator : AbstractValidator<LoginAdminCom
             .Matches(RegularExpressions.UserName)
             .MinimumLength(5)
             .MustAsync(UserExists)
-            .WithName("user")
             .WithErrorCode("404")
             .WithMessage("The credentials are wrong.")
             .MustAsync(IsAdmin)
-            .WithName("user")
             .WithMessage("The authorization is denied")
             .DependentRules(() =>
             {
