@@ -102,17 +102,8 @@ public static class ProductsEndpoints
 
     public static async Task<IResult> DeleteProduct(ISender sender, long id)
     {
-        var result = await sender.Send(new DeleteProductCommand(id));
-        if (result is null)
-        {
-            return Results.NotFound();
-        }
-        else if (result.Value)
-        {
-            return Results.Ok();
-        }
-
-        return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        await sender.Send(new DeleteProductCommand(id));
+        return Results.Ok();
     }
 
     public static async Task<IResult> IsProductNameTaken(ISender sender, string name)

@@ -1,6 +1,7 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Errors;
+using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
@@ -12,11 +13,13 @@ public class OrderService : IOrderService
 {
     private readonly IOrderRepository _orderRepository;
     private readonly IProductRepository _productRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public OrderService(IOrderRepository orderRepository, IProductRepository productRepository)
+    public OrderService(IOrderRepository orderRepository, IProductRepository productRepository, IUnitOfWork unitOfWork)
     {
         _orderRepository = orderRepository;
         _productRepository = productRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<OrderModel>> AddAsync(OrderModel model)
@@ -41,13 +44,16 @@ public class OrderService : IOrderService
         model.SetTotalOrderPrice();
 
         var entity = model.ToEntity();
-        var result = await _orderRepository.AddAsync(entity);
-        return result.Match(o => o.ToModel(), Result<OrderModel>.Failure);
+        await _orderRepository.AddAsync(entity);
+        await _unitOfWork.SaveChangesAsync();
+        var createdEntity = await _orderRepository.GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was a database error");
+        return createdEntity.ToModel();
     }
 
-    public async Task<bool?> DeleteAsync(long id)
+    public async Task DeleteAsync(long id)
     {
-        return await _orderRepository.DeleteByIdAsync(id);
+        await _orderRepository.DeleteByIdAsync(id);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task<IEnumerable<OrderModel>> GetAllAsync(PageInfo? pageInfo = null)
@@ -79,8 +85,10 @@ public class OrderService : IOrderService
         }
 
         var entity = model.ToEntity();
-        var result = await _orderRepository.UpdateAsync(entity);
-        return result.Match(o => o.ToModel(), Result<OrderModel>.Failure);
+        _orderRepository.Update(entity);
+        await _unitOfWork.SaveChangesAsync();
+        var updatedEntity = await _orderRepository.GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was a database error");
+        return updatedEntity.ToModel();
     }
 
     private async Task<Result<List<OrderLineModel>>> SetTotalLinePricesAsync(List<OrderLineModel> orderLines)

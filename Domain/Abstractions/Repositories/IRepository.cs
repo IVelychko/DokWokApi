@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Domain.Helpers;
 using Domain.Models;
 using Domain.ResultType;
 
@@ -10,9 +11,9 @@ public interface IRepository<TEntity> where TEntity : BaseEntity
 
     Task<TEntity?> GetByIdAsync(long id);
 
-    Task<Result<TEntity>> AddAsync(TEntity entity);
+    Task<Result<Unit>> AddAsync(TEntity entity);
 
-    Task<Result<TEntity>> UpdateAsync(TEntity entity);
+    Result<Unit> Update(TEntity entity);
 
-    Task<bool?> DeleteByIdAsync(long id);
+    Task DeleteByIdAsync(long id);
 }

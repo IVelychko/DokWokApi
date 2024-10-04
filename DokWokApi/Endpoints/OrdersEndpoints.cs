@@ -109,16 +109,7 @@ public static class OrdersEndpoints
 
     public static async Task<IResult> DeleteOrder(ISender sender, long id)
     {
-        var result = await sender.Send(new DeleteOrderCommand(id));
-        if (result is null)
-        {
-            return Results.NotFound();
-        }
-        else if (result.Value)
-        {
-            return Results.Ok();
-        }
-
-        return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        await sender.Send(new DeleteOrderCommand(id));
+        return Results.Ok();
     }
 }

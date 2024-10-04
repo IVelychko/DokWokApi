@@ -2,7 +2,6 @@
 using Domain.Abstractions.Services;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Models;
 using Domain.ResultType;
@@ -22,25 +21,23 @@ public class UserRepository : IUserRepository
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<Result<User>> AddAsync(User entity, string password)
+    public async Task<Result<Unit>> AddAsync(User entity, string password)
     {
         if (entity is null)
         {
             var error = new ValidationError("user", "The passed entity is null");
-            return Result<User>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
         else if (string.IsNullOrEmpty(password))
         {
             var error = new ValidationError(nameof(password), "The passed password is null or empty");
-            return Result<User>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         var hashedPassword = _passwordHasher.Hash(password);
         entity.PasswordHash = hashedPassword;
         await _context.AddAsync(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetUserByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 
     public async Task<bool> CheckUserPasswordAsync(long userId, string password)
@@ -69,17 +66,10 @@ public class UserRepository : IUserRepository
         return _passwordHasher.Verify(password, user.PasswordHash);
     }
 
-    public async Task<bool?> DeleteAsync(long id)
+    public async Task DeleteByIdAsync(long id)
     {
-        var user = await GetCustomerByIdAsync(id);
-        if (user is null)
-        {
-            return null;
-        }
-
+        var user = await _context.Users.FirstAsync(u => u.Id == id && u.UserRole!.Name == UserRoles.Customer);
         _context.Remove(user);
-        var result = await _context.SaveChangesAsync();
-        return result > 0;
     }
 
     public async Task<IEnumerable<User>> GetAllCustomersAsync(PageInfo? pageInfo = null)
@@ -207,68 +197,64 @@ public class UserRepository : IUserRepository
         return isTaken;
     }
 
-    public async Task<Result<User>> UpdateAsync(User entity)
+    public Result<Unit> Update(User entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("user", "The passed entity is null");
-            return Result<User>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         _context.Update(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetUserByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 
-    public async Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword)
+    public async Task<Result<Unit>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword)
     {
         if (string.IsNullOrEmpty(newPassword))
         {
             var error = new ValidationError("userData", "The passed userId or newPassword is null");
-            return Result<bool>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
-        var user = await GetUserByIdAsync(userId);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null)
         {
             var error = new EntityNotFoundError(nameof(user), "The user was not found");
-            return Result<bool>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         var hashedPassword = _passwordHasher.Hash(newPassword);
         user.PasswordHash = hashedPassword;
-        await UpdateAsync(user);
-
-        return true;
+        var result = Update(user);
+        return result;
     }
 
-    public async Task<Result<bool>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword)
+    public async Task<Result<Unit>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword)
     {
         if (string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword))
         {
             var error = new ValidationError("userData", "The passed userId, oldPassword or newPassword is null");
-            return Result<bool>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
-        var user = await GetUserByIdAsync(userId);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null)
         {
             var error = new EntityNotFoundError(nameof(user), "The user was not found");
-            return Result<bool>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         var isOldPasswordValid = CheckUserPassword(user, oldPassword);
         if (!isOldPasswordValid)
         {
             var error = new ValidationError("userData", "The passed credentials are not valid");
-            return Result<bool>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         var hashedPassword = _passwordHasher.Hash(newPassword);
         user.PasswordHash = hashedPassword;
-        await UpdateAsync(user);
-
-        return true;
+        var result = Update(user);
+        return result;
     }
 }

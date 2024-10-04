@@ -2,4 +2,4 @@
 
 namespace Application.Operations.ProductCategory.Commands.DeleteProductCategory;
 
-public sealed record DeleteProductCategoryCommand(long Id) : ICommand<bool?>;
+public sealed record DeleteProductCategoryCommand(long Id) : ICommand;

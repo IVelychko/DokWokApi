@@ -1,7 +1,5 @@
 ﻿using Application.Abstractions.Messaging;
-using Domain.Errors;
-using Domain.Errors.Base;
-using Domain.ResultType;
+using Domain.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;
 using MediatR;
@@ -10,7 +8,7 @@ using ValidationException = Domain.Exceptions.ValidationException;
 namespace Application.Behaviors;
 
 public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : class, ICommand<TResponse>
+    where TRequest : class, ICommand
 {
     private readonly IEnumerable<IValidator<TRequest>> _validators;
 
@@ -24,23 +22,6 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         }
 
         var context = new ValidationContext<TRequest>(request);
-
-        //var errorsDictionary = _validators
-        //    .Select(x => x.Validate(context))
-        //    .SelectMany(x => x.Errors)
-        //    .Where(x => x != null)
-        //    .GroupBy(
-        //        x => x.PropertyName,
-        //        x => x.ErrorMessage,
-        //        (propertyName, errorMessages) => new
-        //        {
-        //            Key = propertyName,
-        //            Values = errorMessages.Distinct().ToArray()
-        //        })
-        //    .ToDictionary(x => x.Key, x => x.Values);
-
-        //var validationResults = _validators
-        //    .Select(x => x.ValidateAsync(context));
 
         List<ValidationResult> validationResults = [];
         foreach (var validatior in _validators)
@@ -66,39 +47,14 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
 
         if (errorsDictionary.Count > 0)
         {
-            Error error = isNotFound ? new EntityNotFoundError(errorsDictionary)
-                : new ValidationError(errorsDictionary);
-            var response = CreateFailureResult(error);
-            return response;
+            if (isNotFound)
+            {
+                throw new NotFoundException(errorsDictionary);
+            }
+
+            throw new ValidationException(errorsDictionary);
         }
 
         return await next();
-    }
-
-    private static TResponse CreateFailureResult(Error error)
-    {
-        if (typeof(TResponse).IsGenericType &&
-            typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
-        {
-            // Get the TValue type argument for Result<TValue>
-            var valueType = typeof(TResponse).GetGenericArguments()[0];
-
-            // Create the specific Result<TValue> type
-            var resultType = typeof(Result<>).MakeGenericType(valueType);
-
-            // Find the constructor or static Failure method to create a faulted Result<TValue>
-            var failureMethod = resultType.GetMethod(nameof(Result<object>.Failure), [typeof(Error)]);
-
-            if (failureMethod is not null)
-            {
-                // Invoke the Failure method to construct a faulted result
-                var resultInstance = failureMethod.Invoke(null, [error]);
-
-                // Cast and return the result as TResponse
-                return (TResponse)resultInstance!;
-            }
-        }
-
-        throw new ValidationException(error.Errors);
     }
 }

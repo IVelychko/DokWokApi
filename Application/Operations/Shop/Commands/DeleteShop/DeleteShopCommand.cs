@@ -2,4 +2,4 @@
 
 namespace Application.Operations.Shop.Commands.DeleteShop;
 
-public sealed record DeleteShopCommand(long Id) : ICommand<bool?>;
+public sealed record DeleteShopCommand(long Id) : ICommand;

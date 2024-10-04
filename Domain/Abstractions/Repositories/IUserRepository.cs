@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Domain.Helpers;
 using Domain.Models;
 using Domain.ResultType;
 
@@ -26,15 +27,15 @@ public interface IUserRepository
 
     Task<User?> GetCustomerByIdWithDetailsAsync(long id);
 
-    Task<Result<User>> AddAsync(User entity, string password);
+    Task<Result<Unit>> AddAsync(User entity, string password);
 
-    Task<Result<User>> UpdateAsync(User entity);
+    Result<Unit> Update(User entity);
 
-    Task<Result<bool>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword);
+    Task<Result<Unit>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword);
 
-    Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword);
+    Task<Result<Unit>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword);
 
-    Task<bool?> DeleteAsync(long id);
+    Task DeleteByIdAsync(long id);
 
     Task<bool> CheckUserPasswordAsync(long userId, string password);
 

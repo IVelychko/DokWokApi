@@ -18,6 +18,7 @@ public class UserService : IUserService
     private readonly IUserRepository _userRepository;
     private readonly IUserRoleRepository _userRoleRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ISecurityTokenService<UserModel, JwtSecurityToken> _securityTokenService;
     private readonly IUserServiceValidator _validator;
     private readonly TokenValidationParametersAccessor _tokenValidationParametersAccessor;
@@ -27,7 +28,8 @@ public class UserService : IUserService
         ISecurityTokenService<UserModel, JwtSecurityToken> securityTokenService,
         IUserServiceValidator validator,
         TokenValidationParametersAccessor tokenValidationParametersAccessor,
-        IUserRoleRepository userRoleRepository)
+        IUserRoleRepository userRoleRepository,
+        IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
@@ -35,6 +37,7 @@ public class UserService : IUserService
         _validator = validator;
         _tokenValidationParametersAccessor = tokenValidationParametersAccessor;
         _userRoleRepository = userRoleRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<UserModel>> AddAsync(UserModel model, string password)
@@ -60,13 +63,16 @@ public class UserService : IUserService
         var customerRole = await _userRoleRepository.GetByNameAsync(UserRoles.Customer)
             ?? throw new DbException("The customer role doesn't exist");
         user.UserRoleId = customerRole.Id;
-        var result = await _userRepository.AddAsync(user, password);
-        return result.Match(u => u.ToModel(), Result<UserModel>.Failure);
+        await _userRepository.AddAsync(user, password);
+        await _unitOfWork.SaveChangesAsync();
+        var createdEntity = await _userRepository.GetUserByIdWithDetailsAsync(user.Id) ?? throw new DbException("There was a database error");
+        return createdEntity.ToModel();
     }
 
-    public async Task<bool?> DeleteAsync(long id)
+    public async Task DeleteAsync(long id)
     {
-        return await _userRepository.DeleteAsync(id);
+        await _userRepository.DeleteByIdAsync(id);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task<IEnumerable<UserModel>> GetAllUsersAsync(PageInfo? pageInfo = null)
@@ -109,12 +115,24 @@ public class UserService : IUserService
             return Result<UserModel>.Failure(error);
         }
 
+        var entityToUpdate = await _userRepository.GetUserByIdAsync(model.Id);
+        if (entityToUpdate is null)
+        {
+            var error = new EntityNotFoundError(nameof(entityToUpdate), "The entity to update was not found");
+            return Result<UserModel>.Failure(error);
+        }
+
         var entity = model.ToEntity();
-        var result = await _userRepository.UpdateAsync(entity);
-        return result.Match(u => u.ToModel(), Result<UserModel>.Failure);
+        entity.PasswordHash = entityToUpdate.PasswordHash;
+        entity.IsEmailConfirmed = entityToUpdate.IsEmailConfirmed;
+        _userRepository.Update(entity);
+        await _unitOfWork.SaveChangesAsync();
+        var updatedEntity = await _userRepository.GetUserByIdWithDetailsAsync(entity.Id)
+            ?? throw new DbException("There was a database error");
+        return updatedEntity.ToModel();
     }
 
-    public async Task<Result<bool>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword)
+    public async Task<Result<Unit>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword)
     {
         if (string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword))
         {
@@ -130,22 +148,32 @@ public class UserService : IUserService
             }
 
             var error = new ValidationError(errors);
-            return Result<bool>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         var result = await _userRepository.UpdateCustomerPasswordAsync(userId, oldPassword, newPassword);
+        if (result.IsSuccess)
+        {
+            await _unitOfWork.SaveChangesAsync();
+        }
+
         return result;
     }
 
-    public async Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword)
+    public async Task<Result<Unit>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword)
     {
         if (string.IsNullOrEmpty(newPassword))
         {
             ValidationError error = new(nameof(newPassword), "The passed new password is null or empty");
-            return Result<bool>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         var result = await _userRepository.UpdateCustomerPasswordAsAdminAsync(userId, newPassword);
+        if (result.IsSuccess)
+        {
+            await _unitOfWork.SaveChangesAsync();
+        }
+
         return result;
     }
 
@@ -246,11 +274,8 @@ public class UserService : IUserService
             }
 
             storedRefreshToken!.Used = true;
-            var refreshTokenUpdateResult = await _refreshTokenRepository.UpdateAsync(storedRefreshToken);
-            if (refreshTokenUpdateResult.IsFaulted)
-            {
-                return Result<AuthorizedUserModel>.Failure(refreshTokenUpdateResult.Error);
-            }
+            _refreshTokenRepository.Update(storedRefreshToken);
+            await _unitOfWork.SaveChangesAsync();
 
             var userId = long.Parse(jwtSecurityToken.Claims.First(c => c.Type == "id").Value);
             var user = await _userRepository.GetUserByIdWithDetailsAsync(userId);
@@ -285,7 +310,9 @@ public class UserService : IUserService
         }
 
         storedRefreshToken.Used = true;
-        await _refreshTokenRepository.UpdateAsync(storedRefreshToken);
+        _refreshTokenRepository.Update(storedRefreshToken);
+        await _unitOfWork.SaveChangesAsync();
+
         return true;
     }
 
@@ -352,11 +379,8 @@ public class UserService : IUserService
         var refreshToken = CreateRefreshToken(jwtId, userModel.Id, DateTime.UtcNow.AddMonths(6));
         JwtSecurityTokenHandler jwtTokenHandler = new();
         var serializedJwtToken = jwtTokenHandler.WriteToken(token);
-        var refreshTokenAddResult = await _refreshTokenRepository.AddAsync(refreshToken);
-        if (refreshTokenAddResult.IsFaulted)
-        {
-            return Result<AuthorizedUserModel>.Failure(refreshTokenAddResult.Error);
-        }
+        await _refreshTokenRepository.AddAsync(refreshToken);
+        await _unitOfWork.SaveChangesAsync();
 
         var authorizedUser = userModel.ToAuthorizedModel(serializedJwtToken, refreshToken);
         return authorizedUser;

@@ -1,6 +1,7 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Errors;
+using Domain.Exceptions;
 using Domain.Mapping.Extensions;
 using Domain.Models;
 using Domain.ResultType;
@@ -11,11 +12,13 @@ public class OrderLineService : IOrderLineService
 {
     private readonly IOrderLineRepository _orderLineRepository;
     private readonly IProductRepository _productRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public OrderLineService(IOrderLineRepository orderLineRepository, IProductRepository productRepository)
+    public OrderLineService(IOrderLineRepository orderLineRepository, IProductRepository productRepository, IUnitOfWork unitOfWork)
     {
         _orderLineRepository = orderLineRepository;
         _productRepository = productRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<OrderLineModel>> AddAsync(OrderLineModel model)
@@ -39,13 +42,16 @@ public class OrderLineService : IOrderLineService
         }
 
         var entity = model.ToEntity();
-        var result = await _orderLineRepository.AddAsync(entity);
-        return result.Match(ol => ol.ToModel(), Result<OrderLineModel>.Failure);
+        await _orderLineRepository.AddAsync(entity);
+        await _unitOfWork.SaveChangesAsync();
+        var createdEntity = await _orderLineRepository.GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was a database error");
+        return createdEntity.ToModel();
     }
 
-    public async Task<bool?> DeleteAsync(long id)
+    public async Task DeleteAsync(long id)
     {
-        return await _orderLineRepository.DeleteByIdAsync(id);
+        await _orderLineRepository.DeleteByIdAsync(id);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task<IEnumerable<OrderLineModel>> GetAllAsync(PageInfo? pageInfo = null)
@@ -95,7 +101,9 @@ public class OrderLineService : IOrderLineService
         }
 
         var entity = model.ToEntity();
-        var result = await _orderLineRepository.UpdateAsync(entity);
-        return result.Match(ol => ol.ToModel(), Result<OrderLineModel>.Failure);
+        _orderLineRepository.Update(entity);
+        await _unitOfWork.SaveChangesAsync();
+        var updatedEntity = await _orderLineRepository.GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was a database error");
+        return updatedEntity.ToModel();
     }
 }

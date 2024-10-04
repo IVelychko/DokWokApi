@@ -1,11 +1,24 @@
-﻿using FluentValidation;
+﻿using Domain.Abstractions.Repositories;
+using FluentValidation;
 
 namespace Application.Operations.Product.Commands.DeleteProduct;
 
 public sealed class DeleteProductCommandValidator : AbstractValidator<DeleteProductCommand>
 {
-    public DeleteProductCommandValidator()
+    private readonly IProductRepository _productRepository;
+
+    public DeleteProductCommandValidator(IProductRepository productRepository)
     {
-        RuleFor(x => x.Id).NotEmpty();
+        _productRepository = productRepository;
+
+        RuleFor(x => x.Id)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+            .MustAsync(ProductToDeleteExists)
+            .WithErrorCode("404")
+            .WithMessage("There is no product with this ID to delete in the database");
     }
+
+    private async Task<bool> ProductToDeleteExists(long productId, CancellationToken cancellationToken) =>
+        (await _productRepository.GetByIdAsync(productId)) is not null;
 }

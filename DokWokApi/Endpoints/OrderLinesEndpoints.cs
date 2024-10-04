@@ -118,16 +118,7 @@ public static class OrderLinesEndpoints
 
     public static async Task<IResult> DeleteOrderLine(ISender sender, long id)
     {
-        var result = await sender.Send(new DeleteOrderLineCommand(id));
-        if (result is null)
-        {
-            return Results.NotFound();
-        }
-        else if (result.Value)
-        {
-            return Results.Ok();
-        }
-
-        return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        await sender.Send(new DeleteOrderLineCommand(id));
+        return Results.Ok();
     }
 }

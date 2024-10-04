@@ -37,11 +37,6 @@ public static class ResultExtensions
         return result.Match(response => new OkObjectResult(response), GetActionResultFromError);
     }
 
-    public static IActionResult ToOkPasswordUpdateActionResult(this Result<bool> result)
-    {
-        return result.Match(isUpdated => new OkResult(), GetActionResultFromError);
-    }
-
     public static IActionResult ToCreatedAtActionResult(this Result<AuthorizedUserResponse> result, HttpContext context, string actionName, string controllerName)
     {
         if (result.IsFaulted)
@@ -118,11 +113,6 @@ public static class ResultExtensions
     public static IResult ToOkResult<TResponse>(this Result<TResponse> result)
     {
         return result.Match(response => Results.Ok(response), GetResultFromError);
-    }
-
-    public static IResult ToOkPasswordUpdateResult(this Result<bool> result)
-    {
-        return result.Match(isUpdated => Results.Ok(), GetResultFromError);
     }
 
     public static IResult ToCreatedAtRouteResult(this Result<AuthorizedUserResponse> result, HttpContext context, string routeName)

@@ -1,11 +1,24 @@
-﻿using FluentValidation;
+﻿using Domain.Abstractions.Repositories;
+using FluentValidation;
 
 namespace Application.Operations.User.Commands.DeleteUser;
 
 public sealed class DeleteUserCommandValidator : AbstractValidator<DeleteUserCommand>
 {
-    public DeleteUserCommandValidator()
+    private readonly IUserRepository _userRepository;
+
+    public DeleteUserCommandValidator(IUserRepository userRepository)
     {
-        RuleFor(x => x.Id).NotEmpty();
+        _userRepository = userRepository;
+
+        RuleFor(x => x.Id)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+            .MustAsync(UserToDeleteExists)
+            .WithErrorCode("404")
+            .WithMessage("There is no user with this ID to delete in the database");
     }
+
+    private async Task<bool> UserToDeleteExists(long userId, CancellationToken cancellationToken) =>
+        (await _userRepository.GetCustomerByIdAsync(userId)) is not null;
 }

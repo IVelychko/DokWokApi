@@ -1,7 +1,7 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Exceptions;
+using Domain.Helpers;
 using Domain.Models;
 using Domain.ResultType;
 using FluentValidation;
@@ -18,31 +18,22 @@ public class OrderLineRepository : IOrderLineRepository
         _context = context;
     }
 
-    public async Task<Result<OrderLine>> AddAsync(OrderLine entity)
+    public async Task<Result<Unit>> AddAsync(OrderLine entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("orderLine", "The passed entity is null");
-            return Result<OrderLine>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         await _context.AddAsync(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 
-    public async Task<bool?> DeleteByIdAsync(long id)
+    public async Task DeleteByIdAsync(long id)
     {
-        var entity = await _context.OrderLines.FirstOrDefaultAsync(ol => ol.Id == id);
-        if (entity is null)
-        {
-            return null;
-        }
-
+        var entity = await _context.OrderLines.FirstAsync(ol => ol.Id == id);
         _context.Remove(entity);
-        var result = await _context.SaveChangesAsync();
-        return result > 0;
     }
 
     public async Task<IEnumerable<OrderLine>> GetAllAsync(PageInfo? pageInfo = null)
@@ -141,17 +132,15 @@ public class OrderLineRepository : IOrderLineRepository
             .FirstOrDefaultAsync(ol => ol.OrderId == orderId && ol.ProductId == productId);
     }
 
-    public async Task<Result<OrderLine>> UpdateAsync(OrderLine entity)
+    public Result<Unit> Update(OrderLine entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("orderLine", "The passed entity is null");
-            return Result<OrderLine>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         _context.Update(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 }

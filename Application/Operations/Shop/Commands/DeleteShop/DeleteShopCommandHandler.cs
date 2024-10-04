@@ -3,8 +3,8 @@ using Domain.Abstractions.Services;
 
 namespace Application.Operations.Shop.Commands.DeleteShop;
 
-public class DeleteShopCommandHandler(IShopService shopService) : ICommandHandler<DeleteShopCommand, bool?>
+public class DeleteShopCommandHandler(IShopService shopService) : ICommandHandler<DeleteShopCommand>
 {
-    public async Task<bool?> Handle(DeleteShopCommand request, CancellationToken cancellationToken) =>
+    public async Task Handle(DeleteShopCommand request, CancellationToken cancellationToken) =>
         await shopService.DeleteAsync(request.Id);
 }

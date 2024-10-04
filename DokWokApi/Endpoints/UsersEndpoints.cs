@@ -210,29 +210,20 @@ public static class UsersEndpoints
 
         var command = new UpdatePasswordCommand(request.UserId, request.OldPassword, request.NewPassword);
         var result = await sender.Send(command);
-        return result.ToOkPasswordUpdateResult();
+        return result.ToOkResult();
     }
 
     public static async Task<IResult> UpdateCustomerPasswordAsAdmin(ISender sender, UpdatePasswordAsAdminRequest request)
     {
         var command = new UpdatePasswordAsAdminCommand(request.UserId, request.NewPassword);
         var result = await sender.Send(command);
-        return result.ToOkPasswordUpdateResult();
+        return result.ToOkResult();
     }
 
     public static async Task<IResult> DeleteUserById(ISender sender, long id)
     {
-        var result = await sender.Send(new DeleteUserCommand(id));
-        if (result is null)
-        {
-            return Results.NotFound();
-        }
-        else if (result.Value)
-        {
-            return Results.Ok();
-        }
-
-        return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        await sender.Send(new DeleteUserCommand(id));
+        return Results.Ok();
     }
 
     public static async Task<IResult> LoginCustomer(ISender sender, HttpContext httpContext, LoginCustomerRequest request)

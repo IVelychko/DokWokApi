@@ -1,7 +1,7 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Exceptions;
+using Domain.Helpers;
 using Domain.Models;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
@@ -17,31 +17,22 @@ public class ProductCategoryRepository : IProductCategoryRepository
         _context = context;
     }
 
-    public async Task<Result<ProductCategory>> AddAsync(ProductCategory entity)
+    public async Task<Result<Unit>> AddAsync(ProductCategory entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("productCategory", "The passed entity is null");
-            return Result<ProductCategory>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         await _context.AddAsync(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetByIdAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 
-    public async Task<bool?> DeleteByIdAsync(long id)
+    public async Task DeleteByIdAsync(long id)
     {
-        var entity = await _context.ProductCategories.FirstOrDefaultAsync(c => c.Id == id);
-        if (entity is null)
-        {
-            return null;
-        }
-
+        var entity = await _context.ProductCategories.FirstAsync(c => c.Id == id);
         _context.Remove(entity);
-        var result = await _context.SaveChangesAsync();
-        return result > 0;
     }
 
     public async Task<IEnumerable<ProductCategory>> GetAllAsync(PageInfo? pageInfo = null)
@@ -75,17 +66,15 @@ public class ProductCategoryRepository : IProductCategoryRepository
         return isTaken;
     }
 
-    public async Task<Result<ProductCategory>> UpdateAsync(ProductCategory entity)
+    public Result<Unit> Update(ProductCategory entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("productCategory", "The passed entity is null");
-            return Result<ProductCategory>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         _context.Update(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetByIdAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 }

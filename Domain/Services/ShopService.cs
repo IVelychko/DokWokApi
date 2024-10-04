@@ -1,6 +1,7 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Errors;
+using Domain.Exceptions;
 using Domain.Mapping.Extensions;
 using Domain.Models;
 using Domain.ResultType;
@@ -10,10 +11,12 @@ namespace Domain.Services;
 public class ShopService : IShopService
 {
     private readonly IShopRepository _shopRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public ShopService(IShopRepository shopRepository)
+    public ShopService(IShopRepository shopRepository, IUnitOfWork unitOfWork)
     {
         _shopRepository = shopRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<ShopModel>> AddAsync(ShopModel model)
@@ -25,13 +28,16 @@ public class ShopService : IShopService
         }
 
         var entity = model.ToEntity();
-        var result = await _shopRepository.AddAsync(entity);
-        return result.Match(s => s.ToModel(), Result<ShopModel>.Failure);
+        await _shopRepository.AddAsync(entity);
+        await _unitOfWork.SaveChangesAsync();
+        var createdEntity = await _shopRepository.GetByIdAsync(entity.Id) ?? throw new DbException("There was a database error");
+        return createdEntity.ToModel();
     }
 
-    public async Task<bool?> DeleteAsync(long id)
+    public async Task DeleteAsync(long id)
     {
-        return await _shopRepository.DeleteByIdAsync(id);
+        await _shopRepository.DeleteByIdAsync(id);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task<IEnumerable<ShopModel>> GetAllAsync(PageInfo? pageInfo = null)
@@ -85,7 +91,9 @@ public class ShopService : IShopService
         }
 
         var entity = model.ToEntity();
-        var result = await _shopRepository.UpdateAsync(entity);
-        return result.Match(s => s.ToModel(), Result<ShopModel>.Failure);
+        _shopRepository.Update(entity);
+        await _unitOfWork.SaveChangesAsync();
+        var updatedEntity = await _shopRepository.GetByIdAsync(entity.Id) ?? throw new DbException("There was a database error");
+        return updatedEntity.ToModel();
     }
 }

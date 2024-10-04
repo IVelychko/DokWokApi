@@ -1,4 +1,5 @@
-﻿using Domain.Models;
+﻿using Domain.Helpers;
+using Domain.Models;
 using Domain.Models.User;
 using Domain.ResultType;
 
@@ -20,11 +21,11 @@ public interface IUserService
 
     Task<Result<UserModel>> UpdateAsync(UserModel model);
 
-    Task<Result<bool>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword);
+    Task<Result<Unit>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword);
 
-    Task<Result<bool>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword);
+    Task<Result<Unit>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword);
 
-    Task<bool?> DeleteAsync(long id);
+    Task DeleteAsync(long id);
 
     Task<Result<AuthorizedUserModel>> LoginAsync(string userName, string password);
 

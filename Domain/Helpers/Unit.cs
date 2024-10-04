@@ -2,7 +2,9 @@
 
 public readonly struct Unit : IEquatable<Unit>, IComparable<Unit>
 {
-    public static readonly Unit Default = default;
+    private static readonly Unit _default = default;
+
+    public static Unit Default => _default;
 
     public override int GetHashCode() => 0;
 

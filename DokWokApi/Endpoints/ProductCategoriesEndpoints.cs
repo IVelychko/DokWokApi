@@ -90,17 +90,8 @@ public static class ProductCategoriesEndpoints
 
     public static async Task<IResult> DeleteCategory(ISender sender, long id)
     {
-        var result = await sender.Send(new DeleteProductCategoryCommand(id));
-        if (result is null)
-        {
-            return Results.NotFound();
-        }
-        else if (result.Value)
-        {
-            return Results.Ok();
-        }
-
-        return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        await sender.Send(new DeleteProductCategoryCommand(id));
+        return Results.Ok();
     }
 
     public static async Task<IResult> IsCategoryNameTaken(ISender sender, string name)

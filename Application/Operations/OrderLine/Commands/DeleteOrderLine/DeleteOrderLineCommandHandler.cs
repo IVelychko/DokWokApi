@@ -3,11 +3,8 @@ using Domain.Abstractions.Services;
 
 namespace Application.Operations.OrderLine.Commands.DeleteOrderLine;
 
-public class DeleteOrderLineCommandHandler(IOrderLineService orderLineService) : ICommandHandler<DeleteOrderLineCommand, bool?>
+public class DeleteOrderLineCommandHandler(IOrderLineService orderLineService) : ICommandHandler<DeleteOrderLineCommand>
 {
-    public async Task<bool?> Handle(DeleteOrderLineCommand request, CancellationToken cancellationToken)
-    {
-        var result = await orderLineService.DeleteAsync(request.Id);
-        return result;
-    }
+    public async Task Handle(DeleteOrderLineCommand request, CancellationToken cancellationToken) =>
+        await orderLineService.DeleteAsync(request.Id);
 }

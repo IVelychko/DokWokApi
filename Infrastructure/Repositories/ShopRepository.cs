@@ -1,7 +1,7 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Exceptions;
+using Domain.Helpers;
 using Domain.Models;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
@@ -17,31 +17,22 @@ public class ShopRepository : IShopRepository
         _context = context;
     }
 
-    public async Task<Result<Shop>> AddAsync(Shop entity)
+    public async Task<Result<Unit>> AddAsync(Shop entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("shop", "The passed entity is null");
-            return Result<Shop>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         await _context.AddAsync(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetByIdAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 
-    public async Task<bool?> DeleteByIdAsync(long id)
+    public async Task DeleteByIdAsync(long id)
     {
-        var entity = await GetByIdAsync(id);
-        if (entity is null)
-        {
-            return null;
-        }
-
+        var entity = await _context.Shops.FirstAsync(s => s.Id == id);
         _context.Remove(entity);
-        var result = await _context.SaveChangesAsync();
-        return result > 0;
     }
 
     public async Task<IEnumerable<Shop>> GetAllAsync(PageInfo? pageInfo = null)
@@ -68,18 +59,16 @@ public class ShopRepository : IShopRepository
         return await _context.Shops.FirstOrDefaultAsync(s => s.Street == street && s.Building == building);
     }
 
-    public async Task<Result<Shop>> UpdateAsync(Shop entity)
+    public Result<Unit> Update(Shop entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("shop", "The passed entity is null");
-            return Result<Shop>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         _context.Update(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetByIdAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 
     public async Task<Result<bool>> IsAddressTakenAsync(string street, string building)

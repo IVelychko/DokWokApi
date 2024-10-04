@@ -1,7 +1,7 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Exceptions;
+using Domain.Helpers;
 using Domain.Models;
 using Domain.ResultType;
 using FluentValidation;
@@ -18,31 +18,22 @@ public class OrderRepository : IOrderRepository
         _context = context;
     }
 
-    public async Task<Result<Order>> AddAsync(Order entity)
+    public async Task<Result<Unit>> AddAsync(Order entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("order", "The passed entity is null");
-            return Result<Order>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         await _context.AddAsync(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 
-    public async Task<bool?> DeleteByIdAsync(long id)
+    public async Task DeleteByIdAsync(long id)
     {
-        var entity = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
-        if (entity is null)
-        {
-            return null;
-        }
-
+        var entity = await _context.Orders.FirstAsync(o => o.Id == id);
         _context.Remove(entity);
-        var result = await _context.SaveChangesAsync();
-        return result > 0;
     }
 
     public async Task<IEnumerable<Order>> GetAllAsync(PageInfo? pageInfo = null)
@@ -132,17 +123,15 @@ public class OrderRepository : IOrderRepository
             .FirstOrDefaultAsync(o => o.Id == id);
     }
 
-    public async Task<Result<Order>> UpdateAsync(Order entity)
+    public Result<Unit> Update(Order entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("order", "The passed entity is null");
-            return Result<Order>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         _context.Update(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 }

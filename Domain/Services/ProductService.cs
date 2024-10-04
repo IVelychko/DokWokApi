@@ -1,23 +1,25 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Errors;
+using Domain.Exceptions;
 using Domain.Mapping.Extensions;
 using Domain.Models;
 using Domain.ResultType;
 using Microsoft.Extensions.Caching.Distributed;
-using System.Text.Json;
 
 namespace Domain.Services;
 
 public class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IDistributedCache _distributedCache;
 
-    public ProductService(IProductRepository productRepository, IDistributedCache distributedCache)
+    public ProductService(IProductRepository productRepository, IDistributedCache distributedCache, IUnitOfWork unitOfWork)
     {
         _productRepository = productRepository;
         _distributedCache = distributedCache;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<ProductModel>> AddAsync(ProductModel model)
@@ -29,34 +31,41 @@ public class ProductService : IProductService
         }
 
         var entity = model.ToEntity();
-        var result = await _productRepository.AddAsync(entity);
-        return result.Match(p => p.ToModel(), Result<ProductModel>.Failure);
+        await _productRepository.AddAsync(entity);
+        await _unitOfWork.SaveChangesAsync();
+        var createdEntity = await _productRepository.GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was a database error");
+        return createdEntity.ToModel();
     }
 
-    public async Task<bool?> DeleteAsync(long id)
+    public async Task DeleteAsync(long id)
     {
-        return await _productRepository.DeleteByIdAsync(id);
+        await _productRepository.DeleteByIdAsync(id);
+        await _unitOfWork.SaveChangesAsync();
     }
 
     public async Task<IEnumerable<ProductModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        string key = "allProducts";
-        var cachedSerializedModels = await _distributedCache.GetStringAsync(key);
-        IEnumerable<ProductModel> models;
-        if (string.IsNullOrEmpty(cachedSerializedModels))
-        {
-            var entities = await _productRepository.GetAllWithDetailsAsync(pageInfo);
-            models = entities.Select(p => p.ToModel());
-            if (models.Any())
-            {
-                await _distributedCache.SetStringAsync(key, JsonSerializer.Serialize(models));
-                return models;
-            }
+        //string key = "allProducts";
+        //var cachedSerializedModels = await _distributedCache.GetStringAsync(key);
+        //IEnumerable<ProductModel> models;
+        //if (string.IsNullOrEmpty(cachedSerializedModels))
+        //{
+        //    var entities = await _productRepository.GetAllWithDetailsAsync(pageInfo);
+        //    models = entities.Select(p => p.ToModel());
+        //    if (models.Any())
+        //    {
+        //        await _distributedCache.SetStringAsync(key, JsonSerializer.Serialize(models));
+        //        return models;
+        //    }
 
-            return models;
-        }
+        //    return models;
+        //}
 
-        models = JsonSerializer.Deserialize<IEnumerable<ProductModel>>(cachedSerializedModels)!;
+        //models = JsonSerializer.Deserialize<IEnumerable<ProductModel>>(cachedSerializedModels)!;
+        //return models;
+
+        var entities = await _productRepository.GetAllWithDetailsAsync(pageInfo);
+        var models = entities.Select(p => p.ToModel());
         return models;
     }
 
@@ -82,8 +91,10 @@ public class ProductService : IProductService
         }
 
         var entity = model.ToEntity();
-        var result = await _productRepository.UpdateAsync(entity);
-        return result.Match(p => p.ToModel(), Result<ProductModel>.Failure);
+        _productRepository.Update(entity);
+        await _unitOfWork.SaveChangesAsync();
+        var updatedEntity = await _productRepository.GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was a database error");
+        return updatedEntity.ToModel();
     }
 
     public async Task<Result<bool>> IsNameTakenAsync(string name)

@@ -1,7 +1,7 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Exceptions;
+using Domain.Helpers;
 using Domain.Models;
 using Domain.ResultType;
 using Microsoft.EntityFrameworkCore;
@@ -17,31 +17,22 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         _context = context;
     }
 
-    public async Task<Result<RefreshToken>> AddAsync(RefreshToken entity)
+    public async Task<Result<Unit>> AddAsync(RefreshToken entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("refreshToken", "The passed entity is null");
-            return Result<RefreshToken>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         await _context.AddAsync(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 
-    public async Task<bool?> DeleteByIdAsync(long id)
+    public async Task DeleteByIdAsync(long id)
     {
-        var entity = await GetByIdAsync(id);
-        if (entity is null)
-        {
-            return null;
-        }
-
+        var entity = await _context.RefreshTokens.FirstAsync(rt => rt.Id == id);
         _context.Remove(entity);
-        var result = await _context.SaveChangesAsync();
-        return result > 0;
     }
 
     public async Task<IEnumerable<RefreshToken>> GetAllAsync(PageInfo? pageInfo = null)
@@ -121,17 +112,15 @@ public class RefreshTokenRepository : IRefreshTokenRepository
             .FirstOrDefaultAsync(rt => rt.UserId == userId);
     }
 
-    public async Task<Result<RefreshToken>> UpdateAsync(RefreshToken entity)
+    public Result<Unit> Update(RefreshToken entity)
     {
         if (entity is null)
         {
             var error = new ValidationError("refreshToken", "The passed entity is null");
-            return Result<RefreshToken>.Failure(error);
+            return Result<Unit>.Failure(error);
         }
 
         _context.Update(entity);
-        await _context.SaveChangesAsync();
-        _context.Entry(entity).State = EntityState.Detached;
-        return await GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was the database error");
+        return Unit.Default;
     }
 }

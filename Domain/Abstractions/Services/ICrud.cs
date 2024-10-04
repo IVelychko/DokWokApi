@@ -13,5 +13,5 @@ public interface ICrud<TModel> where TModel : class
 
     Task<Result<TModel>> UpdateAsync(TModel model);
 
-    Task<bool?> DeleteAsync(long id);
+    Task DeleteAsync(long id);
 }

@@ -22,6 +22,7 @@ builder.Host.UseSerilog((context, config) =>
 builder.Services.AddMediatR(opts =>
 {
     opts.RegisterServicesFromAssembly(Application.ApplicationAssemblyReference.Assembly);
+    opts.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationWithResponseBehavior<,>));
     opts.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 });
 

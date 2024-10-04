@@ -24,6 +24,14 @@ public class GlobalExceptionHandler : IExceptionHandler
             await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
             return true;
         }
+        else if (exception is NotFoundException notFoundException)
+        {
+            int statusCode = (int)HttpStatusCode.NotFound;
+            httpContext.Response.StatusCode = statusCode;
+            ProblemDetailsModel problem = new() { StatusCode = statusCode, Title = "Not Found", Errors = notFoundException.Errors };
+            await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
+            return true;
+        }
 
         _logger.LogError(exception, "Server error");
         httpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;

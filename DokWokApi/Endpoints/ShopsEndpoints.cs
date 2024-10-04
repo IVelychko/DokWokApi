@@ -106,17 +106,8 @@ public static class ShopsEndpoints
 
     public static async Task<IResult> DeleteShop(ISender sender, long id)
     {
-        var result = await sender.Send(new DeleteShopCommand(id));
-        if (result is null)
-        {
-            return Results.NotFound();
-        }
-        else if (result.Value)
-        {
-            return Results.Ok();
-        }
-
-        return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        await sender.Send(new DeleteShopCommand(id));
+        return Results.Ok();
     }
 
     public static async Task<IResult> IsShopAddressTaken(ISender sender, string street, string building)
