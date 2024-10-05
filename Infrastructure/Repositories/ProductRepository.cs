@@ -3,8 +3,8 @@ using Domain.Entities;
 using Domain.Errors;
 using Domain.Helpers;
 using Domain.Models;
-using Domain.ResultType;
 using FluentValidation;
+using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -36,15 +36,18 @@ public class ProductRepository : IProductRepository
         _context.Remove(entity);
     }
 
+    public async Task<IEnumerable<Product>> GetAllBySpecificationAsync(Specification<Product> specification)
+    {
+        var query = SpecificationEvaluator.ApplySpecification(_context.Products, specification);
+        return await query.ToListAsync();
+    }
+
     public async Task<IEnumerable<Product>> GetAllAsync(PageInfo? pageInfo = null)
     {
         IQueryable<Product> query = _context.Products;
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();
@@ -52,14 +55,10 @@ public class ProductRepository : IProductRepository
 
     public async Task<IEnumerable<Product>> GetAllByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
     {
-        var query = _context.Products.Where(p => p.CategoryId == categoryId);
-
+        IQueryable<Product> query = _context.Products.Where(p => p.CategoryId == categoryId);
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();
@@ -68,13 +67,9 @@ public class ProductRepository : IProductRepository
     public async Task<IEnumerable<Product>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
         IQueryable<Product> query = _context.Products.Include(p => p.Category);
-
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();
@@ -82,16 +77,13 @@ public class ProductRepository : IProductRepository
 
     public async Task<IEnumerable<Product>> GetAllWithDetailsByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
     {
-        var query = _context.Products
+        IQueryable<Product> query = _context.Products
             .Include(p => p.Category)
             .Where(p => p.CategoryId == categoryId);
 
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();

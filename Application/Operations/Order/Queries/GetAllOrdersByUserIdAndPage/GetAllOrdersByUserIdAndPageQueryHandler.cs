@@ -10,7 +10,7 @@ public sealed class GetAllOrdersByUserIdAndPageQueryHandler(IOrderService orderS
 {
     public async Task<IEnumerable<OrderResponse>> Handle(GetAllOrdersByUserIdAndPageQuery request, CancellationToken cancellationToken)
     {
-        PageInfo pageInfo = new() { PageNumber = request.PageNumber, PageSize = request.PageSize };
+        PageInfo pageInfo = new() { Number = request.PageNumber, Size = request.PageSize };
         var orders = await orderService.GetAllByUserIdAsync(request.UserId, pageInfo);
         return orders.Select(o => o.ToResponse());
     }

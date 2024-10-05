@@ -3,7 +3,7 @@ using Domain.Entities;
 using Domain.Errors;
 using Domain.Helpers;
 using Domain.Models;
-using Domain.ResultType;
+using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -35,15 +35,18 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         _context.Remove(entity);
     }
 
+    public async Task<IEnumerable<RefreshToken>> GetAllBySpecificationAsync(Specification<RefreshToken> specification)
+    {
+        var query = SpecificationEvaluator.ApplySpecification(_context.RefreshTokens, specification);
+        return await query.ToListAsync();
+    }
+
     public async Task<IEnumerable<RefreshToken>> GetAllAsync(PageInfo? pageInfo = null)
     {
         IQueryable<RefreshToken> query = _context.RefreshTokens;
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();
@@ -52,13 +55,9 @@ public class RefreshTokenRepository : IRefreshTokenRepository
     public async Task<IEnumerable<RefreshToken>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
         IQueryable<RefreshToken> query = _context.RefreshTokens.Include(rt => rt.User);
-
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();

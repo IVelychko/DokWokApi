@@ -8,7 +8,6 @@ using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
 using Domain.Models.User;
-using Domain.ResultType;
 using System.IdentityModel.Tokens.Jwt;
 
 namespace Domain.Services;

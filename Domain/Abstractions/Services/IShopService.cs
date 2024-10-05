@@ -1,5 +1,5 @@
-﻿using Domain.Models;
-using Domain.ResultType;
+﻿using Domain.Helpers;
+using Domain.Models;
 
 namespace Domain.Abstractions.Services;
 

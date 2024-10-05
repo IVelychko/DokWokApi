@@ -10,7 +10,7 @@ public sealed class GetAllProductCategoriesByPageQueryHandler(IProductCategorySe
 {
     public async Task<IEnumerable<ProductCategoryResponse>> Handle(GetAllProductCategoriesByPageQuery request, CancellationToken cancellationToken)
     {
-        PageInfo pageInfo = new() { PageNumber = request.PageNumber, PageSize = request.PageSize };
+        PageInfo pageInfo = new() { Number = request.PageNumber, Size = request.PageSize };
         var categories = await productCategoryService.GetAllAsync(pageInfo);
         return categories.Select(c => c.ToResponse());
     }

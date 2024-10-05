@@ -1,5 +1,5 @@
 ﻿using Domain.Entities;
-using Domain.ResultType;
+using Domain.Helpers;
 
 namespace Domain.Abstractions.Repositories;
 

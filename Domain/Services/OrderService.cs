@@ -5,7 +5,6 @@ using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
-using Domain.ResultType;
 
 namespace Domain.Services;
 

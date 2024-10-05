@@ -1,6 +1,6 @@
 ﻿using Domain.Errors.Base;
 
-namespace Domain.ResultType;
+namespace Domain.Helpers;
 
 public readonly struct Result<TValue>
 {

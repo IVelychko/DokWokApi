@@ -10,7 +10,7 @@ public sealed class GetAllUsersByPageQueryHandler(IUserService userService)
 {
     public async Task<IEnumerable<UserResponse>> Handle(GetAllUsersByPageQuery request, CancellationToken cancellationToken)
     {
-        PageInfo pageInfo = new() { PageNumber = request.PageNumber, PageSize = request.PageSize };
+        PageInfo pageInfo = new() { Number = request.PageNumber, Size = request.PageSize };
         var users = await userService.GetAllUsersAsync(pageInfo);
         return users.Select(u => u.ToResponse());
     }

@@ -1,6 +1,6 @@
 ﻿using Application.Abstractions.Messaging;
 using Domain.Abstractions.Services;
-using Domain.ResultType;
+using Domain.Helpers;
 
 namespace Application.Operations.User.Queries.IsUserPhoneNumberTaken;
 

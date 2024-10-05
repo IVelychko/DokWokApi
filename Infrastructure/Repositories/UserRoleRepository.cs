@@ -1,6 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
+using Domain.Helpers;
 using Domain.Models;
+using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -14,15 +16,18 @@ public class UserRoleRepository : IUserRoleRepository
         _context = context;
     }
 
+    public async Task<IEnumerable<UserRole>> GetAllBySpecificationAsync(Specification<UserRole> specification)
+    {
+        var query = SpecificationEvaluator.ApplySpecification(_context.UserRoles, specification);
+        return await query.ToListAsync();
+    }
+
     public async Task<IEnumerable<UserRole>> GetAllAsync(PageInfo? pageInfo = null)
     {
         IQueryable<UserRole> query = _context.UserRoles;
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();

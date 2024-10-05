@@ -2,7 +2,7 @@
 
 public class PageInfo
 {
-    public required int PageNumber { get; set; }
+    public required int Number { get; set; }
 
-    public required int PageSize { get; set; }
+    public required int Size { get; set; }
 }

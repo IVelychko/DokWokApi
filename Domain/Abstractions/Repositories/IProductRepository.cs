@@ -1,6 +1,6 @@
 ﻿using Domain.Entities;
+using Domain.Helpers;
 using Domain.Models;
-using Domain.ResultType;
 
 namespace Domain.Abstractions.Repositories;
 

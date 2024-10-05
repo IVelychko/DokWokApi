@@ -1,4 +1,4 @@
-﻿namespace Domain.ResultType;
+﻿namespace Domain.Helpers;
 
 public enum ResultState : byte
 {

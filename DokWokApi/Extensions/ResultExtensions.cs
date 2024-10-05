@@ -2,8 +2,8 @@
 using Application.Operations.User;
 using DokWokApi.Helpers;
 using Domain.Errors.Base;
+using Domain.Helpers;
 using Domain.Models;
-using Domain.ResultType;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DokWokApi.Extensions;

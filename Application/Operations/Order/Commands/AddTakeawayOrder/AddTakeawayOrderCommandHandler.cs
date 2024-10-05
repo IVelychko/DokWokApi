@@ -1,7 +1,7 @@
 ﻿using Application.Abstractions.Messaging;
 using Application.Mapping.Extensions;
 using Domain.Abstractions.Services;
-using Domain.ResultType;
+using Domain.Helpers;
 
 namespace Application.Operations.Order.Commands.AddTakeawayOrder;
 

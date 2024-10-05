@@ -1,7 +1,6 @@
 ﻿using Domain.Helpers;
 using Domain.Models;
 using Domain.Models.User;
-using Domain.ResultType;
 
 namespace Domain.Abstractions.Services;
 

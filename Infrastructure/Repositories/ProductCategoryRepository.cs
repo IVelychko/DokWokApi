@@ -3,7 +3,7 @@ using Domain.Entities;
 using Domain.Errors;
 using Domain.Helpers;
 using Domain.Models;
-using Domain.ResultType;
+using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -35,15 +35,18 @@ public class ProductCategoryRepository : IProductCategoryRepository
         _context.Remove(entity);
     }
 
+    public async Task<IEnumerable<ProductCategory>> GetAllBySpecificationAsync(Specification<ProductCategory> specification)
+    {
+        var query = SpecificationEvaluator.ApplySpecification(_context.ProductCategories, specification);
+        return await query.ToListAsync();
+    }
+
     public async Task<IEnumerable<ProductCategory>> GetAllAsync(PageInfo? pageInfo = null)
     {
         IQueryable<ProductCategory> query = _context.ProductCategories;
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();

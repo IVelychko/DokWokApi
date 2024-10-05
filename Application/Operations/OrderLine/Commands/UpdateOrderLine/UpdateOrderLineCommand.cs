@@ -1,5 +1,5 @@
 ﻿using Application.Abstractions.Messaging;
-using Domain.ResultType;
+using Domain.Helpers;
 
 namespace Application.Operations.OrderLine.Commands.UpdateOrderLine;
 

@@ -3,8 +3,8 @@ using Domain.Entities;
 using Domain.Errors;
 using Domain.Helpers;
 using Domain.Models;
-using Domain.ResultType;
 using FluentValidation;
+using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -36,16 +36,18 @@ public class OrderLineRepository : IOrderLineRepository
         _context.Remove(entity);
     }
 
+    public async Task<IEnumerable<OrderLine>> GetAllBySpecificationAsync(Specification<OrderLine> specification)
+    {
+        var query = SpecificationEvaluator.ApplySpecification(_context.OrderLines, specification);
+        return await query.ToListAsync();
+    }
+
     public async Task<IEnumerable<OrderLine>> GetAllAsync(PageInfo? pageInfo = null)
     {
         IQueryable<OrderLine> query = _context.OrderLines;
-
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();
@@ -53,14 +55,10 @@ public class OrderLineRepository : IOrderLineRepository
 
     public async Task<IEnumerable<OrderLine>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
     {
-        var query = _context.OrderLines.Where(ol => ol.OrderId == orderId);
-
+        IQueryable<OrderLine> query = _context.OrderLines.Where(ol => ol.OrderId == orderId);
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();
@@ -75,10 +73,7 @@ public class OrderLineRepository : IOrderLineRepository
 
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();
@@ -86,7 +81,7 @@ public class OrderLineRepository : IOrderLineRepository
 
     public async Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
     {
-        var query = _context.OrderLines
+        IQueryable<OrderLine> query = _context.OrderLines
             .Include(ol => ol.Order)
             .Include(ol => ol.Product)
                 .ThenInclude(p => p!.Category)
@@ -94,10 +89,7 @@ public class OrderLineRepository : IOrderLineRepository
 
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query
-                .Skip(itemsToSkip)
-                .Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();

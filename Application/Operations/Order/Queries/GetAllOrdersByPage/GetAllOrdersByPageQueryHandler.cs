@@ -10,7 +10,7 @@ public sealed class GetAllOrdersByPageQueryHandler(IOrderService orderService)
 {
     public async Task<IEnumerable<OrderResponse>> Handle(GetAllOrdersByPageQuery request, CancellationToken cancellationToken)
     {
-        PageInfo pageInfo = new() { PageNumber = request.PageNumber, PageSize = request.PageSize };
+        PageInfo pageInfo = new() { Number = request.PageNumber, Size = request.PageSize };
         var orders = await orderService.GetAllAsync(pageInfo);
         return orders.Select(o => o.ToResponse());
     }

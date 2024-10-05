@@ -2,7 +2,7 @@
 using Domain.Errors;
 using Domain.Errors.Base;
 using Domain.Exceptions;
-using Domain.ResultType;
+using Domain.Helpers;
 using FluentValidation;
 using FluentValidation.Results;
 using MediatR;

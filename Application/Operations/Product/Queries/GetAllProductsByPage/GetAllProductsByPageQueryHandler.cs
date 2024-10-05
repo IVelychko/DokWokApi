@@ -10,7 +10,7 @@ public sealed class GetAllProductsByPageQueryHandler(IProductService productServ
 {
     public async Task<IEnumerable<ProductResponse>> Handle(GetAllProductsByPageQuery request, CancellationToken cancellationToken)
     {
-        PageInfo pageInfo = new() { PageNumber = request.PageNumber, PageSize = request.PageSize };
+        PageInfo pageInfo = new() { Number = request.PageNumber, Size = request.PageSize };
         var products = await productService.GetAllAsync(pageInfo);
         return products.Select(p => p.ToResponse());
     }

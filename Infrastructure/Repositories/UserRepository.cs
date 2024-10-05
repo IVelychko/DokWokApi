@@ -4,7 +4,7 @@ using Domain.Entities;
 using Domain.Errors;
 using Domain.Helpers;
 using Domain.Models;
-using Domain.ResultType;
+using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 
@@ -72,13 +72,25 @@ public class UserRepository : IUserRepository
         _context.Remove(user);
     }
 
+    public async Task<IEnumerable<User>> GetAllUsersBySpecificationAsync(Specification<User> specification)
+    {
+        var query = SpecificationEvaluator.ApplySpecification(_context.Users, specification);
+        return await query.ToListAsync();
+    }
+
+    public async Task<IEnumerable<User>> GetAllCustomersBySpecificationAsync(Specification<User> specification)
+    {
+        var query = SpecificationEvaluator.ApplySpecification(_context.Users.Where(u => u.UserRole!.Name == UserRoles.Customer),
+            specification);
+        return await query.ToListAsync();
+    }
+
     public async Task<IEnumerable<User>> GetAllCustomersAsync(PageInfo? pageInfo = null)
     {
-        var query = _context.Users.Where(u => u.UserRole!.Name == UserRoles.Customer);
+        IQueryable<User> query = _context.Users.Where(u => u.UserRole!.Name == UserRoles.Customer);
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            return await query.Skip(itemsToSkip).Take(pageInfo.PageSize).ToListAsync();
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();
@@ -86,14 +98,13 @@ public class UserRepository : IUserRepository
 
     public async Task<IEnumerable<User>> GetAllCustomersWithDetailsAsync(PageInfo? pageInfo = null)
     {
-        var query = _context.Users
+        IQueryable<User> query = _context.Users
             .Include(u => u.UserRole)
             .Where(u => u.UserRole!.Name == UserRoles.Customer);
 
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            return await query.Skip(itemsToSkip).Take(pageInfo.PageSize).ToListAsync();
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();
@@ -104,8 +115,7 @@ public class UserRepository : IUserRepository
         IQueryable<User> query = _context.Users;
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query.Skip(itemsToSkip).Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();
@@ -114,11 +124,9 @@ public class UserRepository : IUserRepository
     public async Task<IEnumerable<User>> GetAllUsersWithDetailsAsync(PageInfo? pageInfo = null)
     {
         IQueryable<User> query = _context.Users.Include(u => u.UserRole);
-
         if (pageInfo is not null)
         {
-            var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
-            query = query.Skip(itemsToSkip).Take(pageInfo.PageSize);
+            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
         }
 
         return await query.ToListAsync();
