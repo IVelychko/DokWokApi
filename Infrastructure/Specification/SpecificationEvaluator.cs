@@ -16,8 +16,15 @@ public static class SpecificationEvaluator
             queryable = queryable.Where(specification.Criteria);
         }
 
-        queryable = specification.IncludeExpressions.Aggregate(queryable,
-            (current, includeExpression) => current.Include(includeExpression));
+        foreach (var includeExpression in specification.IncludeExpressions)
+        {
+            var includableQueryable = queryable.Include(includeExpression.Include);
+            foreach (var thenIncludeExpression in includeExpression.ThenIncludes)
+            {
+                includableQueryable = includableQueryable.ThenInclude(thenIncludeExpression);
+            }
+            queryable = includableQueryable;
+        }
 
         if (specification.OrderByExpression is not null)
         {
@@ -30,9 +37,7 @@ public static class SpecificationEvaluator
 
         if (specification.PageInfo is not null)
         {
-            var pageInfo = specification.PageInfo;
-            var itemsToSkip = (pageInfo.Number - 1) * pageInfo.Size;
-            queryable = queryable.Skip(itemsToSkip).Take(pageInfo.Size);
+            queryable = ApplyPagination(queryable, specification.PageInfo);
         }
 
         return queryable;

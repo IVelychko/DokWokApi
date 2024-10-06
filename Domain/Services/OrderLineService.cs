@@ -1,10 +1,12 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
+using Domain.Entities;
 using Domain.Errors;
 using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Domain.Services;
 
@@ -13,12 +15,14 @@ public class OrderLineService : IOrderLineService
     private readonly IOrderLineRepository _orderLineRepository;
     private readonly IProductRepository _productRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IDistributedCache _distributedCache;
 
-    public OrderLineService(IOrderLineRepository orderLineRepository, IProductRepository productRepository, IUnitOfWork unitOfWork)
+    public OrderLineService(IOrderLineRepository orderLineRepository, IProductRepository productRepository, IUnitOfWork unitOfWork, IDistributedCache distributedCache)
     {
         _orderLineRepository = orderLineRepository;
         _productRepository = productRepository;
         _unitOfWork = unitOfWork;
+        _distributedCache = distributedCache;
     }
 
     public async Task<Result<OrderLineModel>> AddAsync(OrderLineModel model)
@@ -54,29 +58,73 @@ public class OrderLineService : IOrderLineService
         await _unitOfWork.SaveChangesAsync();
     }
 
+    // TODO
     public async Task<IEnumerable<OrderLineModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _orderLineRepository.GetAllWithDetailsAsync(pageInfo);
-        var models = entities.Select(ol => ol.ToModel());
+        string key = pageInfo is null ? "allOrderLines" :
+            $"allOrderLines-page{pageInfo.Number}-size{pageInfo.Size}";
+
+        Specification<OrderLine> specification = new() { PageInfo = pageInfo };
+        specification.IncludeExpressions.AddRange([
+            new(ol => ol.Order),
+            new(ol => ol.Product!.Category)
+            ]);
+
+        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+            key, specification, _orderLineRepository.GetAllBySpecificationAsync);
+
+        var models = entities.Select(p => p.ToModel());
         return models;
     }
 
     public async Task<IEnumerable<OrderLineModel>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
     {
-        var entities = await _orderLineRepository.GetAllWithDetailsByOrderIdAsync(orderId, pageInfo);
-        var models = entities.Select(ol => ol.ToModel());
+        string key = pageInfo is null ? $"allOrderLinesByOrderId{orderId}" :
+            $"allOrderLinesByOrderId{orderId}-page{pageInfo.Number}-size{pageInfo.Size}";
+
+        Specification<OrderLine> specification = new()
+        {
+            Criteria = ol => ol.OrderId == orderId,
+            PageInfo = pageInfo
+        };
+        specification.IncludeExpressions.AddRange([
+            new(ol => ol.Order),
+            new(ol => ol.Product!.Category)
+            ]);
+        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+            key, specification, _orderLineRepository.GetAllBySpecificationAsync);
+
+        var models = entities.Select(p => p.ToModel());
         return models;
     }
 
     public async Task<OrderLineModel?> GetByIdAsync(long id)
     {
-        var entity = await _orderLineRepository.GetByIdWithDetailsAsync(id);
+        string key = $"orderLineById{id}";
+        Specification<OrderLine> specification = new() { Criteria = ol => ol.Id == id };
+        specification.IncludeExpressions.AddRange([
+            new(ol => ol.Order),
+            new(ol => ol.Product!.Category)
+            ]);
+
+        var entity = await Caching.GetEntityFromCache(_distributedCache,
+            key, specification, _orderLineRepository.GetAllBySpecificationAsync);
+
         return entity?.ToModel();
     }
 
     public async Task<OrderLineModel?> GetByOrderAndProductIdsAsync(long orderId, long productId)
     {
-        var entity = await _orderLineRepository.GetByOrderAndProductIdsWithDetailsAsync(orderId, productId);
+        string key = $"orderLineByOrderId{orderId}-ProductId{productId}";
+        Specification<OrderLine> specification = new() { Criteria = ol => ol.OrderId == orderId && ol.ProductId == productId };
+        specification.IncludeExpressions.AddRange([
+            new(ol => ol.Order),
+            new(ol => ol.Product!.Category)
+            ]);
+
+        var entity = await Caching.GetEntityFromCache(_distributedCache,
+            key, specification, _orderLineRepository.GetAllBySpecificationAsync);
+
         return entity?.ToModel();
     }
 

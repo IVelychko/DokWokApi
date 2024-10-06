@@ -1,10 +1,12 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
+using Domain.Entities;
 using Domain.Errors;
 using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Domain.Services;
 
@@ -12,11 +14,13 @@ public class ProductCategoryService : IProductCategoryService
 {
     private readonly IProductCategoryRepository _productCategoryRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IDistributedCache _distributedCache;
 
-    public ProductCategoryService(IProductCategoryRepository productCategoryRepository, IUnitOfWork unitOfWork)
+    public ProductCategoryService(IProductCategoryRepository productCategoryRepository, IUnitOfWork unitOfWork, IDistributedCache distributedCache)
     {
         _productCategoryRepository = productCategoryRepository;
         _unitOfWork = unitOfWork;
+        _distributedCache = distributedCache;
     }
 
     public async Task<Result<ProductCategoryModel>> AddAsync(ProductCategoryModel model)
@@ -42,14 +46,24 @@ public class ProductCategoryService : IProductCategoryService
 
     public async Task<IEnumerable<ProductCategoryModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _productCategoryRepository.GetAllAsync(pageInfo);
-        var models = entities.Select(c => c.ToModel());
+        string key = pageInfo is null ? "allProductCategories" :
+            $"allProductCategories-page{pageInfo.Number}-size{pageInfo.Size}";
+
+        Specification<ProductCategory> specification = new() { PageInfo = pageInfo };
+        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+            key, specification, _productCategoryRepository.GetAllBySpecificationAsync);
+
+        var models = entities.Select(p => p.ToModel());
         return models;
     }
 
     public async Task<ProductCategoryModel?> GetByIdAsync(long id)
     {
-        var entity = await _productCategoryRepository.GetByIdAsync(id);
+        string key = $"productCategoryById{id}";
+        Specification<ProductCategory> specification = new() { Criteria = c => c.Id == id };
+        var entity = await Caching.GetEntityFromCache(_distributedCache,
+            key, specification, _productCategoryRepository.GetAllBySpecificationAsync);
+
         return entity?.ToModel();
     }
 

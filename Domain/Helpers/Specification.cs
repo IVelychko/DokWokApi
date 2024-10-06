@@ -8,7 +8,7 @@ public class Specification<TEntity> where TEntity : BaseEntity
 {
     public Expression<Func<TEntity, bool>>? Criteria { get; init; }
 
-    public List<Expression<Func<TEntity, object?>>> IncludeExpressions { get; } = [];
+    public List<IncludeExpression<TEntity>> IncludeExpressions { get; init; } = [];
 
     public Expression<Func<TEntity, object>>? OrderByExpression { get; init; }
 

@@ -1,5 +1,6 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
+using Domain.Entities;
 using Domain.Errors;
 using Domain.Exceptions;
 using Domain.Helpers;
@@ -45,40 +46,45 @@ public class ProductService : IProductService
 
     public async Task<IEnumerable<ProductModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        //string key = "allProducts";
-        //var cachedSerializedModels = await _distributedCache.GetStringAsync(key);
-        //IEnumerable<ProductModel> models;
-        //if (string.IsNullOrEmpty(cachedSerializedModels))
-        //{
-        //    var entities = await _productRepository.GetAllWithDetailsAsync(pageInfo);
-        //    models = entities.Select(p => p.ToModel());
-        //    if (models.Any())
-        //    {
-        //        await _distributedCache.SetStringAsync(key, JsonSerializer.Serialize(models));
-        //        return models;
-        //    }
+        string key = pageInfo is null ? "allProducts" :
+            $"allProducts-page{pageInfo.Number}-size{pageInfo.Size}";
 
-        //    return models;
-        //}
+        Specification<Product> specification = new() { PageInfo = pageInfo };
+        specification.IncludeExpressions.Add(new(p => p.Category));
+        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+            key, specification, _productRepository.GetAllBySpecificationAsync);
 
-        //models = JsonSerializer.Deserialize<IEnumerable<ProductModel>>(cachedSerializedModels)!;
-        //return models;
-
-        var entities = await _productRepository.GetAllWithDetailsAsync(pageInfo);
         var models = entities.Select(p => p.ToModel());
         return models;
     }
 
     public async Task<IEnumerable<ProductModel>> GetAllByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
     {
-        var entities = await _productRepository.GetAllWithDetailsByCategoryIdAsync(categoryId, pageInfo);
+        string key = pageInfo is null ? $"allProductsByCategoryId{categoryId}" :
+            $"allProductsByCategoryId{categoryId}-page{pageInfo.Number}-size{pageInfo.Size}";
+
+        Specification<Product> specification = new()
+        {
+            Criteria = p => p.CategoryId == categoryId,
+            PageInfo = pageInfo
+        };
+        specification.IncludeExpressions.Add(new(p => p.Category));
+        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+            key, specification, _productRepository.GetAllBySpecificationAsync);
+
         var models = entities.Select(p => p.ToModel());
         return models;
     }
 
     public async Task<ProductModel?> GetByIdAsync(long id)
     {
-        var entity = await _productRepository.GetByIdWithDetailsAsync(id);
+        string key = $"productById{id}";
+        Specification<Product> specification = new() { Criteria = p => p.Id == id };
+        specification.IncludeExpressions.Add(new(p => p.Category));
+
+        var entity = await Caching.GetEntityFromCache(_distributedCache,
+            key, specification, _productRepository.GetAllBySpecificationAsync);
+
         return entity?.ToModel();
     }
 

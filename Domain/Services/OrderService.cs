@@ -1,10 +1,13 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
+using Domain.Entities;
 using Domain.Errors;
 using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Linq.Expressions;
 
 namespace Domain.Services;
 
@@ -13,12 +16,14 @@ public class OrderService : IOrderService
     private readonly IOrderRepository _orderRepository;
     private readonly IProductRepository _productRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IDistributedCache _distributedCache;
 
-    public OrderService(IOrderRepository orderRepository, IProductRepository productRepository, IUnitOfWork unitOfWork)
+    public OrderService(IOrderRepository orderRepository, IProductRepository productRepository, IUnitOfWork unitOfWork, IDistributedCache distributedCache)
     {
         _orderRepository = orderRepository;
         _productRepository = productRepository;
         _unitOfWork = unitOfWork;
+        _distributedCache = distributedCache;
     }
 
     public async Task<Result<OrderModel>> AddAsync(OrderModel model)
@@ -55,23 +60,73 @@ public class OrderService : IOrderService
         await _unitOfWork.SaveChangesAsync();
     }
 
+    // TODO
     public async Task<IEnumerable<OrderModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _orderRepository.GetAllWithDetailsAsync(pageInfo);
-        var models = entities.Select(o => o.ToModel());
+        string key = pageInfo is null ? "allOrders" :
+            $"allOrders-page{pageInfo.Number}-size{pageInfo.Size}";
+
+        Specification<Order> specification = new() { PageInfo = pageInfo };
+        IncludeExpression<Order> includeOrderLine = new(o => o.OrderLines);
+        Expression<Func<object?, object?>> thenIncludeProduct = ol => (ol as OrderLine)!.Product;
+        Expression<Func<object?, object?>> thenIncludeProductCategory = p => (p as Product)!.Category;
+        includeOrderLine.ThenIncludes.AddRange([thenIncludeProduct, thenIncludeProductCategory]);
+        specification.IncludeExpressions.AddRange([
+            new(o => o.User),
+            new(o => o.Shop),
+            includeOrderLine
+            ]);
+        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+            key, specification, _orderRepository.GetAllBySpecificationAsync);
+
+        var models = entities.Select(p => p.ToModel());
         return models;
     }
 
     public async Task<IEnumerable<OrderModel>> GetAllByUserIdAsync(long userId, PageInfo? pageInfo = null)
     {
-        var entities = await _orderRepository.GetAllWithDetailsByUserIdAsync(userId, pageInfo);
-        var models = entities.Select(o => o.ToModel());
+        string key = pageInfo is null ? $"allOrdersByUserId{userId}" :
+            $"allOrdersByUserId{userId}-page{pageInfo.Number}-size{pageInfo.Size}";
+
+        Specification<Order> specification = new()
+        {
+            Criteria = o => o.UserId == userId,
+            PageInfo = pageInfo
+        };
+        IncludeExpression<Order> includeOrderLine = new(o => o.OrderLines);
+        Expression<Func<object?, object?>> thenIncludeProduct = ol => (ol as OrderLine)!.Product;
+        Expression<Func<object?, object?>> thenIncludeProductCategory = p => (p as Product)!.Category;
+        includeOrderLine.ThenIncludes.AddRange([thenIncludeProduct, thenIncludeProductCategory]);
+        specification.IncludeExpressions.AddRange([
+            new(o => o.User),
+            new(o => o.Shop),
+            includeOrderLine
+            ]);
+
+        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+            key, specification, _orderRepository.GetAllBySpecificationAsync);
+
+        var models = entities.Select(p => p.ToModel());
         return models;
     }
 
     public async Task<OrderModel?> GetByIdAsync(long id)
     {
-        var entity = await _orderRepository.GetByIdWithDetailsAsync(id);
+        string key = $"orderById{id}";
+        Specification<Order> specification = new() { Criteria = o => o.Id == id };
+        IncludeExpression<Order> includeOrderLine = new(o => o.OrderLines);
+        Expression<Func<object?, object?>> thenIncludeProduct = ol => (ol as OrderLine)!.Product;
+        Expression<Func<object?, object?>> thenIncludeProductCategory = p => (p as Product)!.Category;
+        includeOrderLine.ThenIncludes.AddRange([thenIncludeProduct, thenIncludeProductCategory]);
+        specification.IncludeExpressions.AddRange([
+            new(o => o.User),
+            new(o => o.Shop),
+            includeOrderLine
+            ]);
+
+        var entity = await Caching.GetEntityFromCache(_distributedCache,
+            key, specification, _orderRepository.GetAllBySpecificationAsync);
+
         return entity?.ToModel();
     }
 

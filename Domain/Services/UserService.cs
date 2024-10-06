@@ -8,6 +8,7 @@ using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
 using Domain.Models.User;
+using Microsoft.Extensions.Caching.Distributed;
 using System.IdentityModel.Tokens.Jwt;
 
 namespace Domain.Services;
@@ -18,6 +19,7 @@ public class UserService : IUserService
     private readonly IUserRoleRepository _userRoleRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IDistributedCache _distributedCache;
     private readonly ISecurityTokenService<UserModel, JwtSecurityToken> _securityTokenService;
     private readonly IUserServiceValidator _validator;
     private readonly TokenValidationParametersAccessor _tokenValidationParametersAccessor;
@@ -28,7 +30,8 @@ public class UserService : IUserService
         IUserServiceValidator validator,
         TokenValidationParametersAccessor tokenValidationParametersAccessor,
         IUserRoleRepository userRoleRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IDistributedCache distributedCache)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
@@ -37,6 +40,7 @@ public class UserService : IUserService
         _tokenValidationParametersAccessor = tokenValidationParametersAccessor;
         _userRoleRepository = userRoleRepository;
         _unitOfWork = unitOfWork;
+        _distributedCache = distributedCache;
     }
 
     public async Task<Result<UserModel>> AddAsync(UserModel model, string password)
@@ -76,33 +80,62 @@ public class UserService : IUserService
 
     public async Task<IEnumerable<UserModel>> GetAllUsersAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _userRepository.GetAllUsersWithDetailsAsync(pageInfo);
-        var models = entities.Select(u => u.ToModel());
+        string key = pageInfo is null ? "allUsers" :
+            $"allUsers-page{pageInfo.Number}-size{pageInfo.Size}";
+
+        Specification<User> specification = new() { PageInfo = pageInfo };
+        specification.IncludeExpressions.Add(new(u => u.UserRole));
+        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+            key, specification, _userRepository.GetAllUsersBySpecificationAsync);
+
+        var models = entities.Select(p => p.ToModel());
         return models;
     }
 
     public async Task<IEnumerable<UserModel>> GetAllCustomersAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _userRepository.GetAllCustomersWithDetailsAsync(pageInfo);
-        var models = entities.Select(u => u.ToModel());
+        string key = pageInfo is null ? "allCustomers" :
+            $"allCustomers-page{pageInfo.Number}-size{pageInfo.Size}";
+
+        Specification<User> specification = new() { PageInfo = pageInfo };
+        specification.IncludeExpressions.Add(new(u => u.UserRole));
+        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+            key, specification, _userRepository.GetAllCustomersBySpecificationAsync);
+
+        var models = entities.Select(p => p.ToModel());
         return models;
     }
 
     public async Task<UserModel?> GetUserByUserNameAsync(string userName)
     {
-        var entity = await _userRepository.GetUserByUserNameWithDetailsAsync(userName);
+        string key = $"userByUserName{userName}";
+        Specification<User> specification = new() { Criteria = u => u.UserName == userName };
+        specification.IncludeExpressions.Add(new(u => u.UserRole));
+        var entity = await Caching.GetEntityFromCache(_distributedCache,
+            key, specification, _userRepository.GetAllUsersBySpecificationAsync);
+
         return entity?.ToModel();
     }
 
     public async Task<UserModel?> GetUserByIdAsync(long id)
     {
-        var entity = await _userRepository.GetUserByIdWithDetailsAsync(id);
+        string key = $"userById{id}";
+        Specification<User> specification = new() { Criteria = u => u.Id == id };
+        specification.IncludeExpressions.Add(new(u => u.UserRole));
+        var entity = await Caching.GetEntityFromCache(_distributedCache,
+            key, specification, _userRepository.GetAllUsersBySpecificationAsync);
+
         return entity?.ToModel();
     }
 
     public async Task<UserModel?> GetCustomerByIdAsync(long id)
     {
-        var entity = await _userRepository.GetCustomerByIdWithDetailsAsync(id);
+        string key = $"customerById{id}";
+        Specification<User> specification = new() { Criteria = u => u.Id == id };
+        specification.IncludeExpressions.Add(new(u => u.UserRole));
+        var entity = await Caching.GetEntityFromCache(_distributedCache,
+            key, specification, _userRepository.GetAllCustomersBySpecificationAsync);
+
         return entity?.ToModel();
     }
 

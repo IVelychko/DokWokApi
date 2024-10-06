@@ -1,10 +1,12 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
+using Domain.Entities;
 using Domain.Errors;
 using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Domain.Services;
 
@@ -12,11 +14,13 @@ public class ShopService : IShopService
 {
     private readonly IShopRepository _shopRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IDistributedCache _distributedCache;
 
-    public ShopService(IShopRepository shopRepository, IUnitOfWork unitOfWork)
+    public ShopService(IShopRepository shopRepository, IUnitOfWork unitOfWork, IDistributedCache distributedCache)
     {
         _shopRepository = shopRepository;
         _unitOfWork = unitOfWork;
+        _distributedCache = distributedCache;
     }
 
     public async Task<Result<ShopModel>> AddAsync(ShopModel model)
@@ -42,20 +46,34 @@ public class ShopService : IShopService
 
     public async Task<IEnumerable<ShopModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
-        var entities = await _shopRepository.GetAllAsync(pageInfo);
-        var models = entities.Select(s => s.ToModel());
+        string key = pageInfo is null ? "allShops" :
+            $"allShops-page{pageInfo.Number}-size{pageInfo.Size}";
+
+        Specification<Shop> specification = new() { PageInfo = pageInfo };
+        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+            key, specification, _shopRepository.GetAllBySpecificationAsync);
+
+        var models = entities.Select(p => p.ToModel());
         return models;
     }
 
     public async Task<ShopModel?> GetByIdAsync(long id)
     {
-        var entity = await _shopRepository.GetByIdAsync(id);
+        string key = $"shopById{id}";
+        Specification<Shop> specification = new() { Criteria = s => s.Id == id };
+        var entity = await Caching.GetEntityFromCache(_distributedCache,
+            key, specification, _shopRepository.GetAllBySpecificationAsync);
+
         return entity?.ToModel();
     }
 
     public async Task<ShopModel?> GetByAddressAsync(string street, string building)
     {
-        var entity = await _shopRepository.GetByAddressAsync(street, building);
+        string key = $"shopByAddress-{street}-{building}";
+        Specification<Shop> specification = new() { Criteria = s => s.Street == street && s.Building == building };
+        var entity = await Caching.GetEntityFromCache(_distributedCache,
+            key, specification, _shopRepository.GetAllBySpecificationAsync);
+
         return entity?.ToModel();
     }
 
