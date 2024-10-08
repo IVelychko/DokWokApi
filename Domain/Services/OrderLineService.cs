@@ -6,7 +6,6 @@ using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
-using Microsoft.Extensions.Caching.Distributed;
 
 namespace Domain.Services;
 
@@ -15,14 +14,14 @@ public class OrderLineService : IOrderLineService
     private readonly IOrderLineRepository _orderLineRepository;
     private readonly IProductRepository _productRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IDistributedCache _distributedCache;
+    private readonly ICacheService _cacheService;
 
-    public OrderLineService(IOrderLineRepository orderLineRepository, IProductRepository productRepository, IUnitOfWork unitOfWork, IDistributedCache distributedCache)
+    public OrderLineService(IOrderLineRepository orderLineRepository, IProductRepository productRepository, IUnitOfWork unitOfWork, ICacheService cacheService)
     {
         _orderLineRepository = orderLineRepository;
         _productRepository = productRepository;
         _unitOfWork = unitOfWork;
-        _distributedCache = distributedCache;
+        _cacheService = cacheService;
     }
 
     public async Task<Result<OrderLineModel>> AddAsync(OrderLineModel model)
@@ -49,20 +48,32 @@ public class OrderLineService : IOrderLineService
         await _orderLineRepository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
         var createdEntity = await _orderLineRepository.GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was a database error");
+
+        await _cacheService.RemoveAsync($"allOrderLinesByOrderId{createdEntity.OrderId}");
+        await _cacheService.RemoveAsync("allOrderLines");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllOrderLines");
+
         return createdEntity.ToModel();
     }
 
     public async Task DeleteAsync(long id)
     {
+        var entityToDelete = await _orderLineRepository.GetByIdAsync(id) ?? throw new DbException("There was a database error");
+
         await _orderLineRepository.DeleteByIdAsync(id);
         await _unitOfWork.SaveChangesAsync();
+
+        await _cacheService.RemoveAsync($"allOrderLinesByOrderId{entityToDelete.OrderId}");
+        await _cacheService.RemoveAsync($"orderLineByOrderId{entityToDelete.OrderId}-ProductId{entityToDelete.ProductId}");
+        await _cacheService.RemoveAsync("allOrderLines");
+        await _cacheService.RemoveAsync($"orderLineById{entityToDelete.Id}");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllOrderLines");
     }
 
-    // TODO
     public async Task<IEnumerable<OrderLineModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
         string key = pageInfo is null ? "allOrderLines" :
-            $"allOrderLines-page{pageInfo.Number}-size{pageInfo.Size}";
+            $"paginatedAllOrderLines-page{pageInfo.Number}-size{pageInfo.Size}";
 
         Specification<OrderLine> specification = new() { PageInfo = pageInfo };
         specification.IncludeExpressions.AddRange([
@@ -70,17 +81,16 @@ public class OrderLineService : IOrderLineService
             new(ol => ol.Product!.Category)
             ]);
 
-        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+        var entities = await Caching.GetCollectionFromCache(_cacheService,
             key, specification, _orderLineRepository.GetAllBySpecificationAsync);
 
-        var models = entities.Select(p => p.ToModel());
-        return models;
+        return entities.Select(p => p.ToModel());
     }
 
     public async Task<IEnumerable<OrderLineModel>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
     {
         string key = pageInfo is null ? $"allOrderLinesByOrderId{orderId}" :
-            $"allOrderLinesByOrderId{orderId}-page{pageInfo.Number}-size{pageInfo.Size}";
+            $"paginatedAllOrderLinesByOrderId{orderId}-page{pageInfo.Number}-size{pageInfo.Size}";
 
         Specification<OrderLine> specification = new()
         {
@@ -91,11 +101,11 @@ public class OrderLineService : IOrderLineService
             new(ol => ol.Order),
             new(ol => ol.Product!.Category)
             ]);
-        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+
+        var entities = await Caching.GetCollectionFromCache(_cacheService,
             key, specification, _orderLineRepository.GetAllBySpecificationAsync);
 
-        var models = entities.Select(p => p.ToModel());
-        return models;
+        return entities.Select(p => p.ToModel());
     }
 
     public async Task<OrderLineModel?> GetByIdAsync(long id)
@@ -107,7 +117,7 @@ public class OrderLineService : IOrderLineService
             new(ol => ol.Product!.Category)
             ]);
 
-        var entity = await Caching.GetEntityFromCache(_distributedCache,
+        var entity = await Caching.GetEntityFromCache(_cacheService,
             key, specification, _orderLineRepository.GetAllBySpecificationAsync);
 
         return entity?.ToModel();
@@ -122,7 +132,7 @@ public class OrderLineService : IOrderLineService
             new(ol => ol.Product!.Category)
             ]);
 
-        var entity = await Caching.GetEntityFromCache(_distributedCache,
+        var entity = await Caching.GetEntityFromCache(_cacheService,
             key, specification, _orderLineRepository.GetAllBySpecificationAsync);
 
         return entity?.ToModel();
@@ -148,10 +158,18 @@ public class OrderLineService : IOrderLineService
             model.TotalLinePrice = product.Price * model.Quantity;
         }
 
+        var entityToUpdate = await _orderLineRepository.GetByIdAsync(model.Id) ?? throw new DbException("There was a database error");
+        await _cacheService.RemoveAsync($"allOrderLinesByOrderId{entityToUpdate.OrderId}");
+        await _cacheService.RemoveAsync($"orderLineByOrderId{entityToUpdate.OrderId}-ProductId{entityToUpdate.ProductId}");
+        await _cacheService.RemoveAsync("allOrderLines");
+        await _cacheService.RemoveAsync($"orderLineById{entityToUpdate.Id}");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllOrderLines");
+
         var entity = model.ToEntity();
         _orderLineRepository.Update(entity);
         await _unitOfWork.SaveChangesAsync();
         var updatedEntity = await _orderLineRepository.GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was a database error");
+
         return updatedEntity.ToModel();
     }
 }

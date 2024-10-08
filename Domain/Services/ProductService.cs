@@ -6,7 +6,6 @@ using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
-using Microsoft.Extensions.Caching.Distributed;
 
 namespace Domain.Services;
 
@@ -14,12 +13,12 @@ public class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IDistributedCache _distributedCache;
+    private readonly ICacheService _cacheService;
 
-    public ProductService(IProductRepository productRepository, IDistributedCache distributedCache, IUnitOfWork unitOfWork)
+    public ProductService(IProductRepository productRepository, ICacheService cacheService, IUnitOfWork unitOfWork)
     {
         _productRepository = productRepository;
-        _distributedCache = distributedCache;
+        _cacheService = cacheService;
         _unitOfWork = unitOfWork;
     }
 
@@ -35,33 +34,44 @@ public class ProductService : IProductService
         await _productRepository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
         var createdEntity = await _productRepository.GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was a database error");
+
+        await _cacheService.RemoveAsync("allProducts");
+        await _cacheService.RemoveAsync($"allProductsByCategoryId{createdEntity.CategoryId}");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllProducts");
+
         return createdEntity.ToModel();
     }
 
     public async Task DeleteAsync(long id)
     {
+        var entityToDelete = await _productRepository.GetByIdAsync(id) ?? throw new DbException("There was a database error");
+
         await _productRepository.DeleteByIdAsync(id);
         await _unitOfWork.SaveChangesAsync();
+
+        await _cacheService.RemoveAsync("allProducts");
+        await _cacheService.RemoveAsync($"allProductsByCategoryId{entityToDelete.CategoryId}");
+        await _cacheService.RemoveAsync($"productById{id}");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllProducts");
     }
 
     public async Task<IEnumerable<ProductModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
         string key = pageInfo is null ? "allProducts" :
-            $"allProducts-page{pageInfo.Number}-size{pageInfo.Size}";
+            $"paginatedAllProducts-page{pageInfo.Number}-size{pageInfo.Size}";
 
         Specification<Product> specification = new() { PageInfo = pageInfo };
         specification.IncludeExpressions.Add(new(p => p.Category));
-        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+        var entities = await Caching.GetCollectionFromCache(_cacheService,
             key, specification, _productRepository.GetAllBySpecificationAsync);
 
-        var models = entities.Select(p => p.ToModel());
-        return models;
+        return entities.Select(p => p.ToModel());
     }
 
     public async Task<IEnumerable<ProductModel>> GetAllByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
     {
         string key = pageInfo is null ? $"allProductsByCategoryId{categoryId}" :
-            $"allProductsByCategoryId{categoryId}-page{pageInfo.Number}-size{pageInfo.Size}";
+            $"paginatedAllProductsByCategoryId{categoryId}-page{pageInfo.Number}-size{pageInfo.Size}";
 
         Specification<Product> specification = new()
         {
@@ -69,11 +79,10 @@ public class ProductService : IProductService
             PageInfo = pageInfo
         };
         specification.IncludeExpressions.Add(new(p => p.Category));
-        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+        var entities = await Caching.GetCollectionFromCache(_cacheService,
             key, specification, _productRepository.GetAllBySpecificationAsync);
 
-        var models = entities.Select(p => p.ToModel());
-        return models;
+        return entities.Select(p => p.ToModel());
     }
 
     public async Task<ProductModel?> GetByIdAsync(long id)
@@ -82,7 +91,7 @@ public class ProductService : IProductService
         Specification<Product> specification = new() { Criteria = p => p.Id == id };
         specification.IncludeExpressions.Add(new(p => p.Category));
 
-        var entity = await Caching.GetEntityFromCache(_distributedCache,
+        var entity = await Caching.GetEntityFromCache(_cacheService,
             key, specification, _productRepository.GetAllBySpecificationAsync);
 
         return entity?.ToModel();
@@ -96,10 +105,17 @@ public class ProductService : IProductService
             return Result<ProductModel>.Failure(error);
         }
 
+        var entityToUpdate = await _productRepository.GetByIdAsync(model.Id) ?? throw new DbException("There was a database error");
+        await _cacheService.RemoveAsync($"allProductsByCategoryId{entityToUpdate.CategoryId}");
+        await _cacheService.RemoveAsync("allProducts");
+        await _cacheService.RemoveAsync($"productById{entityToUpdate.Id}");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllProducts");
+
         var entity = model.ToEntity();
         _productRepository.Update(entity);
         await _unitOfWork.SaveChangesAsync();
         var updatedEntity = await _productRepository.GetByIdWithDetailsAsync(entity.Id) ?? throw new DbException("There was a database error");
+
         return updatedEntity.ToModel();
     }
 

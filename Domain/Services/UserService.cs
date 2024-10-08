@@ -8,7 +8,6 @@ using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
 using Domain.Models.User;
-using Microsoft.Extensions.Caching.Distributed;
 using System.IdentityModel.Tokens.Jwt;
 
 namespace Domain.Services;
@@ -19,7 +18,7 @@ public class UserService : IUserService
     private readonly IUserRoleRepository _userRoleRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IDistributedCache _distributedCache;
+    private readonly ICacheService _cacheService;
     private readonly ISecurityTokenService<UserModel, JwtSecurityToken> _securityTokenService;
     private readonly IUserServiceValidator _validator;
     private readonly TokenValidationParametersAccessor _tokenValidationParametersAccessor;
@@ -31,7 +30,7 @@ public class UserService : IUserService
         TokenValidationParametersAccessor tokenValidationParametersAccessor,
         IUserRoleRepository userRoleRepository,
         IUnitOfWork unitOfWork,
-        IDistributedCache distributedCache)
+        ICacheService cacheService)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
@@ -40,7 +39,7 @@ public class UserService : IUserService
         _tokenValidationParametersAccessor = tokenValidationParametersAccessor;
         _userRoleRepository = userRoleRepository;
         _unitOfWork = unitOfWork;
-        _distributedCache = distributedCache;
+        _cacheService = cacheService;
     }
 
     public async Task<Result<UserModel>> AddAsync(UserModel model, string password)
@@ -69,41 +68,55 @@ public class UserService : IUserService
         await _userRepository.AddAsync(user, password);
         await _unitOfWork.SaveChangesAsync();
         var createdEntity = await _userRepository.GetUserByIdWithDetailsAsync(user.Id) ?? throw new DbException("There was a database error");
+
+        await _cacheService.RemoveAsync("allUsers");
+        await _cacheService.RemoveAsync("allCustomers");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllUsers");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllCustomers");
+
         return createdEntity.ToModel();
     }
 
     public async Task DeleteAsync(long id)
     {
+        var entityToDelete = await _userRepository.GetUserByIdAsync(id) ?? throw new DbException("There was a database error");
+
         await _userRepository.DeleteByIdAsync(id);
         await _unitOfWork.SaveChangesAsync();
+
+        await _cacheService.RemoveAsync("allUsers");
+        await _cacheService.RemoveAsync("allCustomers");
+        await _cacheService.RemoveAsync($"userByUserName{entityToDelete.UserName}");
+        await _cacheService.RemoveAsync($"userById{id}");
+        await _cacheService.RemoveAsync($"customerById{id}");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllUsers");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllCustomers");
     }
 
     public async Task<IEnumerable<UserModel>> GetAllUsersAsync(PageInfo? pageInfo = null)
     {
         string key = pageInfo is null ? "allUsers" :
-            $"allUsers-page{pageInfo.Number}-size{pageInfo.Size}";
+            $"paginatedAllUsers-page{pageInfo.Number}-size{pageInfo.Size}";
 
         Specification<User> specification = new() { PageInfo = pageInfo };
         specification.IncludeExpressions.Add(new(u => u.UserRole));
-        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+        var entities = await Caching.GetCollectionFromCache(_cacheService,
             key, specification, _userRepository.GetAllUsersBySpecificationAsync);
 
-        var models = entities.Select(p => p.ToModel());
-        return models;
+        return entities.Select(p => p.ToModel());
     }
 
     public async Task<IEnumerable<UserModel>> GetAllCustomersAsync(PageInfo? pageInfo = null)
     {
         string key = pageInfo is null ? "allCustomers" :
-            $"allCustomers-page{pageInfo.Number}-size{pageInfo.Size}";
+            $"paginatedAllCustomers-page{pageInfo.Number}-size{pageInfo.Size}";
 
         Specification<User> specification = new() { PageInfo = pageInfo };
         specification.IncludeExpressions.Add(new(u => u.UserRole));
-        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+        var entities = await Caching.GetCollectionFromCache(_cacheService,
             key, specification, _userRepository.GetAllCustomersBySpecificationAsync);
 
-        var models = entities.Select(p => p.ToModel());
-        return models;
+        return entities.Select(p => p.ToModel());
     }
 
     public async Task<UserModel?> GetUserByUserNameAsync(string userName)
@@ -111,7 +124,7 @@ public class UserService : IUserService
         string key = $"userByUserName{userName}";
         Specification<User> specification = new() { Criteria = u => u.UserName == userName };
         specification.IncludeExpressions.Add(new(u => u.UserRole));
-        var entity = await Caching.GetEntityFromCache(_distributedCache,
+        var entity = await Caching.GetEntityFromCache(_cacheService,
             key, specification, _userRepository.GetAllUsersBySpecificationAsync);
 
         return entity?.ToModel();
@@ -122,7 +135,7 @@ public class UserService : IUserService
         string key = $"userById{id}";
         Specification<User> specification = new() { Criteria = u => u.Id == id };
         specification.IncludeExpressions.Add(new(u => u.UserRole));
-        var entity = await Caching.GetEntityFromCache(_distributedCache,
+        var entity = await Caching.GetEntityFromCache(_cacheService,
             key, specification, _userRepository.GetAllUsersBySpecificationAsync);
 
         return entity?.ToModel();
@@ -133,7 +146,7 @@ public class UserService : IUserService
         string key = $"customerById{id}";
         Specification<User> specification = new() { Criteria = u => u.Id == id };
         specification.IncludeExpressions.Add(new(u => u.UserRole));
-        var entity = await Caching.GetEntityFromCache(_distributedCache,
+        var entity = await Caching.GetEntityFromCache(_cacheService,
             key, specification, _userRepository.GetAllCustomersBySpecificationAsync);
 
         return entity?.ToModel();
@@ -147,11 +160,22 @@ public class UserService : IUserService
             return Result<UserModel>.Failure(error);
         }
 
-        var entityToUpdate = await _userRepository.GetUserByIdAsync(model.Id);
+        var entityToUpdate = await _userRepository.GetUserByIdWithDetailsAsync(model.Id);
         if (entityToUpdate is null)
         {
             var error = new EntityNotFoundError(nameof(entityToUpdate), "The entity to update was not found");
             return Result<UserModel>.Failure(error);
+        }
+
+        await _cacheService.RemoveAsync($"userByUserName{entityToUpdate.UserName}");
+        await _cacheService.RemoveAsync("allUsers");
+        await _cacheService.RemoveAsync($"userById{entityToUpdate.Id}");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllUsers");
+        if (entityToUpdate.UserRole?.Name == UserRoles.Customer)
+        {
+            await _cacheService.RemoveAsync("allCustomers");
+            await _cacheService.RemoveAsync($"customerById{entityToUpdate.Id}");
+            await _cacheService.RemoveByPrefixAsync("paginatedAllCustomers");
         }
 
         var entity = model.ToEntity();
@@ -161,6 +185,7 @@ public class UserService : IUserService
         await _unitOfWork.SaveChangesAsync();
         var updatedEntity = await _userRepository.GetUserByIdWithDetailsAsync(entity.Id)
             ?? throw new DbException("There was a database error");
+
         return updatedEntity.ToModel();
     }
 
@@ -183,10 +208,19 @@ public class UserService : IUserService
             return Result<Unit>.Failure(error);
         }
 
+        var entityToUpdate = await _userRepository.GetCustomerByIdAsync(userId) ?? throw new DbException("There was a database error");
         var result = await _userRepository.UpdateCustomerPasswordAsync(userId, oldPassword, newPassword);
         if (result.IsSuccess)
         {
             await _unitOfWork.SaveChangesAsync();
+
+            await _cacheService.RemoveAsync($"userByUserName{entityToUpdate.UserName}");
+            await _cacheService.RemoveAsync("allUsers");
+            await _cacheService.RemoveAsync($"userById{entityToUpdate.Id}");
+            await _cacheService.RemoveAsync("allCustomers");
+            await _cacheService.RemoveAsync($"customerById{entityToUpdate.Id}");
+            await _cacheService.RemoveByPrefixAsync("paginatedAllUsers");
+            await _cacheService.RemoveByPrefixAsync("paginatedAllCustomers");
         }
 
         return result;
@@ -200,10 +234,19 @@ public class UserService : IUserService
             return Result<Unit>.Failure(error);
         }
 
+        var entityToUpdate = await _userRepository.GetCustomerByIdAsync(userId) ?? throw new DbException("There was a database error");
         var result = await _userRepository.UpdateCustomerPasswordAsAdminAsync(userId, newPassword);
         if (result.IsSuccess)
         {
             await _unitOfWork.SaveChangesAsync();
+
+            await _cacheService.RemoveAsync($"userByUserName{entityToUpdate.UserName}");
+            await _cacheService.RemoveAsync("allUsers");
+            await _cacheService.RemoveAsync($"userById{entityToUpdate.Id}");
+            await _cacheService.RemoveAsync("allCustomers");
+            await _cacheService.RemoveAsync($"customerById{entityToUpdate.Id}");
+            await _cacheService.RemoveByPrefixAsync("paginatedAllUsers");
+            await _cacheService.RemoveByPrefixAsync("paginatedAllCustomers");
         }
 
         return result;

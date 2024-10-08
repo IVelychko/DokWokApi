@@ -6,7 +6,6 @@ using Domain.Exceptions;
 using Domain.Helpers;
 using Domain.Mapping.Extensions;
 using Domain.Models;
-using Microsoft.Extensions.Caching.Distributed;
 
 namespace Domain.Services;
 
@@ -14,13 +13,13 @@ public class ShopService : IShopService
 {
     private readonly IShopRepository _shopRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IDistributedCache _distributedCache;
+    private readonly ICacheService _cacheService;
 
-    public ShopService(IShopRepository shopRepository, IUnitOfWork unitOfWork, IDistributedCache distributedCache)
+    public ShopService(IShopRepository shopRepository, IUnitOfWork unitOfWork, ICacheService cacheService)
     {
         _shopRepository = shopRepository;
         _unitOfWork = unitOfWork;
-        _distributedCache = distributedCache;
+        _cacheService = cacheService;
     }
 
     public async Task<Result<ShopModel>> AddAsync(ShopModel model)
@@ -35,33 +34,43 @@ public class ShopService : IShopService
         await _shopRepository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
         var createdEntity = await _shopRepository.GetByIdAsync(entity.Id) ?? throw new DbException("There was a database error");
+
+        await _cacheService.RemoveAsync("allShops");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllShops");
+
         return createdEntity.ToModel();
     }
 
     public async Task DeleteAsync(long id)
     {
+        var entityToDelete = await _shopRepository.GetByIdAsync(id) ?? throw new DbException("There was a database error");
+
         await _shopRepository.DeleteByIdAsync(id);
         await _unitOfWork.SaveChangesAsync();
+
+        await _cacheService.RemoveAsync("allShops");
+        await _cacheService.RemoveAsync($"shopById{id}");
+        await _cacheService.RemoveAsync($"shopByAddress-{entityToDelete.Street}-{entityToDelete.Building}");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllShops");
     }
 
     public async Task<IEnumerable<ShopModel>> GetAllAsync(PageInfo? pageInfo = null)
     {
         string key = pageInfo is null ? "allShops" :
-            $"allShops-page{pageInfo.Number}-size{pageInfo.Size}";
+            $"paginatedAllShops-page{pageInfo.Number}-size{pageInfo.Size}";
 
         Specification<Shop> specification = new() { PageInfo = pageInfo };
-        var entities = await Caching.GetCollectionFromCache(_distributedCache,
+        var entities = await Caching.GetCollectionFromCache(_cacheService,
             key, specification, _shopRepository.GetAllBySpecificationAsync);
 
-        var models = entities.Select(p => p.ToModel());
-        return models;
+        return entities.Select(p => p.ToModel());
     }
 
     public async Task<ShopModel?> GetByIdAsync(long id)
     {
         string key = $"shopById{id}";
         Specification<Shop> specification = new() { Criteria = s => s.Id == id };
-        var entity = await Caching.GetEntityFromCache(_distributedCache,
+        var entity = await Caching.GetEntityFromCache(_cacheService,
             key, specification, _shopRepository.GetAllBySpecificationAsync);
 
         return entity?.ToModel();
@@ -71,7 +80,7 @@ public class ShopService : IShopService
     {
         string key = $"shopByAddress-{street}-{building}";
         Specification<Shop> specification = new() { Criteria = s => s.Street == street && s.Building == building };
-        var entity = await Caching.GetEntityFromCache(_distributedCache,
+        var entity = await Caching.GetEntityFromCache(_cacheService,
             key, specification, _shopRepository.GetAllBySpecificationAsync);
 
         return entity?.ToModel();
@@ -108,10 +117,17 @@ public class ShopService : IShopService
             return Result<ShopModel>.Failure(error);
         }
 
+        var entityToUpdate = await _shopRepository.GetByIdAsync(model.Id) ?? throw new DbException("There was a database error");
+        await _cacheService.RemoveAsync($"shopByAddress-{entityToUpdate.Street}-{entityToUpdate.Building}");
+        await _cacheService.RemoveAsync("allShops");
+        await _cacheService.RemoveAsync($"shopById{entityToUpdate.Id}");
+        await _cacheService.RemoveByPrefixAsync("paginatedAllShops");
+
         var entity = model.ToEntity();
         _shopRepository.Update(entity);
         await _unitOfWork.SaveChangesAsync();
         var updatedEntity = await _shopRepository.GetByIdAsync(entity.Id) ?? throw new DbException("There was a database error");
+
         return updatedEntity.ToModel();
     }
 }

@@ -11,6 +11,7 @@ using Domain.Services;
 using Domain.Validation;
 using FluentValidation;
 using Infrastructure;
+using Infrastructure.Cache;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
@@ -75,6 +76,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ISecurityTokenService<UserModel, JwtSecurityToken>, JwtService>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<ICacheService, CacheService>();
 
         return services;
     }

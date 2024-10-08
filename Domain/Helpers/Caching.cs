@@ -1,5 +1,5 @@
-﻿using Domain.Entities;
-using Microsoft.Extensions.Caching.Distributed;
+﻿using Domain.Abstractions.Services;
+using Domain.Entities;
 using Newtonsoft.Json;
 
 namespace Domain.Helpers;
@@ -8,50 +8,44 @@ public static class Caching
 {
     private static readonly JsonSerializerSettings _settings = new() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
 
-    public async static Task<IEnumerable<TEntity>> GetCollectionFromCache<TEntity>(IDistributedCache distributedCache,
+    public async static Task<IEnumerable<TEntity>> GetCollectionFromCache<TEntity>(ICacheService cacheService,
         string key, Specification<TEntity> specification, Func<Specification<TEntity>, Task<IEnumerable<TEntity>>> fetch)
         where TEntity : BaseEntity
     {
-        IEnumerable<TEntity> entities;
-        string? cachedSerializedEntities = await distributedCache.GetStringAsync(key);
-        if (string.IsNullOrEmpty(cachedSerializedEntities))
+        IEnumerable<TEntity>? entities = await cacheService.GetAsync<IEnumerable<TEntity>>(key);
+        if (entities is null)
         {
             entities = await fetch(specification);
             if (entities.Any())
             {
-                var serializedEntities = JsonConvert.SerializeObject(entities, _settings);
-                await distributedCache.SetStringAsync(key, serializedEntities);
+                await cacheService.SetAsync(key, entities, _settings);
                 return entities;
             }
 
             return entities;
         }
 
-        entities = JsonConvert.DeserializeObject<IEnumerable<TEntity>>(cachedSerializedEntities)!;
         return entities;
     }
 
-    public async static Task<TEntity?> GetEntityFromCache<TEntity>(IDistributedCache distributedCache,
+    public async static Task<TEntity?> GetEntityFromCache<TEntity>(ICacheService cacheService,
         string key, Specification<TEntity> specification, Func<Specification<TEntity>, Task<IEnumerable<TEntity>>> fetch)
         where TEntity : BaseEntity
     {
-        TEntity? entity;
-        string? cachedSerializedEntity = await distributedCache.GetStringAsync(key);
-        if (string.IsNullOrEmpty(cachedSerializedEntity))
+        TEntity? entity = await cacheService.GetAsync<TEntity>(key);
+        if (entity is null)
         {
             var fetchedResult = await fetch(specification);
             entity = fetchedResult.FirstOrDefault();
             if (entity is not null)
             {
-                var serializedEntity = JsonConvert.SerializeObject(entity, _settings);
-                await distributedCache.SetStringAsync(key, serializedEntity);
+                await cacheService.SetAsync(key, entity, _settings);
                 return entity;
             }
 
             return entity;
         }
 
-        entity = JsonConvert.DeserializeObject<TEntity>(cachedSerializedEntity);
         return entity;
     }
 }
