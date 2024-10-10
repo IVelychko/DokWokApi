@@ -48,7 +48,11 @@ public static class SpecificationEvaluator
     {
         IQueryable<TEntity> queryable = initialQuery;
         var itemsToSkip = (pageInfo.Number - 1) * pageInfo.Size;
-        queryable = queryable.Skip(itemsToSkip).Take(pageInfo.Size);
+        queryable = queryable
+            .OrderBy(x => x.Id)
+            .Skip(itemsToSkip)
+            .Take(pageInfo.Size);
+
         return queryable;
     }
 }
