@@ -5,6 +5,5 @@ public sealed record UpdateUserRequest(
     string FirstName,
     string UserName,
     string Email,
-    string PhoneNumber,
-    long UserRoleId
+    string PhoneNumber
 );

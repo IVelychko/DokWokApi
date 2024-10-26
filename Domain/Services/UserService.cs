@@ -181,6 +181,7 @@ public class UserService : IUserService
         var entity = model.ToEntity();
         entity.PasswordHash = entityToUpdate.PasswordHash;
         entity.IsEmailConfirmed = entityToUpdate.IsEmailConfirmed;
+        entity.UserRoleId = entityToUpdate.UserRoleId;
         _userRepository.Update(entity);
         await _unitOfWork.SaveChangesAsync();
         var updatedEntity = await _userRepository.GetUserByIdWithDetailsAsync(entity.Id)

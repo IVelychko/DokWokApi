@@ -81,3 +81,7 @@ var passwordHasher = app.Services.GetRequiredService<IPasswordHasher>();
 await SeedData.SeedDatabaseAsync(context, passwordHasher);
 
 await app.RunAsync();
+
+#pragma warning disable S1118 // Utility classes should not have public constructors
+public partial class Program { }
+#pragma warning restore S1118 // Utility classes should not have public constructors

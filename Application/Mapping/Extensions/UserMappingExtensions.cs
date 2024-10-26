@@ -15,7 +15,7 @@ public static class UserMappingExtensions
         new(request.FirstName, request.UserName, request.Email, request.PhoneNumber, request.Password);
 
     public static UpdateUserCommand ToCommand(this UpdateUserRequest request) =>
-        new(request.Id, request.FirstName, request.UserName, request.Email, request.PhoneNumber, request.UserRoleId);
+        new(request.Id, request.FirstName, request.UserName, request.Email, request.PhoneNumber);
 
     public static UserModel ToModel(this RegisterUserCommand command)
     {
@@ -47,8 +47,7 @@ public static class UserMappingExtensions
             FirstName = command.FirstName,
             PhoneNumber = command.PhoneNumber,
             UserName = command.UserName,
-            Id = command.Id,
-            UserRoleId = command.UserRoleId
+            Id = command.Id
         };
     }
 

@@ -8,6 +8,5 @@ public sealed record UpdateUserCommand(
     string FirstName,
     string UserName,
     string Email,
-    string PhoneNumber,
-    long UserRoleId
+    string PhoneNumber
 ) : ICommand<Result<UserResponse>>;

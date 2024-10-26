@@ -7,11 +7,9 @@ namespace Application.Operations.User.Commands.UpdateUser;
 public sealed class UpdateUserCommandValidator : AbstractValidator<UpdateUserCommand>
 {
     private readonly IUserRepository _userRepository;
-    private readonly IUserRoleRepository _userRoleRepository;
 
-    public UpdateUserCommandValidator(IUserRepository userRepository, IUserRoleRepository userRoleRepository)
+    public UpdateUserCommandValidator(IUserRepository userRepository)
     {
-        _userRoleRepository = userRoleRepository;
         _userRepository = userRepository;
 
         RuleLevelCascadeMode = CascadeMode.Stop;
@@ -47,22 +45,12 @@ public sealed class UpdateUserCommandValidator : AbstractValidator<UpdateUserCom
                     .MinimumLength(9)
                     .MustAsync(IsPhoneNumberNotTaken)
                     .WithMessage("The phone number is already taken");
-
-                RuleFor(x => x.UserRoleId)
-                    .NotEmpty()
-                    .MustAsync(UserRoleExists)
-                    .WithMessage("There is no user role with the ID specified in the UserRoleId property");
             });
     }
 
     private async Task<bool> UserToUpdateExists(long userId, CancellationToken cancellationToken)
     {
         return (await _userRepository.GetUserByIdAsync(userId)) is not null;
-    }
-
-    private async Task<bool> UserRoleExists(long userRoleId, CancellationToken cancellationToken)
-    {
-        return (await _userRoleRepository.GetByIdAsync(userRoleId)) is not null;
     }
 
     private async Task<bool> IsPhoneNumberNotTaken(UpdateUserCommand user, string phoneNumber, CancellationToken cancellationToken)

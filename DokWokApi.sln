@@ -5,7 +5,7 @@ VisualStudioVersion = 17.9.34714.143
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DokWokApi", "DokWokApi\DokWokApi.csproj", "{47751024-E23B-4578-B737-0D2333CEADD8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DokWokApiTests", "DokWokApiTests\DokWokApiTests.csproj", "{6A017750-4396-4222-9962-234CC069FB6D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DokWokApi.IntegrationTests", "DokWokApiTests\DokWokApi.IntegrationTests.csproj", "{6A017750-4396-4222-9962-234CC069FB6D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "Domain\Domain.csproj", "{49D15138-8C58-46FB-89C6-6DD203617776}"
 EndProject
