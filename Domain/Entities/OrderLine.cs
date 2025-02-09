@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class OrderLine : BaseEntity
 {
@@ -9,8 +7,7 @@ public class OrderLine : BaseEntity
     public long ProductId { get; set; }
 
     public int Quantity { get; set; }
-
-    [Column(TypeName = "decimal(8, 2)")]
+    
     public decimal TotalLinePrice { get; set; }
 
     public Order? Order { get; set; }

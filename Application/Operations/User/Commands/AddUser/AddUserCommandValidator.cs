@@ -1,5 +1,6 @@
 ﻿using Domain.Abstractions.Repositories;
-using Domain.Helpers;
+using Domain.DTOs.Commands.Users;
+using Domain.Shared;
 using FluentValidation;
 
 namespace Application.Operations.User.Commands.AddUser;

@@ -15,8 +15,8 @@ public class ProductCategoryServiceTests
     public async Task ProductCategoryService_AddAsync_AddsValueToRepository()
     {
         // Arrange
-        var entityList = UnitTestHelper.GetServiceTestCategories();
-        var mapper = UnitTestHelper.GetMapper();
+        var entityList = TestHelper.GetServiceTestCategories();
+        var mapper = TestHelper.GetMapper();
         var repositoryMock = new Mock<IProductCategoryRepository>();
 
         repositoryMock.Setup(r => r.AddAsync(It.IsAny<ProductCategory>()))
@@ -33,7 +33,7 @@ public class ProductCategoryServiceTests
         var modelToAdd = new ProductCategoryModel
         {
             Id = 100,
-            Name = UnitTestHelper.GetRandomString(5, 15)
+            Name = TestHelper.GetRandomString(5, 15)
         };
         var resultModel = await service.AddAsync(modelToAdd);
         var newLength = entityList.Count;
@@ -47,8 +47,8 @@ public class ProductCategoryServiceTests
     public async Task ProductCategoryService_DeleteAsync_DeletesValueFromRepository()
     {
         // Arrange
-        var entityList = UnitTestHelper.GetServiceTestCategories();
-        var mapper = UnitTestHelper.GetMapper();
+        var entityList = TestHelper.GetServiceTestCategories();
+        var mapper = TestHelper.GetMapper();
         var repositoryMock = new Mock<IProductCategoryRepository>();
 
         repositoryMock.Setup(r => r.DeleteByIdAsync(It.IsAny<long>()))
@@ -78,8 +78,8 @@ public class ProductCategoryServiceTests
     public async Task ProductCategoryService_GetAllAsync_GetsAllValuesFromRepository()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
-        var mapper = UnitTestHelper.GetMapper();
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
+        var mapper = TestHelper.GetMapper();
         var repository = new ProductCategoryRepository(context);
         var service = new ProductCategoryService(repository, mapper);
         var expectedResult = mapper.Map<IEnumerable<ProductCategoryModel>>(context.ProductCategories);
@@ -95,9 +95,9 @@ public class ProductCategoryServiceTests
     public async Task ProductCategoryService_GetByIdAsync_GetsValueByIdFromRepository()
     {
         // Arrange
-        var entityList = UnitTestHelper.GetServiceTestCategories();
-        var modelList = UnitTestHelper.GetServiceTestCategoryModels();
-        var mapper = UnitTestHelper.GetMapper();
+        var entityList = TestHelper.GetServiceTestCategories();
+        var modelList = TestHelper.GetServiceTestCategoryModels();
+        var mapper = TestHelper.GetMapper();
         var repositoryMock = new Mock<IProductCategoryRepository>();
 
         repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<long>()))
@@ -122,8 +122,8 @@ public class ProductCategoryServiceTests
     public async Task ProductCategoryService_UpdateAsync_UpdatesValueFromRepository()
     {
         // Arrange
-        var entityList = UnitTestHelper.GetServiceTestCategories();
-        var mapper = UnitTestHelper.GetMapper();
+        var entityList = TestHelper.GetServiceTestCategories();
+        var mapper = TestHelper.GetMapper();
         var repositoryMock = new Mock<IProductCategoryRepository>();
 
         repositoryMock.Setup(r => r.UpdateAsync(It.IsAny<ProductCategory>()))
@@ -144,7 +144,7 @@ public class ProductCategoryServiceTests
         var modelToUpdate = new ProductCategoryModel
         {
             Id = 1,
-            Name = UnitTestHelper.GetRandomString(5, 15)
+            Name = TestHelper.GetRandomString(5, 15)
         };
         var result = await service.UpdateAsync(modelToUpdate);
 

@@ -1,5 +1,6 @@
 ﻿using Domain.Abstractions.Repositories;
-using Domain.Helpers;
+using Domain.DTOs.Commands.Users;
+using Domain.Shared;
 using FluentValidation;
 
 namespace Application.Operations.User.Commands.LoginAdmin;
@@ -7,6 +8,7 @@ namespace Application.Operations.User.Commands.LoginAdmin;
 public sealed class LoginAdminCommandValidator : AbstractValidator<LoginAdminCommand>
 {
     private readonly IUserRepository _userRepository;
+    private Domain.Entities.User? _userToLogin;
 
     public LoginAdminCommandValidator(IUserRepository userRepository)
     {
@@ -28,14 +30,16 @@ public sealed class LoginAdminCommandValidator : AbstractValidator<LoginAdminCom
                 RuleFor(x => x.Password)
                     .NotEmpty()
                     .Matches(RegularExpressions.Password)
-                    .MinimumLength(6);
+                    .MinimumLength(6)
+                    .Must(IsPasswordCorrect)
+                    .WithMessage("The credentials are invalid");
             });
     }
 
     private async Task<bool> UserExists(string userName, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetUserByUserNameAsync(userName);
-        return user is not null;
+        _userToLogin = await _userRepository.GetUserByUserNameAsync(userName);
+        return _userToLogin is not null;
     }
 
     private async Task<bool> IsAdmin(string userName, CancellationToken cancellationToken)
@@ -47,5 +51,10 @@ public sealed class LoginAdminCommandValidator : AbstractValidator<LoginAdminCom
         }
 
         return user.UserRole?.Name == UserRoles.Admin;
+    }
+    
+    private bool IsPasswordCorrect(string password)
+    {
+        return _userRepository.CheckUserPassword(_userToLogin!, password);
     }
 }

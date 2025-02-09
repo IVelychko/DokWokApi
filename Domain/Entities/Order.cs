@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class Order : BaseEntity
 {
@@ -13,8 +11,7 @@ public class Order : BaseEntity
     public string? DeliveryAddress { get; set; }
 
     public string PaymentType { get; set; } = string.Empty;
-
-    [Column(TypeName = "decimal(8, 2)")]
+    
     public decimal TotalOrderPrice { get; set; }
 
     public DateTime CreationDate { get; set; }

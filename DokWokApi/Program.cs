@@ -2,7 +2,7 @@ using Application.Behaviors;
 using DokWokApi.Extensions;
 using DokWokApi.Services;
 using Domain.Abstractions.Services;
-using Domain.Helpers;
+using Domain.Shared;
 using Infrastructure;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +36,6 @@ builder.Services.AddDbContext<StoreDbContext>(opts =>
 {
     var connectionString = builder.Configuration.GetConnectionString("FoodStoreConnection");
     opts.UseNpgsql(connectionString);
-    opts.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
 
 builder.Services.AddHttpContextAccessor();

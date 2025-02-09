@@ -16,8 +16,8 @@ public class ProductServiceTests
     public async Task ProductService_AddAsync_AddsValueToRepository()
     {
         // Arrange
-        var entityList = UnitTestHelper.GetServiceTestProducts();
-        var mapper = UnitTestHelper.GetMapper();
+        var entityList = TestHelper.GetServiceTestProducts();
+        var mapper = TestHelper.GetMapper();
         var repositoryMock = new Mock<IProductRepository>();
 
         repositoryMock.Setup(r => r.AddAsync(It.IsAny<Product>()))
@@ -33,7 +33,7 @@ public class ProductServiceTests
                 var entity = entityList.Find(p => p.Id == id);
                 if (entity is not null)
                 {
-                    entity.Category ??= UnitTestHelper.GetServiceTestCategories()[0];
+                    entity.Category ??= TestHelper.GetServiceTestCategories()[0];
                 }
                 return Task.FromResult(entity);
             });
@@ -45,11 +45,11 @@ public class ProductServiceTests
         var modelToAdd = new ProductModel
         {
             Id = 100,
-            Name = UnitTestHelper.GetRandomString(5, 15),
+            Name = TestHelper.GetRandomString(5, 15),
             Description = "TestDesc",
             CategoryId = 1,
             Price = 234,
-            CategoryName = UnitTestHelper.GetServiceTestCategories()[0].Name
+            CategoryName = TestHelper.GetServiceTestCategories()[0].Name
         };
         var resultModel = await service.AddAsync(modelToAdd);
         var newLength = entityList.Count;
@@ -63,8 +63,8 @@ public class ProductServiceTests
     public async Task ProductService_DeleteAsync_DeletesValueFromRepository()
     {
         // Arrange
-        var entityList = UnitTestHelper.GetServiceTestProducts();
-        var mapper = UnitTestHelper.GetMapper();
+        var entityList = TestHelper.GetServiceTestProducts();
+        var mapper = TestHelper.GetMapper();
         var repositoryMock = new Mock<IProductRepository>();
 
         repositoryMock.Setup(r => r.DeleteByIdAsync(It.IsAny<long>()))
@@ -94,8 +94,8 @@ public class ProductServiceTests
     public async Task ProductService_GetAllAsync_GetsAllValuesFromRepository()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
-        var mapper = UnitTestHelper.GetMapper();
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
+        var mapper = TestHelper.GetMapper();
         var repository = new ProductRepository(context);
         var service = new ProductService(repository, mapper);
         var expectedResult = mapper.Map<IEnumerable<ProductModel>>(context.Products.Include(p => p.Category));
@@ -111,9 +111,9 @@ public class ProductServiceTests
     public async Task ProductService_GetByIdAsync_GetsValueByIdFromRepository()
     {
         // Arrange
-        var entityList = UnitTestHelper.GetServiceTestProducts();
-        var modelList = UnitTestHelper.GetServiceTestProductModels();
-        var mapper = UnitTestHelper.GetMapper();
+        var entityList = TestHelper.GetServiceTestProducts();
+        var modelList = TestHelper.GetServiceTestProductModels();
+        var mapper = TestHelper.GetMapper();
         var repositoryMock = new Mock<IProductRepository>();
 
         repositoryMock.Setup(r => r.GetByIdWithDetailsAsync(It.IsAny<long>()))
@@ -122,7 +122,7 @@ public class ProductServiceTests
                 var entity = entityList.Find(p => p.Id == id);
                 if (entity is not null)
                 {
-                    entity.Category ??= UnitTestHelper.GetServiceTestCategories()[0];
+                    entity.Category ??= TestHelper.GetServiceTestCategories()[0];
                 }
                 return Task.FromResult(entity);
             });
@@ -142,8 +142,8 @@ public class ProductServiceTests
     public async Task ProductService_UpdateAsync_UpdatesValueFromRepository()
     {
         // Arrange
-        var entityList = UnitTestHelper.GetServiceTestProducts();
-        var mapper = UnitTestHelper.GetMapper();
+        var entityList = TestHelper.GetServiceTestProducts();
+        var mapper = TestHelper.GetMapper();
         var repositoryMock = new Mock<IProductRepository>();
 
         repositoryMock.Setup(r => r.UpdateAsync(It.IsAny<Product>()))
@@ -168,7 +168,7 @@ public class ProductServiceTests
                 var entity = entityList.Find(p => p.Id == id);
                 if (entity is not null)
                 {
-                    entity.Category ??= UnitTestHelper.GetServiceTestCategories()[0];
+                    entity.Category ??= TestHelper.GetServiceTestCategories()[0];
                 }
                 return Task.FromResult(entity);
             });
@@ -179,11 +179,11 @@ public class ProductServiceTests
         var modelToUpdate = new ProductModel
         {
             Id = 1,
-            Name = UnitTestHelper.GetRandomString(5, 15),
+            Name = TestHelper.GetRandomString(5, 15),
             Description = "TestDesc",
             CategoryId = 1,
             Price = 234,
-            CategoryName = UnitTestHelper.GetServiceTestCategories()[0].Name
+            CategoryName = TestHelper.GetServiceTestCategories()[0].Name
         };
         var result = await service.UpdateAsync(modelToUpdate);
 

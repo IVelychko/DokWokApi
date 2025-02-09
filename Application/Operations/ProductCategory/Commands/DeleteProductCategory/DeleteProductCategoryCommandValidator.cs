@@ -1,4 +1,5 @@
 ﻿using Domain.Abstractions.Repositories;
+using Domain.DTOs.Commands.ProductCategories;
 using FluentValidation;
 
 namespace Application.Operations.ProductCategory.Commands.DeleteProductCategory;

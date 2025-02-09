@@ -1,7 +1,9 @@
-﻿using Application.Abstractions.Messaging;
-using Application.Mapping.Extensions;
+﻿using Application.Mapping.Extensions;
+using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
-using Domain.Helpers;
+using Domain.DTOs.Commands.Shops;
+using Domain.DTOs.Responses.Shops;
+using Domain.Shared;
 
 namespace Application.Operations.Shop.Commands.UpdateShop;
 

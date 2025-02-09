@@ -7,7 +7,7 @@ namespace Infrastructure.Cache;
 
 public class CacheService : ICacheService
 {
-    private static readonly ConcurrentDictionary<string, bool> _cacheKeys = [];
+    private static readonly ConcurrentDictionary<string, bool> CacheKeys = [];
     private readonly IDistributedCache _distributedCache;
 
     public CacheService(IDistributedCache distributedCache)
@@ -17,19 +17,19 @@ public class CacheService : ICacheService
 
     public async Task<TValue?> GetAsync<TValue>(string key) where TValue : class
     {
-        var serializedValue = await _distributedCache.GetStringAsync(key);
+        string? serializedValue = await _distributedCache.GetStringAsync(key);
         return serializedValue is not null ? JsonConvert.DeserializeObject<TValue>(serializedValue) : null;
     }
 
     public async Task RemoveAsync(string key)
     {
         await _distributedCache.RemoveAsync(key);
-        _cacheKeys.TryRemove(key, out _);
+        CacheKeys.TryRemove(key, out _);
     }
 
     public async Task RemoveByPrefixAsync(string prefixKey)
     {
-        IEnumerable<Task> tasks = _cacheKeys.Keys
+        IEnumerable<Task> tasks = CacheKeys.Keys
             .Where(x => x.StartsWith(prefixKey))
             .Select(RemoveAsync);
 
@@ -39,6 +39,8 @@ public class CacheService : ICacheService
     public async Task SetAsync<TValue>(string key, TValue value, JsonSerializerSettings? jsonSerializerSettings = null) where TValue : class
     {
         string serializedValue;
+        DistributedCacheEntryOptions cacheOptions = new();
+        cacheOptions.SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
         if (jsonSerializerSettings is not null)
         {
             serializedValue = JsonConvert.SerializeObject(value, jsonSerializerSettings);
@@ -48,7 +50,7 @@ public class CacheService : ICacheService
             serializedValue = JsonConvert.SerializeObject(value);
         }
 
-        await _distributedCache.SetStringAsync(key, serializedValue);
-        _cacheKeys.TryAdd(key, false);
+        await _distributedCache.SetStringAsync(key, serializedValue, cacheOptions);
+        CacheKeys.TryAdd(key, false);
     }
 }

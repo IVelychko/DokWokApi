@@ -1,14 +1,14 @@
 ﻿using Domain.Entities;
-using Domain.Helpers;
 using Domain.Models;
+using Domain.Shared;
 
 namespace Domain.Abstractions.Repositories;
 
 public interface IUserRoleRepository
 {
-    Task<IEnumerable<UserRole>> GetAllBySpecificationAsync(Specification<UserRole> specification);
+    Task<IList<UserRole>> GetAllBySpecificationAsync(Specification<UserRole> specification);
 
-    Task<IEnumerable<UserRole>> GetAllAsync(PageInfo? pageInfo = null);
+    Task<IList<UserRole>> GetAllAsync(PageInfo? pageInfo = null);
 
     Task<UserRole?> GetByIdAsync(long id);
 

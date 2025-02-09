@@ -1,6 +1,6 @@
 ﻿using Domain.Entities;
-using Domain.Helpers;
 using Domain.Models;
+using Domain.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Specification;
@@ -43,7 +43,7 @@ public static class SpecificationEvaluator
         return queryable;
     }
 
-    public static IQueryable<TEntity> ApplyPagination<TEntity>(IQueryable<TEntity> initialQuery, PageInfo pageInfo)
+    private static IQueryable<TEntity> ApplyPagination<TEntity>(IQueryable<TEntity> initialQuery, PageInfo pageInfo)
         where TEntity : BaseEntity
     {
         IQueryable<TEntity> queryable = initialQuery;

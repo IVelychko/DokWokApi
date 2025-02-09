@@ -1,8 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
-using Domain.Errors;
-using Domain.Helpers;
 using Domain.Models;
+using Domain.Shared;
+using Infrastructure.Extensions;
 using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,47 +17,42 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         _context = context;
     }
 
-    public async Task<Result<Unit>> AddAsync(RefreshToken entity)
+    public async Task AddAsync(RefreshToken entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("refreshToken", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-
+        Ensure.ArgumentNotNull(entity);
         await _context.AddAsync(entity);
-        return Unit.Default;
     }
 
-    public async Task DeleteByIdAsync(long id)
+    public void Delete(RefreshToken entity)
     {
-        var entity = await _context.RefreshTokens.FirstAsync(rt => rt.Id == id);
+        Ensure.ArgumentNotNull(entity);
         _context.Remove(entity);
     }
 
-    public async Task<IEnumerable<RefreshToken>> GetAllBySpecificationAsync(Specification<RefreshToken> specification)
+    public async Task<IList<RefreshToken>> GetAllBySpecificationAsync(Specification<RefreshToken> specification)
     {
-        var query = SpecificationEvaluator.ApplySpecification(_context.RefreshTokens, specification);
+        IQueryable<RefreshToken> query = SpecificationEvaluator
+            .ApplySpecification(_context.RefreshTokens, specification);
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<RefreshToken>> GetAllAsync(PageInfo? pageInfo = null)
+    public async Task<IList<RefreshToken>> GetAllAsync(PageInfo? pageInfo = null)
     {
         IQueryable<RefreshToken> query = _context.RefreshTokens;
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<RefreshToken>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
+    public async Task<IList<RefreshToken>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
         IQueryable<RefreshToken> query = _context.RefreshTokens.Include(rt => rt.User);
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
@@ -65,7 +60,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<RefreshToken?> GetByIdAsync(long id)
     {
-        return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Id == id);
+        return await _context.FindAsync<RefreshToken>(id);
     }
 
     public async Task<RefreshToken?> GetByIdWithDetailsAsync(long id)
@@ -111,15 +106,9 @@ public class RefreshTokenRepository : IRefreshTokenRepository
             .FirstOrDefaultAsync(rt => rt.UserId == userId);
     }
 
-    public Result<Unit> Update(RefreshToken entity)
+    public void Update(RefreshToken entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("refreshToken", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-
+        Ensure.ArgumentNotNull(entity);
         _context.Update(entity);
-        return Unit.Default;
     }
 }

@@ -21,6 +21,8 @@ public class StoreDbContext(DbContextOptions<StoreDbContext> options) : DbContex
 
     public DbSet<UserRole> UserRoles => Set<UserRole>();
 
+    private const string DecimalType = "decimal(8, 2)";
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -48,10 +50,27 @@ public class StoreDbContext(DbContextOptions<StoreDbContext> options) : DbContex
         modelBuilder.Entity<Product>()
             .HasIndex(p => p.Name)
             .IsUnique();
+        
+        modelBuilder.Entity<Product>()
+            .Property(p => p.Price)
+            .HasColumnType(DecimalType);
+        
+        modelBuilder.Entity<Product>()
+            .Property(p => p.Weight)
+            .HasColumnType(DecimalType);
+        
+        modelBuilder.Entity<Order>()
+            .Property(o => o.TotalOrderPrice)
+            .HasColumnType(DecimalType);
+            
 
         modelBuilder.Entity<OrderLine>()
             .HasIndex(ol => new { ol.OrderId, ol.ProductId })
             .IsUnique();
+        
+        modelBuilder.Entity<OrderLine>()
+            .Property(ol => ol.TotalLinePrice)
+            .HasColumnType(DecimalType);
 
         modelBuilder.Entity<Shop>()
             .HasIndex(s => new { s.Street, s.Building })

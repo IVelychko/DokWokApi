@@ -5,11 +5,11 @@ namespace Domain.Abstractions.Repositories;
 
 public interface IOrderLineRepository : IRepository<OrderLine>
 {
-    Task<IEnumerable<OrderLine>> GetAllWithDetailsAsync(PageInfo? pageInfo = null);
+    Task<IList<OrderLine>> GetAllWithDetailsAsync(PageInfo? pageInfo = null);
 
-    Task<IEnumerable<OrderLine>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null);
+    Task<IList<OrderLine>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null);
 
-    Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId, PageInfo? pageInfo = null);
+    Task<IList<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId, PageInfo? pageInfo = null);
 
     Task<OrderLine?> GetByIdWithDetailsAsync(long id);
 

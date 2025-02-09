@@ -1,8 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
-using Domain.Errors;
-using Domain.Helpers;
 using Domain.Models;
+using Domain.Shared;
+using Infrastructure.Extensions;
 using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,36 +17,30 @@ public class ShopRepository : IShopRepository
         _context = context;
     }
 
-    public async Task<Result<Unit>> AddAsync(Shop entity)
+    public async Task AddAsync(Shop entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("shop", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-
+        Ensure.ArgumentNotNull(entity);
         await _context.AddAsync(entity);
-        return Unit.Default;
     }
 
-    public async Task DeleteByIdAsync(long id)
+    public void Delete(Shop entity)
     {
-        var entity = await _context.Shops.FirstAsync(s => s.Id == id);
+        Ensure.ArgumentNotNull(entity);
         _context.Remove(entity);
     }
 
-    public async Task<IEnumerable<Shop>> GetAllBySpecificationAsync(Specification<Shop> specification)
+    public async Task<IList<Shop>> GetAllBySpecificationAsync(Specification<Shop> specification)
     {
-        var query = SpecificationEvaluator.ApplySpecification(_context.Shops, specification);
+        IQueryable<Shop> query = SpecificationEvaluator.ApplySpecification(_context.Shops, specification);
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<Shop>> GetAllAsync(PageInfo? pageInfo = null)
+    public async Task<IList<Shop>> GetAllAsync(PageInfo? pageInfo = null)
     {
         IQueryable<Shop> query = _context.Shops;
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
@@ -54,7 +48,7 @@ public class ShopRepository : IShopRepository
 
     public async Task<Shop?> GetByIdAsync(long id)
     {
-        return await _context.Shops.FirstOrDefaultAsync(s => s.Id == id);
+        return await _context.FindAsync<Shop>(id);
     }
 
     public async Task<Shop?> GetByAddressAsync(string street, string building)
@@ -62,32 +56,18 @@ public class ShopRepository : IShopRepository
         return await _context.Shops.FirstOrDefaultAsync(s => s.Street == street && s.Building == building);
     }
 
-    public Result<Unit> Update(Shop entity)
+    public void Update(Shop entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("shop", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-
+        Ensure.ArgumentNotNull(entity);
         _context.Update(entity);
-        return Unit.Default;
     }
 
-    public async Task<Result<bool>> IsAddressTakenAsync(string street, string building)
+    public async Task<bool> IsAddressUniqueAsync(string street, string building)
     {
-        if (string.IsNullOrEmpty(street))
-        {
-            var error = new ValidationError(nameof(street), "The passed street is null or empty");
-            return Result<bool>.Failure(error);
-        }
-        else if (string.IsNullOrEmpty(building))
-        {
-            var error = new ValidationError(nameof(building), "The passed building is null or empty");
-            return Result<bool>.Failure(error);
-        }
-
-        var isTaken = await _context.Shops.AnyAsync(s => s.Street == street && s.Building == building);
-        return isTaken;
+        Ensure.ArgumentNotNull(street);
+        Ensure.ArgumentNotNull(building);
+        bool isTaken = await _context.Shops.AsNoTracking()
+            .AnyAsync(s => s.Street == street && s.Building == building);
+        return !isTaken;
     }
 }

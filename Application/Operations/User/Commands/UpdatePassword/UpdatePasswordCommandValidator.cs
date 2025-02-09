@@ -1,5 +1,6 @@
 ﻿using Domain.Abstractions.Repositories;
-using Domain.Helpers;
+using Domain.DTOs.Commands.Users;
+using Domain.Shared;
 using FluentValidation;
 
 namespace Application.Operations.User.Commands.UpdatePassword;
@@ -7,7 +8,8 @@ namespace Application.Operations.User.Commands.UpdatePassword;
 public sealed class UpdatePasswordCommandValidator : AbstractValidator<UpdatePasswordCommand>
 {
     private readonly IUserRepository _userRepository;
-
+    private Domain.Entities.User? _userToUpdate;
+    
     public UpdatePasswordCommandValidator(IUserRepository userRepository)
     {
         _userRepository = userRepository;
@@ -27,7 +29,9 @@ public sealed class UpdatePasswordCommandValidator : AbstractValidator<UpdatePas
                 RuleFor(x => x.OldPassword)
                     .NotEmpty()
                     .Matches(RegularExpressions.Password)
-                    .MinimumLength(6);
+                    .MinimumLength(6)
+                    .Must(IsOldPasswordCorrect)
+                    .WithMessage("The credentials are invalid");
 
                 RuleFor(x => x.NewPassword)
                     .NotEmpty()
@@ -38,7 +42,8 @@ public sealed class UpdatePasswordCommandValidator : AbstractValidator<UpdatePas
 
     private async Task<bool> UserToUpdateExists(long userId, CancellationToken cancellationToken)
     {
-        return (await _userRepository.GetUserByIdAsync(userId)) is not null;
+        _userToUpdate = await _userRepository.GetUserByIdAsync(userId);
+        return _userToUpdate is not null;
     }
 
     private async Task<bool> IsNotAdmin(long userId, CancellationToken cancellationToken)
@@ -51,5 +56,10 @@ public sealed class UpdatePasswordCommandValidator : AbstractValidator<UpdatePas
 
         var isNotAdmin = user.UserRole?.Name != UserRoles.Admin;
         return isNotAdmin;
+    }
+
+    private bool IsOldPasswordCorrect(string oldPassword)
+    {
+        return _userRepository.CheckUserPassword(_userToUpdate!, oldPassword);
     }
 }

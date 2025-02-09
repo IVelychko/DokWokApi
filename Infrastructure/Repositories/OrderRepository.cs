@@ -1,9 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
-using Domain.Errors;
-using Domain.Helpers;
 using Domain.Models;
-using FluentValidation;
+using Domain.Shared;
+using Infrastructure.Extensions;
 using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,53 +17,47 @@ public class OrderRepository : IOrderRepository
         _context = context;
     }
 
-    public async Task<Result<Unit>> AddAsync(Order entity)
+    public async Task AddAsync(Order entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("order", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-
+        Ensure.ArgumentNotNull(entity);
         await _context.AddAsync(entity);
-        return Unit.Default;
     }
 
-    public async Task DeleteByIdAsync(long id)
+    public void Delete(Order entity)
     {
-        var entity = await _context.Orders.FirstAsync(o => o.Id == id);
+        Ensure.ArgumentNotNull(entity);
         _context.Remove(entity);
     }
 
-    public async Task<IEnumerable<Order>> GetAllBySpecificationAsync(Specification<Order> specification)
+    public async Task<IList<Order>> GetAllBySpecificationAsync(Specification<Order> specification)
     {
         var query = SpecificationEvaluator.ApplySpecification(_context.Orders, specification);
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<Order>> GetAllAsync(PageInfo? pageInfo = null)
+    public async Task<IList<Order>> GetAllAsync(PageInfo? pageInfo = null)
     {
         IQueryable<Order> query = _context.Orders;
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<Order>> GetAllByUserIdAsync(long userId, PageInfo? pageInfo = null)
+    public async Task<IList<Order>> GetAllByUserIdAsync(long userId, PageInfo? pageInfo = null)
     {
         IQueryable<Order> query = _context.Orders.Where(o => o.UserId == userId);
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<Order>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
+    public async Task<IList<Order>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
         IQueryable<Order> query = _context.Orders
             .Include(o => o.User)
@@ -75,13 +68,13 @@ public class OrderRepository : IOrderRepository
 
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<Order>> GetAllWithDetailsByUserIdAsync(long userId, PageInfo? pageInfo = null)
+    public async Task<IList<Order>> GetAllWithDetailsByUserIdAsync(long userId, PageInfo? pageInfo = null)
     {
         IQueryable<Order> query = _context.Orders
             .Include(o => o.User)
@@ -93,7 +86,7 @@ public class OrderRepository : IOrderRepository
 
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
@@ -101,7 +94,7 @@ public class OrderRepository : IOrderRepository
 
     public async Task<Order?> GetByIdAsync(long id)
     {
-        return await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
+        return await _context.FindAsync<Order>(id);
     }
 
     public async Task<Order?> GetByIdWithDetailsAsync(long id)
@@ -115,15 +108,9 @@ public class OrderRepository : IOrderRepository
             .FirstOrDefaultAsync(o => o.Id == id);
     }
 
-    public Result<Unit> Update(Order entity)
+    public void Update(Order entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("order", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-
+        Ensure.ArgumentNotNull(entity);
         _context.Update(entity);
-        return Unit.Default;
     }
 }

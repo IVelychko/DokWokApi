@@ -1,5 +1,6 @@
 ﻿using Domain.Abstractions.Repositories;
-using Domain.Helpers;
+using Domain.DTOs.Commands.Users;
+using Domain.Shared;
 using FluentValidation;
 
 namespace Application.Operations.User.Commands.LoginCustomer;
@@ -7,6 +8,7 @@ namespace Application.Operations.User.Commands.LoginCustomer;
 public sealed class LoginCustomerCommandValidator : AbstractValidator<LoginCustomerCommand>
 {
     private readonly IUserRepository _userRepository;
+    private Domain.Entities.User? _userToLogin;
 
     public LoginCustomerCommandValidator(IUserRepository userRepository)
     {
@@ -28,14 +30,16 @@ public sealed class LoginCustomerCommandValidator : AbstractValidator<LoginCusto
                 RuleFor(x => x.Password)
                     .NotEmpty()
                     .Matches(RegularExpressions.Password)
-                    .MinimumLength(6);
+                    .MinimumLength(6)
+                    .Must(IsPasswordCorrect)
+                    .WithMessage("The credentials are invalid");
             });
     }
 
     private async Task<bool> UserExists(string userName, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetUserByUserNameAsync(userName);
-        return user is not null;
+        _userToLogin = await _userRepository.GetUserByUserNameAsync(userName);
+        return _userToLogin is not null;
     }
 
     private async Task<bool> IsCustomerOrAdmin(string userName, CancellationToken cancellationToken)
@@ -48,5 +52,10 @@ public sealed class LoginCustomerCommandValidator : AbstractValidator<LoginCusto
 
         var isCustomerOrAdmin = user.UserRole?.Name == UserRoles.Admin || user.UserRole?.Name == UserRoles.Customer;
         return isCustomerOrAdmin;
+    }
+    
+    private bool IsPasswordCorrect(string password)
+    {
+        return _userRepository.CheckUserPassword(_userToLogin!, password);
     }
 }

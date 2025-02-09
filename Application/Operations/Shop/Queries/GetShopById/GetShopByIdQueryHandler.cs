@@ -1,6 +1,8 @@
-﻿using Application.Abstractions.Messaging;
-using Application.Mapping.Extensions;
+﻿using Application.Mapping.Extensions;
+using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
+using Domain.DTOs.Queries.Shops;
+using Domain.DTOs.Responses.Shops;
 
 namespace Application.Operations.Shop.Queries.GetShopById;
 

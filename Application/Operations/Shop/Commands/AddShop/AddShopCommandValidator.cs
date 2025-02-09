@@ -1,5 +1,6 @@
 ﻿using Domain.Abstractions.Repositories;
-using Domain.Helpers;
+using Domain.DTOs.Commands.Shops;
+using Domain.Shared;
 using FluentValidation;
 
 namespace Application.Operations.Shop.Commands.AddShop;

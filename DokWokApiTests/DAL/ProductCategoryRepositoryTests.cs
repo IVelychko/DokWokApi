@@ -12,9 +12,9 @@ public class ProductCategoryRepositoryTests
     public async Task ProductCategoryRepository_AddAsync_AddsValueToDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductCategoryRepository(context);
-        var newEntity = new ProductCategory { Name = UnitTestHelper.GetRandomString(5, 15) };
+        var newEntity = new ProductCategory { Name = TestHelper.GetRandomString(5, 15) };
 
         // Act
         var oldLength = context.ProductCategories.Count();
@@ -34,9 +34,9 @@ public class ProductCategoryRepositoryTests
     public async Task ProductCategoryRepository_DeleteAsync_DeletesValueFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductCategoryRepository(context);
-        var entityToDelete = new ProductCategory { Name = UnitTestHelper.GetRandomString(5, 15) };
+        var entityToDelete = new ProductCategory { Name = TestHelper.GetRandomString(5, 15) };
         await context.AddAsync(entityToDelete);
         await context.SaveChangesAsync();
 
@@ -54,9 +54,9 @@ public class ProductCategoryRepositoryTests
     public async Task ProductCategoryRepository_DeleteByIdAsync_DeletesValueFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductCategoryRepository(context);
-        var entityToDelete = new ProductCategory { Name = UnitTestHelper.GetRandomString(5, 15) };
+        var entityToDelete = new ProductCategory { Name = TestHelper.GetRandomString(5, 15) };
         await context.AddAsync(entityToDelete);
         await context.SaveChangesAsync();
 
@@ -74,7 +74,7 @@ public class ProductCategoryRepositoryTests
     public void ProductCategoryRepository_GetAll_GetsAllValuesFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductCategoryRepository(context);
         var expectedResult = context.ProductCategories;
 
@@ -89,7 +89,7 @@ public class ProductCategoryRepositoryTests
     public async Task ProductCategoryRepository_GetById_GetsValueByIdFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductCategoryRepository(context);
         long id = 1;
         var expectedResult = await context.ProductCategories.FindAsync(id);
@@ -105,9 +105,9 @@ public class ProductCategoryRepositoryTests
     public async Task ProductCategoryRepository_UpdateAsync_UpdatesValueFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductCategoryRepository(context);
-        var entityToUpdate = new ProductCategory { Name = UnitTestHelper.GetRandomString(5, 15) };
+        var entityToUpdate = new ProductCategory { Name = TestHelper.GetRandomString(5, 15) };
         await context.AddAsync(entityToUpdate);
         await context.SaveChangesAsync();
         context.Entry(entityToUpdate).State = EntityState.Detached;
@@ -116,7 +116,7 @@ public class ProductCategoryRepositoryTests
         var updatedEntity = new ProductCategory
         {
             Id = entityToUpdate.Id,
-            Name = UnitTestHelper.GetRandomString(5, 15)
+            Name = TestHelper.GetRandomString(5, 15)
         };
         var result = await repository.UpdateAsync(updatedEntity);
 

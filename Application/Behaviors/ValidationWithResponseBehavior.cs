@@ -1,8 +1,8 @@
-﻿using Application.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Errors;
 using Domain.Errors.Base;
 using Domain.Exceptions;
-using Domain.Helpers;
+using Domain.Shared;
 using FluentValidation;
 using FluentValidation.Results;
 using MediatR;
