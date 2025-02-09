@@ -1,13 +1,13 @@
 ﻿using Domain.Abstractions.Services;
 using Domain.Entities;
-using Domain.Helpers;
+using Domain.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure;
 
 public static class SeedData
 {
-    private readonly static string[] roles = [
+    private static readonly string[] Roles = [
             UserRoles.Admin,
             UserRoles.Customer
     ];
@@ -51,7 +51,7 @@ public static class SeedData
         return products;
     }
 
-    private readonly static Shop[] shops = [
+    private static readonly Shop[] Shops = [
             new() { Street = "Олександра Поля", Building = "36", OpeningTime = "10:00", ClosingTime = "22:00" },
             new() { Street = "Незалежності", Building = "42", OpeningTime = "09:00", ClosingTime = "21:00" },
             new() { Street = "Дмитра Яворницького", Building = "12", OpeningTime = "10:00", ClosingTime = "21:00" },
@@ -62,23 +62,25 @@ public static class SeedData
     {
         await context.Database.MigrateAsync();
 
-        if (!await context.UserRoles.AnyAsync())
+        if (!await context.UserRoles.AsNoTracking().AnyAsync())
         {
             List<UserRole> userRoles = [];
-            foreach (var role in roles)
+            foreach (string role in Roles)
             {
-                userRoles.Add(new() { Name = role });
+                userRoles.Add(new UserRole { Name = role });
             }
 
             await context.AddRangeAsync(userRoles);
             await context.SaveChangesAsync();
         }
 
-        var adminExists = await context.Users.AnyAsync(u => u.UserRole!.Name == UserRoles.Admin);
+        bool adminExists = await context.Users.AsNoTracking()
+            .AnyAsync(u => u.UserRole!.Name == UserRoles.Admin);
         if (!adminExists)
         {
-            var adminRole = await context.UserRoles.FirstOrDefaultAsync(r => r.Name == UserRoles.Admin);
-            var hashedPassword = passwordHasher.Hash("AdminPassword1");
+            UserRole? adminRole = await context.UserRoles.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Name == UserRoles.Admin);
+            string hashedPassword = passwordHasher.Hash("AdminPassword1");
             await context.AddAsync(new User
             {
                 FirstName = "Ihor",
@@ -91,15 +93,16 @@ public static class SeedData
             await context.SaveChangesAsync();
         }
 
-        if (!await context.ProductCategories.AnyAsync() && !await context.Products.AnyAsync())
+        if (!await context.ProductCategories.AsNoTracking().AnyAsync() && 
+            !await context.Products.AsNoTracking().AnyAsync())
         {
             context.Products.AddRange(GetProductsToAdd());
             await context.SaveChangesAsync();
         }
 
-        if (!await context.Shops.AnyAsync())
+        if (!await context.Shops.AsNoTracking().AnyAsync())
         {
-            context.Shops.AddRange(shops);
+            context.Shops.AddRange(Shops);
             await context.SaveChangesAsync();
         }
     }

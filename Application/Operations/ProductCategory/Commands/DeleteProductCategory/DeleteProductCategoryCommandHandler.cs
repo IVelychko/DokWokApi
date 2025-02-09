@@ -1,5 +1,6 @@
-﻿using Application.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
+using Domain.DTOs.Commands.ProductCategories;
 
 namespace Application.Operations.ProductCategory.Commands.DeleteProductCategory;
 

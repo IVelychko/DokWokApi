@@ -1,4 +1,4 @@
-﻿using Application.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;

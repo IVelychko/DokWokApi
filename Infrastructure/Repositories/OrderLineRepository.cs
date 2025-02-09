@@ -1,9 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
-using Domain.Errors;
-using Domain.Helpers;
 using Domain.Models;
-using FluentValidation;
+using Domain.Shared;
+using Infrastructure.Extensions;
 using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,53 +17,47 @@ public class OrderLineRepository : IOrderLineRepository
         _context = context;
     }
 
-    public async Task<Result<Unit>> AddAsync(OrderLine entity)
+    public async Task AddAsync(OrderLine entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("orderLine", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-
+        Ensure.ArgumentNotNull(entity);
         await _context.AddAsync(entity);
-        return Unit.Default;
     }
 
-    public async Task DeleteByIdAsync(long id)
+    public void Delete(OrderLine entity)
     {
-        var entity = await _context.OrderLines.FirstAsync(ol => ol.Id == id);
+        Ensure.ArgumentNotNull(entity);
         _context.Remove(entity);
     }
 
-    public async Task<IEnumerable<OrderLine>> GetAllBySpecificationAsync(Specification<OrderLine> specification)
+    public async Task<IList<OrderLine>> GetAllBySpecificationAsync(Specification<OrderLine> specification)
     {
         var query = SpecificationEvaluator.ApplySpecification(_context.OrderLines, specification);
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<OrderLine>> GetAllAsync(PageInfo? pageInfo = null)
+    public async Task<IList<OrderLine>> GetAllAsync(PageInfo? pageInfo = null)
     {
         IQueryable<OrderLine> query = _context.OrderLines;
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<OrderLine>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
+    public async Task<IList<OrderLine>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
     {
         IQueryable<OrderLine> query = _context.OrderLines.Where(ol => ol.OrderId == orderId);
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<OrderLine>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
+    public async Task<IList<OrderLine>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
     {
         IQueryable<OrderLine> query = _context.OrderLines
             .Include(ol => ol.Order)
@@ -73,13 +66,13 @@ public class OrderLineRepository : IOrderLineRepository
 
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
+    public async Task<IList<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
     {
         IQueryable<OrderLine> query = _context.OrderLines
             .Include(ol => ol.Order)
@@ -89,7 +82,7 @@ public class OrderLineRepository : IOrderLineRepository
 
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
@@ -97,7 +90,7 @@ public class OrderLineRepository : IOrderLineRepository
 
     public async Task<OrderLine?> GetByIdAsync(long id)
     {
-        return await _context.OrderLines.FirstOrDefaultAsync(ol => ol.Id == id);
+        return await _context.FindAsync<OrderLine>(id);
     }
 
     public async Task<OrderLine?> GetByIdWithDetailsAsync(long id)
@@ -124,15 +117,9 @@ public class OrderLineRepository : IOrderLineRepository
             .FirstOrDefaultAsync(ol => ol.OrderId == orderId && ol.ProductId == productId);
     }
 
-    public Result<Unit> Update(OrderLine entity)
+    public void Update(OrderLine entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("orderLine", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-
+        Ensure.ArgumentNotNull(entity);
         _context.Update(entity);
-        return Unit.Default;
     }
 }

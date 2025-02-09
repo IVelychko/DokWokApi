@@ -1,6 +1,3 @@
 ﻿namespace Domain.Exceptions;
 
-public class NotFoundException(IDictionary<string, string[]> errors) : Exception
-{
-    public IDictionary<string, string[]> Errors { get; set; } = errors;
-}
+public class NotFoundException(string? message) : Exception(message);

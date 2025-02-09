@@ -1,6 +1,8 @@
-﻿using Application.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
-using Domain.Helpers;
+using Domain.DTOs.Queries.Products;
+using Domain.DTOs.Responses;
+using Domain.Shared;
 
 namespace Application.Operations.Product.Queries.IsProductNameTaken;
 

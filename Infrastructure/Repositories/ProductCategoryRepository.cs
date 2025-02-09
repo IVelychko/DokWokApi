@@ -1,8 +1,9 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Helpers;
 using Domain.Models;
+using Domain.Shared;
+using Infrastructure.Extensions;
 using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,36 +18,30 @@ public class ProductCategoryRepository : IProductCategoryRepository
         _context = context;
     }
 
-    public async Task<Result<Unit>> AddAsync(ProductCategory entity)
+    public async Task AddAsync(ProductCategory entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("productCategory", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-
+        Ensure.ArgumentNotNull(entity);
         await _context.AddAsync(entity);
-        return Unit.Default;
     }
 
-    public async Task DeleteByIdAsync(long id)
+    public void Delete(ProductCategory entity)
     {
-        var entity = await _context.ProductCategories.FirstAsync(c => c.Id == id);
+        Ensure.ArgumentNotNull(entity);
         _context.Remove(entity);
     }
 
-    public async Task<IEnumerable<ProductCategory>> GetAllBySpecificationAsync(Specification<ProductCategory> specification)
+    public async Task<IList<ProductCategory>> GetAllBySpecificationAsync(Specification<ProductCategory> specification)
     {
         var query = SpecificationEvaluator.ApplySpecification(_context.ProductCategories, specification);
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<ProductCategory>> GetAllAsync(PageInfo? pageInfo = null)
+    public async Task<IList<ProductCategory>> GetAllAsync(PageInfo? pageInfo = null)
     {
         IQueryable<ProductCategory> query = _context.ProductCategories;
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
@@ -54,30 +49,19 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public async Task<ProductCategory?> GetByIdAsync(long id)
     {
-        return await _context.ProductCategories.FirstOrDefaultAsync(c => c.Id == id);
+        return await _context.FindAsync<ProductCategory>(id);
     }
 
-    public async Task<Result<bool>> IsNameTakenAsync(string name)
+    public async Task<bool> IsNameUniqueAsync(string name)
     {
-        if (string.IsNullOrEmpty(name))
-        {
-            var error = new ValidationError(nameof(name), "The passed name is null or empty");
-            return Result<bool>.Failure(error);
-        }
-
-        var isTaken = await _context.ProductCategories.AnyAsync(c => c.Name == name);
-        return isTaken;
+        Ensure.ArgumentNotNull(name);
+        bool isTaken = await _context.ProductCategories.AsNoTracking().AnyAsync(c => c.Name == name);
+        return !isTaken;
     }
 
-    public Result<Unit> Update(ProductCategory entity)
+    public void Update(ProductCategory entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("productCategory", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-
+        Ensure.ArgumentNotNull(entity);
         _context.Update(entity);
-        return Unit.Default;
     }
 }

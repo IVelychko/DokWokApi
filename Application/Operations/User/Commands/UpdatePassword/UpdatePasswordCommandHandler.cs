@@ -1,6 +1,7 @@
-﻿using Application.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
-using Domain.Helpers;
+using Domain.DTOs.Commands.Users;
+using Domain.Shared;
 
 namespace Application.Operations.User.Commands.UpdatePassword;
 

@@ -1,5 +1,6 @@
 ﻿using Domain.Abstractions.Repositories;
-using Domain.Helpers;
+using Domain.DTOs.Commands.ProductCategories;
+using Domain.Shared;
 using FluentValidation;
 
 namespace Application.Operations.ProductCategory.Commands.AddProductCategory;

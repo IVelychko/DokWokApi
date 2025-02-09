@@ -1,13 +1,13 @@
 ﻿using Application;
+using Application.Services;
 using DokWokApi.Helpers;
 using Domain;
 using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Abstractions.Validation;
+using Domain.Entities;
 using Domain.Exceptions;
-using Domain.Helpers;
-using Domain.Models.User;
-using Domain.Services;
+using Domain.Shared;
 using Domain.Validation;
 using FluentValidation;
 using Infrastructure;
@@ -74,7 +74,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOrderLineService, OrderLineService>();
         services.AddScoped<IShopService, ShopService>();
         services.AddScoped<IUserService, UserService>();
-        services.AddScoped<ISecurityTokenService<UserModel, JwtSecurityToken>, JwtService>();
+        services.AddScoped<ISecurityTokenService<User, JwtSecurityToken>, JwtService>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ICacheService, CacheService>();
 

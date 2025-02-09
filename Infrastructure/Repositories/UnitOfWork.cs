@@ -11,6 +11,5 @@ public class UnitOfWork : IUnitOfWork
     public async Task SaveChangesAsync()
     {
         await _context.SaveChangesAsync();
-        _context.ChangeTracker.Clear();
     }
 }

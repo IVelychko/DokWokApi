@@ -1,22 +1,22 @@
 ﻿using Domain.Entities;
-using Domain.Helpers;
 using Domain.Models;
+using Domain.Shared;
 
 namespace Domain.Abstractions.Repositories;
 
 public interface IUserRepository
 {
-    Task<IEnumerable<User>> GetAllUsersBySpecificationAsync(Specification<User> specification);
+    Task<IList<User>> GetAllUsersBySpecificationAsync(Specification<User> specification);
 
-    Task<IEnumerable<User>> GetAllCustomersBySpecificationAsync(Specification<User> specification);
+    Task<IList<User>> GetAllCustomersBySpecificationAsync(Specification<User> specification);
 
-    Task<IEnumerable<User>> GetAllUsersAsync(PageInfo? pageInfo = null);
+    Task<IList<User>> GetAllUsersAsync(PageInfo? pageInfo = null);
 
-    Task<IEnumerable<User>> GetAllUsersWithDetailsAsync(PageInfo? pageInfo = null);
+    Task<IList<User>> GetAllUsersWithDetailsAsync(PageInfo? pageInfo = null);
 
-    Task<IEnumerable<User>> GetAllCustomersAsync(PageInfo? pageInfo = null);
+    Task<IList<User>> GetAllCustomersAsync(PageInfo? pageInfo = null);
 
-    Task<IEnumerable<User>> GetAllCustomersWithDetailsAsync(PageInfo? pageInfo = null);
+    Task<IList<User>> GetAllCustomersWithDetailsAsync(PageInfo? pageInfo = null);
 
     Task<User?> GetUserByUserNameAsync(string userName);
 
@@ -30,23 +30,19 @@ public interface IUserRepository
 
     Task<User?> GetCustomerByIdWithDetailsAsync(long id);
 
-    Task<Result<Unit>> AddAsync(User entity, string password);
+    Task AddAsync(User entity);
 
-    Result<Unit> Update(User entity);
+    void Update(User entity);
 
-    Task<Result<Unit>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword);
-
-    Task<Result<Unit>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword);
-
-    Task DeleteByIdAsync(long id);
+    void Delete(User entity);
 
     Task<bool> CheckUserPasswordAsync(long userId, string password);
 
     bool CheckUserPassword(User user, string password);
 
-    Task<Result<bool>> IsUserNameTakenAsync(string userName);
+    Task<bool> IsUserNameUniqueAsync(string userName);
 
-    Task<Result<bool>> IsEmailTakenAsync(string email);
+    Task<bool> IsEmailUniqueAsync(string email);
 
-    Task<Result<bool>> IsPhoneNumberTakenAsync(string phoneNumber);
+    Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber);
 }

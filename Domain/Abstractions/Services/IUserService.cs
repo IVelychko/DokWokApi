@@ -1,44 +1,42 @@
-﻿using Domain.Helpers;
+﻿using Domain.DTOs.Commands.Users;
+using Domain.DTOs.Responses.Users;
 using Domain.Models;
-using Domain.Models.User;
 
 namespace Domain.Abstractions.Services;
 
 public interface IUserService
 {
-    Task<IEnumerable<UserModel>> GetAllUsersAsync(PageInfo? pageInfo = null);
+    Task<IEnumerable<UserResponse>> GetAllUsersAsync(PageInfo? pageInfo = null);
 
-    Task<IEnumerable<UserModel>> GetAllCustomersAsync(PageInfo? pageInfo = null);
+    Task<IEnumerable<UserResponse>> GetAllCustomersAsync(PageInfo? pageInfo = null);
 
-    Task<UserModel?> GetUserByUserNameAsync(string userName);
+    Task<UserResponse?> GetUserByUserNameAsync(string userName);
 
-    Task<UserModel?> GetUserByIdAsync(long id);
+    Task<UserResponse?> GetUserByIdAsync(long id);
 
-    Task<UserModel?> GetCustomerByIdAsync(long id);
+    Task<UserResponse?> GetCustomerByIdAsync(long id);
 
-    Task<Result<UserModel>> AddAsync(UserModel model, string password);
+    Task<UserResponse> AddAsync(AddUserCommand command);
 
-    Task<Result<UserModel>> UpdateAsync(UserModel model);
+    Task<UserResponse> UpdateAsync(UpdateUserCommand command);
 
-    Task<Result<Unit>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword);
-
-    Task<Result<Unit>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword);
+    Task UpdateCustomerPasswordAsync(long userId, string newPassword);
 
     Task DeleteAsync(long id);
 
-    Task<Result<AuthorizedUserModel>> LoginAsync(string userName, string password);
+    Task<AuthorizedUserResponse> LoginAsync(string userName);
 
-    Task<Result<AuthorizedUserModel>> RegisterAsync(UserModel model, string password);
+    Task<AuthorizedUserResponse> RegisterAsync(RegisterUserCommand command);
 
     Task<bool> LogOutAsync(string refreshToken);
 
-    Task<Result<bool>> IsUserNameTakenAsync(string userName);
+    Task<bool> IsUserNameUniqueAsync(string userName);
 
-    Task<Result<bool>> IsEmailTakenAsync(string email);
+    Task<bool> IsEmailUniqueAsync(string email);
 
-    Task<Result<bool>> IsPhoneNumberTakenAsync(string phoneNumber);
+    Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber);
 
-    Task<UserModel?> GetUserFromTokenAsync(string token);
+    Task<UserResponse?> GetUserFromTokenAsync(string token);
 
-    Task<Result<AuthorizedUserModel>> RefreshTokenAsync(string securityToken, string refreshToken);
+    Task<AuthorizedUserResponse> RefreshTokenAsync(string securityToken, string refreshToken);
 }

@@ -1,20 +1,20 @@
 ﻿using Domain.Entities;
-using Domain.Helpers;
 using Domain.Models;
+using Domain.Shared;
 
 namespace Domain.Abstractions.Repositories;
 
 public interface IRepository<TEntity> where TEntity : BaseEntity
 {
-    Task<IEnumerable<TEntity>> GetAllAsync(PageInfo? pageInfo = null);
+    Task<IList<TEntity>> GetAllAsync(PageInfo? pageInfo = null);
 
-    Task<IEnumerable<TEntity>> GetAllBySpecificationAsync(Specification<TEntity> specification);
+    Task<IList<TEntity>> GetAllBySpecificationAsync(Specification<TEntity> specification);
 
     Task<TEntity?> GetByIdAsync(long id);
 
-    Task<Result<Unit>> AddAsync(TEntity entity);
+    Task AddAsync(TEntity entity);
 
-    Result<Unit> Update(TEntity entity);
+    void Update(TEntity entity);
 
-    Task DeleteByIdAsync(long id);
+    void Delete(TEntity entity);
 }

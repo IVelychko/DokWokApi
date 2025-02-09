@@ -1,4 +1,5 @@
 ﻿using Domain.Abstractions.Repositories;
+using Domain.DTOs.Commands.Users;
 using FluentValidation;
 
 namespace Application.Operations.User.Commands.DeleteUser;

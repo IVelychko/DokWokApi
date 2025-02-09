@@ -1,4 +1,5 @@
 ﻿using Domain.Abstractions.Repositories;
+using Domain.DTOs.Commands.Shops;
 using FluentValidation;
 
 namespace Application.Operations.Shop.Commands.DeleteShop;

@@ -12,11 +12,11 @@ public class ProductRepositoryTests
     public async Task ProductRepository_AddAsync_AddsValueToDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductRepository(context);
         var newEntity = new Product 
         { 
-            Name = UnitTestHelper.GetRandomString(5, 15), Description = "TestDesc", CategoryId = 1, Price = 123 
+            Name = TestHelper.GetRandomString(5, 15), Description = "TestDesc", CategoryId = 1, Price = 123 
         };
 
         // Act
@@ -37,11 +37,11 @@ public class ProductRepositoryTests
     public async Task ProductRepository_DeleteAsync_DeletesValueFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductRepository(context);
         var entityToDelete = new Product 
         { 
-            Name = UnitTestHelper.GetRandomString(5, 15), Description = "TestDesc", CategoryId = 1, Price = 123 
+            Name = TestHelper.GetRandomString(5, 15), Description = "TestDesc", CategoryId = 1, Price = 123 
         };
         await context.AddAsync(entityToDelete);
         await context.SaveChangesAsync();
@@ -60,11 +60,11 @@ public class ProductRepositoryTests
     public async Task ProductRepository_DeleteByIdAsync_DeletesValueFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductRepository(context);
         var entityToDelete = new Product 
         { 
-            Name = UnitTestHelper.GetRandomString(5, 15), Description = "TestDesc", CategoryId = 1, Price = 123 
+            Name = TestHelper.GetRandomString(5, 15), Description = "TestDesc", CategoryId = 1, Price = 123 
         };
         await context.AddAsync(entityToDelete);
         await context.SaveChangesAsync();
@@ -83,7 +83,7 @@ public class ProductRepositoryTests
     public void ProductRepository_GetAll_GetsAllValuesFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductRepository(context);
         var expectedResult = context.Products;
 
@@ -98,7 +98,7 @@ public class ProductRepositoryTests
     public void ProductRepository_GetAllWithDetails_GetsAllValuesFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductRepository(context);
         var expectedResult = context.Products.Include(p => p.Category);
 
@@ -113,7 +113,7 @@ public class ProductRepositoryTests
     public async Task ProductRepository_GetById_GetsValueByIdFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductRepository(context);
         long id = 1;
         var expectedResult = await context.Products.FindAsync(id);
@@ -129,7 +129,7 @@ public class ProductRepositoryTests
     public async Task ProductRepository_GetByIdWithDetails_GetsValueByIdFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductRepository(context);
         long id = 1;
         var expectedResult = await context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == id);
@@ -145,11 +145,11 @@ public class ProductRepositoryTests
     public async Task ProductRepository_UpdateAsync_UpdatesValueFromDb()
     {
         // Arrange
-        using var context = new StoreDbContext(UnitTestHelper.GetDbContextOptions());
+        using var context = new StoreDbContext(TestHelper.GetDbContextOptions());
         var repository = new ProductRepository(context);
         var entityToUpdate = new Product 
         { 
-            Name = UnitTestHelper.GetRandomString(5, 15), Description = "TestDesc", CategoryId = 1, Price = 123 
+            Name = TestHelper.GetRandomString(5, 15), Description = "TestDesc", CategoryId = 1, Price = 123 
         };
         await context.AddAsync(entityToUpdate);
         await context.SaveChangesAsync();
@@ -159,7 +159,7 @@ public class ProductRepositoryTests
         var updatedEntity = new Product
         {
             Id = entityToUpdate.Id,
-            Name = UnitTestHelper.GetRandomString(5, 15),
+            Name = TestHelper.GetRandomString(5, 15),
             Description = entityToUpdate.Description,
             CategoryId = entityToUpdate.CategoryId,
             Price = entityToUpdate.Price

@@ -1,4 +1,5 @@
 ﻿using Domain.Abstractions.Repositories;
+using Domain.DTOs.Commands.Products;
 using FluentValidation;
 
 namespace Application.Operations.Product.Commands.DeleteProduct;

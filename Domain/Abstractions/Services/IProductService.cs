@@ -1,11 +1,22 @@
-﻿using Domain.Helpers;
+﻿using Domain.DTOs.Commands.Products;
+using Domain.DTOs.Responses.Products;
 using Domain.Models;
 
 namespace Domain.Abstractions.Services;
 
-public interface IProductService : ICrud<ProductModel>
+public interface IProductService
 {
-    Task<IEnumerable<ProductModel>> GetAllByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null);
+    Task<IEnumerable<ProductResponse>> GetAllAsync(PageInfo? pageInfo = null);
 
-    Task<Result<bool>> IsNameTakenAsync(string name);
+    Task<ProductResponse?> GetByIdAsync(long id);
+
+    Task<ProductResponse> AddAsync(AddProductCommand command);
+
+    Task<ProductResponse> UpdateAsync(UpdateProductCommand command);
+
+    Task DeleteAsync(long id);
+    
+    Task<IEnumerable<ProductResponse>> GetAllByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null);
+
+    Task<bool> IsNameUniqueAsync(string name);
 }

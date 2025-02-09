@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using Domain.DTOs.Commands.Users;
+using FluentValidation;
 
 namespace Application.Operations.User.Commands.LogOutUser;
 

@@ -5,7 +5,7 @@ namespace Domain.Abstractions.Repositories;
 
 public interface IRefreshTokenRepository : IRepository<RefreshToken>
 {
-    Task<IEnumerable<RefreshToken>> GetAllWithDetailsAsync(PageInfo? pageInfo = null);
+    Task<IList<RefreshToken>> GetAllWithDetailsAsync(PageInfo? pageInfo = null);
 
     Task<RefreshToken?> GetByTokenAsync(string token);
 

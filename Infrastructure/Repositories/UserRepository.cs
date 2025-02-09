@@ -2,11 +2,11 @@
 using Domain.Abstractions.Services;
 using Domain.Entities;
 using Domain.Errors;
-using Domain.Helpers;
 using Domain.Models;
+using Domain.Shared;
+using Infrastructure.Extensions;
 using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
-using System.Data;
 
 namespace Infrastructure.Repositories;
 
@@ -21,82 +21,58 @@ public class UserRepository : IUserRepository
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<Result<Unit>> AddAsync(User entity, string password)
+    public async Task AddAsync(User entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("user", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-        else if (string.IsNullOrEmpty(password))
-        {
-            var error = new ValidationError(nameof(password), "The passed password is null or empty");
-            return Result<Unit>.Failure(error);
-        }
-
-        var hashedPassword = _passwordHasher.Hash(password);
-        entity.PasswordHash = hashedPassword;
+        Ensure.ArgumentNotNull(entity);
         await _context.AddAsync(entity);
-        return Unit.Default;
     }
 
     public async Task<bool> CheckUserPasswordAsync(long userId, string password)
     {
-        if (string.IsNullOrEmpty(password))
-        {
-            return false;
-        }
-
-        var user = await GetUserByIdAsync(userId);
-        if (user is null)
-        {
-            return false;
-        }
-
-        return _passwordHasher.Verify(password, user.PasswordHash);
+        Ensure.ArgumentNotNull(password);
+        User? user = await GetUserByIdAsync(userId);
+        return user is not null && _passwordHasher.Verify(password, user.PasswordHash);
     }
 
     public bool CheckUserPassword(User user, string password)
     {
-        if (user is null || string.IsNullOrEmpty(password))
-        {
-            return false;
-        }
-
+        Ensure.ArgumentNotNull(user);
+        Ensure.ArgumentNotNull(password);
         return _passwordHasher.Verify(password, user.PasswordHash);
     }
 
-    public async Task DeleteByIdAsync(long id)
+    public void Delete(User entity)
     {
-        var user = await _context.Users.FirstAsync(u => u.Id == id && u.UserRole!.Name == UserRoles.Customer);
-        _context.Remove(user);
+        Ensure.ArgumentNotNull(entity);
+        _context.Remove(entity);
     }
 
-    public async Task<IEnumerable<User>> GetAllUsersBySpecificationAsync(Specification<User> specification)
+    public async Task<IList<User>> GetAllUsersBySpecificationAsync(Specification<User> specification)
     {
-        var query = SpecificationEvaluator.ApplySpecification(_context.Users, specification);
+        IQueryable<User> query = SpecificationEvaluator.ApplySpecification(_context.Users, specification);
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<User>> GetAllCustomersBySpecificationAsync(Specification<User> specification)
+    public async Task<IList<User>> GetAllCustomersBySpecificationAsync(Specification<User> specification)
     {
-        var query = SpecificationEvaluator.ApplySpecification(_context.Users.Where(u => u.UserRole!.Name == UserRoles.Customer),
+        IQueryable<User> query = SpecificationEvaluator
+            .ApplySpecification(_context.Users.Where(u => u.UserRole!.Name == UserRoles.Customer),
             specification);
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<User>> GetAllCustomersAsync(PageInfo? pageInfo = null)
+    public async Task<IList<User>> GetAllCustomersAsync(PageInfo? pageInfo = null)
     {
         IQueryable<User> query = _context.Users.Where(u => u.UserRole!.Name == UserRoles.Customer);
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<User>> GetAllCustomersWithDetailsAsync(PageInfo? pageInfo = null)
+    public async Task<IList<User>> GetAllCustomersWithDetailsAsync(PageInfo? pageInfo = null)
     {
         IQueryable<User> query = _context.Users
             .Include(u => u.UserRole)
@@ -104,29 +80,29 @@ public class UserRepository : IUserRepository
 
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<User>> GetAllUsersAsync(PageInfo? pageInfo = null)
+    public async Task<IList<User>> GetAllUsersAsync(PageInfo? pageInfo = null)
     {
         IQueryable<User> query = _context.Users;
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<User>> GetAllUsersWithDetailsAsync(PageInfo? pageInfo = null)
+    public async Task<IList<User>> GetAllUsersWithDetailsAsync(PageInfo? pageInfo = null)
     {
         IQueryable<User> query = _context.Users.Include(u => u.UserRole);
         if (pageInfo is not null)
         {
-            query = SpecificationEvaluator.ApplyPagination(query, pageInfo);
+            query = query.ApplyPagination(pageInfo);
         }
 
         return await query.ToListAsync();
@@ -147,7 +123,7 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetUserByIdAsync(long id)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+        return await _context.FindAsync<User>(id);
     }
 
     public async Task<User?> GetUserByIdWithDetailsAsync(long id)
@@ -169,100 +145,30 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.UserName == userName);
     }
 
-    public async Task<Result<bool>> IsEmailTakenAsync(string email)
+    public async Task<bool> IsEmailUniqueAsync(string email)
     {
-        if (string.IsNullOrEmpty(email))
-        {
-            var error = new ValidationError(nameof(email), "The passed email is null or empty");
-            return Result<bool>.Failure(error);
-        }
-
-        var isTaken = await _context.Users.AnyAsync(u => u.Email == email);
-        return isTaken;
+        Ensure.ArgumentNotNull(email);
+        bool isTaken = await _context.Users.AsNoTracking().AnyAsync(u => u.Email == email);
+        return !isTaken;
     }
 
-    public async Task<Result<bool>> IsPhoneNumberTakenAsync(string phoneNumber)
+    public async Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber)
     {
-        if (string.IsNullOrEmpty(phoneNumber))
-        {
-            var error = new ValidationError(nameof(phoneNumber), "The passed phone number is null or empty");
-            return Result<bool>.Failure(error);
-        }
-
-        var isTaken = await _context.Users.AnyAsync(u => u.PhoneNumber == phoneNumber);
-        return isTaken;
+        Ensure.ArgumentNotNull(phoneNumber);
+        bool isTaken = await _context.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == phoneNumber);
+        return !isTaken;
     }
 
-    public async Task<Result<bool>> IsUserNameTakenAsync(string userName)
+    public async Task<bool> IsUserNameUniqueAsync(string userName)
     {
-        if (string.IsNullOrEmpty(userName))
-        {
-            var error = new ValidationError(nameof(userName), "The passed user name is null or empty");
-            return Result<bool>.Failure(error);
-        }
-
-        var isTaken = await _context.Users.AnyAsync(u => u.UserName == userName);
-        return isTaken;
+        Ensure.ArgumentNotNull(userName);
+        bool isTaken = await _context.Users.AsNoTracking().AnyAsync(u => u.UserName == userName);
+        return !isTaken;
     }
 
-    public Result<Unit> Update(User entity)
+    public void Update(User entity)
     {
-        if (entity is null)
-        {
-            var error = new ValidationError("user", "The passed entity is null");
-            return Result<Unit>.Failure(error);
-        }
-
+        Ensure.ArgumentNotNull(entity);
         _context.Update(entity);
-        return Unit.Default;
-    }
-
-    public async Task<Result<Unit>> UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword)
-    {
-        if (string.IsNullOrEmpty(newPassword))
-        {
-            var error = new ValidationError("userData", "The passed userId or newPassword is null");
-            return Result<Unit>.Failure(error);
-        }
-
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null)
-        {
-            var error = new EntityNotFoundError(nameof(user), "The user was not found");
-            return Result<Unit>.Failure(error);
-        }
-
-        var hashedPassword = _passwordHasher.Hash(newPassword);
-        user.PasswordHash = hashedPassword;
-        var result = Update(user);
-        return result;
-    }
-
-    public async Task<Result<Unit>> UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword)
-    {
-        if (string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword))
-        {
-            var error = new ValidationError("userData", "The passed userId, oldPassword or newPassword is null");
-            return Result<Unit>.Failure(error);
-        }
-
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null)
-        {
-            var error = new EntityNotFoundError(nameof(user), "The user was not found");
-            return Result<Unit>.Failure(error);
-        }
-
-        var isOldPasswordValid = CheckUserPassword(user, oldPassword);
-        if (!isOldPasswordValid)
-        {
-            var error = new ValidationError("userData", "The passed credentials are not valid");
-            return Result<Unit>.Failure(error);
-        }
-
-        var hashedPassword = _passwordHasher.Hash(newPassword);
-        user.PasswordHash = hashedPassword;
-        var result = Update(user);
-        return result;
     }
 }
