@@ -2,14 +2,10 @@
 
 namespace Infrastructure.Repositories;
 
-public class UnitOfWork : IUnitOfWork
+public class UnitOfWork(StoreDbContext context) : IUnitOfWork
 {
-    private readonly StoreDbContext _context;
-
-    public UnitOfWork(StoreDbContext context) => _context = context;
-
     public async Task SaveChangesAsync()
     {
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }

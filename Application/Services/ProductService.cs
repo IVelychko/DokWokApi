@@ -113,7 +113,7 @@ public class ProductService : IProductService
 
     public async Task<bool> IsNameUniqueAsync(string name)
     {
-        Ensure.ArgumentNotNull(name);
+        Ensure.ArgumentNotNullOrWhiteSpace(name);
         return await _productRepository.IsNameUniqueAsync(name);
     }
 }

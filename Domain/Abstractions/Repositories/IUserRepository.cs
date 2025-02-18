@@ -20,11 +20,15 @@ public interface IUserRepository
 
     Task<User?> GetUserByUserNameAsync(string userName);
 
+    Task<User?> GetUserByUserNameWithDetailsAsNoTrackingAsync(string userName);
+
     Task<User?> GetUserByUserNameWithDetailsAsync(string userName);
 
     Task<User?> GetUserByIdAsync(long id);
 
     Task<User?> GetUserByIdWithDetailsAsync(long id);
+
+    Task<User?> GetUserByIdWithDetailsAsNoTrackingAsync(long id);
 
     Task<User?> GetCustomerByIdAsync(long id);
 
@@ -41,8 +45,18 @@ public interface IUserRepository
     bool CheckUserPassword(User user, string password);
 
     Task<bool> IsUserNameUniqueAsync(string userName);
+    
+    Task<bool> IsUserNameUniqueAsync(string userName, long idToExclude);
 
     Task<bool> IsEmailUniqueAsync(string email);
+    
+    Task<bool> IsEmailUniqueAsync(string email, long idToExclude);
 
     Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber);
+    
+    Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber, long idToExclude);
+    
+    Task<bool> UserExistsAsync(long id);
+
+    Task<bool> CustomerExistsAsync(long id);
 }

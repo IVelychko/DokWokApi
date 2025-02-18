@@ -2,19 +2,15 @@
 using Domain.Abstractions.Services;
 using Domain.DTOs.Queries.ProductCategories;
 using Domain.DTOs.Responses;
-using Domain.Shared;
 
 namespace Application.Operations.ProductCategory.Queries.IsProductCategoryNameTaken;
 
 public class IsProductCategoryNameTakenQueryHandler(IProductCategoryService productCategoryService)
-    : IQueryHandler<IsProductCategoryNameTakenQuery, Result<IsTakenResponse>>
+    : IQueryHandler<IsProductCategoryNameTakenQuery, IsTakenResponse>
 {
-    public async Task<Result<IsTakenResponse>> Handle(IsProductCategoryNameTakenQuery request, CancellationToken cancellationToken)
+    public async Task<IsTakenResponse> Handle(IsProductCategoryNameTakenQuery request, CancellationToken cancellationToken)
     {
-        var result = await productCategoryService.IsNameTakenAsync(request.Name);
-        Result<IsTakenResponse> isTakenResponseResult = result.Match(isTaken => new IsTakenResponse(isTaken),
-            Result<IsTakenResponse>.Failure);
-
-        return isTakenResponseResult;
+        bool isUnique = await productCategoryService.IsNameUniqueAsync(request.Name);
+        return new IsTakenResponse(!isUnique);
     }
 }

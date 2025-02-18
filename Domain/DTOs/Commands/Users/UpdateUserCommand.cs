@@ -1,6 +1,5 @@
 ﻿using Domain.Abstractions.Messaging;
 using Domain.DTOs.Responses.Users;
-using Domain.Shared;
 
 namespace Domain.DTOs.Commands.Users;
 
@@ -10,4 +9,4 @@ public sealed record UpdateUserCommand(
     string UserName,
     string Email,
     string PhoneNumber
-) : ICommand<Result<UserResponse>>;
+) : ICommand<UserResponse>;

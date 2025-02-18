@@ -1,5 +1,4 @@
-﻿using Application.Mapping.Extensions;
-using Domain.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
 using Domain.DTOs.Queries.ProductCategories;
 using Domain.DTOs.Responses.ProductCategories;
@@ -13,7 +12,6 @@ public sealed class GetAllProductCategoriesByPageQueryHandler(IProductCategorySe
     public async Task<IEnumerable<ProductCategoryResponse>> Handle(GetAllProductCategoriesByPageQuery request, CancellationToken cancellationToken)
     {
         PageInfo pageInfo = new() { Number = request.PageNumber, Size = request.PageSize };
-        var categories = await productCategoryService.GetAllAsync(pageInfo);
-        return categories.Select(c => c.ToResponse());
+        return await productCategoryService.GetAllAsync(pageInfo);
     }
 }

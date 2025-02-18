@@ -113,4 +113,11 @@ public class OrderRepository : IOrderRepository
         Ensure.ArgumentNotNull(entity);
         _context.Update(entity);
     }
+    
+    public async Task<bool> OrderExistsAsync(long id)
+    {
+        var exists = await _context.Orders
+            .AnyAsync(x => x.Id == id);
+        return exists;
+    }
 }

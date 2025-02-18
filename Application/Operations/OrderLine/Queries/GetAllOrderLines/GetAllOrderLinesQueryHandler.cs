@@ -1,5 +1,4 @@
-﻿using Application.Mapping.Extensions;
-using Domain.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
 using Domain.DTOs.Queries.OrderLines;
 using Domain.DTOs.Responses.OrderLines;
@@ -11,7 +10,6 @@ public class GetAllOrderLinesQueryHandler(IOrderLineService orderLineService)
 {
     public async Task<IEnumerable<OrderLineResponse>> Handle(GetAllOrderLinesQuery request, CancellationToken cancellationToken)
     {
-        var orderLines = await orderLineService.GetAllAsync();
-        return orderLines.Select(ol => ol.ToResponse());
+        return await orderLineService.GetAllAsync();
     }
 }

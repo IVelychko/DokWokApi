@@ -53,6 +53,8 @@ public class ShopRepository : IShopRepository
 
     public async Task<Shop?> GetByAddressAsync(string street, string building)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(street);
+        Ensure.ArgumentNotNullOrWhiteSpace(building);
         return await _context.Shops.FirstOrDefaultAsync(s => s.Street == street && s.Building == building);
     }
 
@@ -64,10 +66,25 @@ public class ShopRepository : IShopRepository
 
     public async Task<bool> IsAddressUniqueAsync(string street, string building)
     {
-        Ensure.ArgumentNotNull(street);
-        Ensure.ArgumentNotNull(building);
-        bool isTaken = await _context.Shops.AsNoTracking()
+        Ensure.ArgumentNotNullOrWhiteSpace(street);
+        Ensure.ArgumentNotNullOrWhiteSpace(building);
+        bool isTaken = await _context.Shops
             .AnyAsync(s => s.Street == street && s.Building == building);
         return !isTaken;
+    }
+    
+    public async Task<bool> IsAddressUniqueAsync(string street, string building, long idToExclude)
+    {
+        Ensure.ArgumentNotNullOrWhiteSpace(street);
+        Ensure.ArgumentNotNullOrWhiteSpace(building);
+        bool isTaken = await _context.Shops
+            .AnyAsync(s => s.Street == street && s.Building == building && s.Id != idToExclude);
+        return !isTaken;
+    }
+    
+    public async Task<bool> ShopExistsAsync(long id)
+    {
+        var exists = await _context.Shops.AnyAsync(x => x.Id == id);
+        return exists;
     }
 }

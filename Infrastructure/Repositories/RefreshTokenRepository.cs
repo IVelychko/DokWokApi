@@ -72,11 +72,13 @@ public class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<RefreshToken?> GetByJwtIdAsync(string jwtId)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(jwtId);
         return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.JwtId == jwtId);
     }
 
     public async Task<RefreshToken?> GetByJwtIdWithDetailsAsync(string jwtId)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(jwtId);
         return await _context.RefreshTokens
             .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.JwtId == jwtId);
@@ -84,11 +86,21 @@ public class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<RefreshToken?> GetByTokenAsync(string token)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(token);
         return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token);
+    }
+    
+    public async Task<RefreshToken?> GetByTokenAsNoTrackingAsync(string token)
+    {
+        Ensure.ArgumentNotNullOrWhiteSpace(token);
+        return await _context.RefreshTokens
+            .AsNoTracking()
+            .FirstOrDefaultAsync(rt => rt.Token == token);
     }
 
     public async Task<RefreshToken?> GetByTokenWithDetailsAsync(string token)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(token);
         return await _context.RefreshTokens
             .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.Token == token);
@@ -110,5 +122,12 @@ public class RefreshTokenRepository : IRefreshTokenRepository
     {
         Ensure.ArgumentNotNull(entity);
         _context.Update(entity);
+    }
+    
+    public async Task<bool> RefreshTokenExistsAsync(long id)
+    {
+        var exists = await _context.RefreshTokens
+            .AnyAsync(x => x.Id == id);
+        return exists;
     }
 }

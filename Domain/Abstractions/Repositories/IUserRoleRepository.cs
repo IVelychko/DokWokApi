@@ -13,4 +13,6 @@ public interface IUserRoleRepository
     Task<UserRole?> GetByIdAsync(long id);
 
     Task<UserRole?> GetByNameAsync(string name);
+    
+    Task<bool> UserRoleExistsAsync(long id);
 }

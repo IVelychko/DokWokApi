@@ -1,5 +1,4 @@
-﻿using Application.Mapping.Extensions;
-using Domain.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
 using Domain.DTOs.Queries.Shops;
 using Domain.DTOs.Responses.Shops;
@@ -10,7 +9,6 @@ public class GetShopByAddressQueryHandler(IShopService shopService) : IQueryHand
 {
     public async Task<ShopResponse?> Handle(GetShopByAddressQuery request, CancellationToken cancellationToken)
     {
-        var shop = await shopService.GetByAddressAsync(request.Street, request.Building);
-        return shop?.ToResponse();
+        return await shopService.GetByAddressAsync(request.Street, request.Building);
     }
 }

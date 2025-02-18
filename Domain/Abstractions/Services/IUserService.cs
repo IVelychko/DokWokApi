@@ -28,15 +28,13 @@ public interface IUserService
 
     Task<AuthorizedUserResponse> RegisterAsync(RegisterUserCommand command);
 
-    Task<bool> LogOutAsync(string refreshToken);
+    Task LogOutAsync(string refreshToken);
 
     Task<bool> IsUserNameUniqueAsync(string userName);
 
     Task<bool> IsEmailUniqueAsync(string email);
 
     Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber);
-
-    Task<UserResponse?> GetUserFromTokenAsync(string token);
 
     Task<AuthorizedUserResponse> RefreshTokenAsync(string securityToken, string refreshToken);
 }

@@ -1,4 +1,5 @@
 ﻿using Domain.Abstractions.Services;
+using Domain.Shared;
 using System.Security.Cryptography;
 
 namespace Application.Services;
@@ -13,6 +14,7 @@ public sealed class PasswordHasher : IPasswordHasher
 
     public string Hash(string password)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(password);
         byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
         byte[] hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, Algorithm, HashSize);
 
@@ -21,6 +23,8 @@ public sealed class PasswordHasher : IPasswordHasher
 
     public bool Verify(string password, string passwordHash)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(password);
+        Ensure.ArgumentNotNullOrWhiteSpace(passwordHash);
         string[] parts = passwordHash.Split('-');
         byte[] hash = Convert.FromHexString(parts[0]);
         byte[] salt = Convert.FromHexString(parts[1]);

@@ -41,6 +41,12 @@ public class UserRoleRepository : IUserRoleRepository
 
     public async Task<UserRole?> GetByNameAsync(string name)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(name);
         return await _context.UserRoles.FirstOrDefaultAsync(r => r.Name == name);
+    }
+    
+    public async Task<bool> UserRoleExistsAsync(long id)
+    {
+        return await _context.UserRoles.AnyAsync(x => x.Id == id);
     }
 }

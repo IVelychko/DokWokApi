@@ -30,7 +30,7 @@ public class AddOrderLineCommandValidator : AbstractValidator<AddOrderLineComman
             .WithMessage("There is no product with the ID specified in the ProductId property of the OrderLine entity");
 
         RuleFor(x => x)
-            .MustAsync(OrderLineNotExists)
+            .MustAsync(OrderLineDoesNotExist)
             .WithName("orderLine")
             .WithMessage("The order line with the same orderID and productID already exists")
             .When(x => x.ProductId != 0 && x.OrderId != 0);
@@ -40,11 +40,14 @@ public class AddOrderLineCommandValidator : AbstractValidator<AddOrderLineComman
     }
 
     private async Task<bool> OrderExists(long orderId, CancellationToken token) =>
-        (await _orderRepository.GetByIdAsync(orderId)) is not null;
+        await _orderRepository.OrderExistsAsync(orderId);
 
     private async Task<bool> ProductExists(long productId, CancellationToken token) =>
-        (await _productRepository.GetByIdAsync(productId)) is not null;
-
-    private async Task<bool> OrderLineNotExists(AddOrderLineCommand orderLine, CancellationToken token) =>
-        (await _orderLineRepository.GetByOrderAndProductIdsAsync(orderLine.OrderId, orderLine.ProductId)) is null;
+        await _productRepository.ProductExistsAsync(productId);
+    
+    private async Task<bool> OrderLineDoesNotExist(AddOrderLineCommand orderLine, CancellationToken token)
+    {
+        var exists = await _orderLineRepository.OrderLineExistsAsync(orderLine.OrderId, orderLine.ProductId);
+        return !exists;
+    }
 }

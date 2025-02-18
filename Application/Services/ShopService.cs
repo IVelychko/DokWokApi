@@ -4,9 +4,7 @@ using Domain.Abstractions.Services;
 using Domain.DTOs.Commands.Shops;
 using Domain.DTOs.Responses.Shops;
 using Domain.Entities;
-using Domain.Errors;
 using Domain.Exceptions;
-using Domain.Mapping.Extensions;
 using Domain.Models;
 using Domain.Shared;
 
@@ -78,6 +76,8 @@ public class ShopService : IShopService
 
     public async Task<ShopResponse?> GetByAddressAsync(string street, string building)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(street);
+        Ensure.ArgumentNotNullOrWhiteSpace(building);
         string key = $"shopByAddress-{street}-{building}";
         Specification<Shop> specification = new() { Criteria = s => s.Street == street && s.Building == building };
         Shop? entity = await Caching.GetEntityFromCache(_cacheService,
@@ -88,8 +88,8 @@ public class ShopService : IShopService
 
     public async Task<bool> IsAddressUniqueAsync(string street, string building)
     {
-        Ensure.ArgumentNotNull(street);
-        Ensure.ArgumentNotNull(building);
+        Ensure.ArgumentNotNullOrWhiteSpace(street);
+        Ensure.ArgumentNotNullOrWhiteSpace(building);
         return await _shopRepository.IsAddressUniqueAsync(street, building);
     }
 

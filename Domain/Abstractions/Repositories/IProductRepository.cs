@@ -1,6 +1,5 @@
 ﻿using Domain.Entities;
 using Domain.Models;
-using Domain.Shared;
 
 namespace Domain.Abstractions.Repositories;
 
@@ -15,4 +14,8 @@ public interface IProductRepository : IRepository<Product>
     Task<Product?> GetByIdWithDetailsAsync(long id);
 
     Task<bool> IsNameUniqueAsync(string name);
+    
+    Task<bool> IsNameUniqueAsync(string name, long idToExclude);
+    
+    Task<bool> ProductExistsAsync(long id);
 }

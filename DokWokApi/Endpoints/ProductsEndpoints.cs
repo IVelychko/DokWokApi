@@ -1,16 +1,4 @@
 ﻿using Application.Mapping.Extensions;
-using Application.Operations;
-using Application.Operations.Product;
-using Application.Operations.Product.Commands.AddProduct;
-using Application.Operations.Product.Commands.DeleteProduct;
-using Application.Operations.Product.Commands.UpdateProduct;
-using Application.Operations.Product.Queries.GetAllProducts;
-using Application.Operations.Product.Queries.GetAllProductsByCategoryId;
-using Application.Operations.Product.Queries.GetAllProductsByCategoryIdAndPage;
-using Application.Operations.Product.Queries.GetAllProductsByPage;
-using Application.Operations.Product.Queries.GetProductById;
-using Application.Operations.Product.Queries.IsProductNameTaken;
-using DokWokApi.Extensions;
 using DokWokApi.Helpers;
 using Domain.DTOs.Commands.Products;
 using Domain.DTOs.Queries.Products;

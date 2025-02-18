@@ -26,29 +26,19 @@ public sealed class UpdateProductCategoryCommandValidator : AbstractValidator<Up
                     .NotEmpty()
                     .Matches(RegularExpressions.RegularString)
                     .MinimumLength(3)
-                    .MustAsync(IsNameNotTaken)
+                    .MustAsync(IsNameUnique)
                     .WithMessage("The product category with the same Name value is already present in the database");
             });
     }
-
+    
     private async Task<bool> CategoryExists(long categoryId, CancellationToken cancellationToken)
     {
-        return (await _productCategoryRepository.GetByIdAsync(categoryId)) is not null;
+        return await _productCategoryRepository.CategoryExistsAsync(categoryId);
     }
 
-    private async Task<bool> IsNameNotTaken(UpdateProductCategoryCommand category, string categoryName, CancellationToken cancellationToken)
+    private async Task<bool> IsNameUnique(
+        UpdateProductCategoryCommand category, string categoryName, CancellationToken cancellationToken)
     {
-        var existingEntity = await _productCategoryRepository.GetByIdAsync(category.Id);
-        if (existingEntity is null)
-        {
-            return false;
-        }
-
-        if (categoryName != existingEntity.Name)
-        {
-            var result = await _productCategoryRepository.IsNameTakenAsync(categoryName);
-            return result.Match(isTaken => !isTaken, error => false);
-        }
-        return true;
+        return await _productCategoryRepository.IsNameUniqueAsync(categoryName, category.Id);
     }
 }

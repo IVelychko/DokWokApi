@@ -12,4 +12,6 @@ public interface IOrderRepository : IRepository<Order>
     Task<IList<Order>> GetAllWithDetailsByUserIdAsync(long userId, PageInfo? pageInfo = null);
 
     Task<Order?> GetByIdWithDetailsAsync(long id);
+    
+    Task<bool> OrderExistsAsync(long id);
 }

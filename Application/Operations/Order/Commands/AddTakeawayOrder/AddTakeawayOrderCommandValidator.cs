@@ -52,8 +52,8 @@ public class AddTakeawayOrderCommandValidator : AbstractValidator<AddTakeawayOrd
     }
 
     private async Task<bool> ShopExists(long shopId, CancellationToken token) =>
-        (await _shopRepository.GetByIdAsync(shopId)) is not null;
+        await _shopRepository.ShopExistsAsync(shopId);
 
     private async Task<bool> UserExists(long? userId, CancellationToken token) =>
-        (await _userRepository.GetUserByIdAsync(userId.GetValueOrDefault())) is not null;
+        await _userRepository.UserExistsAsync(userId.GetValueOrDefault());
 }

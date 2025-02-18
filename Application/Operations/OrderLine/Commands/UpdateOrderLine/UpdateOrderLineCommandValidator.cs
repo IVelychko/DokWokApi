@@ -36,7 +36,7 @@ public sealed class UpdateOrderLineCommandValidator : AbstractValidator<UpdateOr
             .WithMessage("There is no product with the ID specified in the ProductId property of the OrderLine entity");
 
         RuleFor(x => x)
-            .MustAsync(OrderLineNotExists)
+            .MustAsync(AreOrderAndProductIdsUnique)
             .WithName("orderLine")
             .WithMessage("The order line with the same orderID and productID already exists")
             .When(x => x.Id != 0 && x.OrderId != 0 && x.ProductId != 0);
@@ -46,31 +46,17 @@ public sealed class UpdateOrderLineCommandValidator : AbstractValidator<UpdateOr
     }
 
     private async Task<bool> OrderLineToUpdateExists(long orderLineId, CancellationToken cancellationToken) =>
-        (await _orderLineRepository.GetByIdAsync(orderLineId)) is not null;
+        await _orderLineRepository.OrderLineExistsAsync(orderLineId);
 
     private async Task<bool> OrderExists(long orderId, CancellationToken cancellationToken) =>
-        (await _orderRepository.GetByIdAsync(orderId)) is not null;
+        await _orderRepository.OrderExistsAsync(orderId);
 
     private async Task<bool> ProductExists(long productId, CancellationToken cancellationToken) =>
-        (await _productRepository.GetByIdAsync(productId)) is not null;
+        await _productRepository.ProductExistsAsync(productId);
 
-    private async Task<bool> OrderLineNotExists(UpdateOrderLineCommand orderLine, CancellationToken cancellationToken)
+    private async Task<bool> AreOrderAndProductIdsUnique(UpdateOrderLineCommand orderLine, CancellationToken cancellationToken)
     {
-        var existingEntity = await _orderLineRepository.GetByIdAsync(orderLine.Id);
-        if (existingEntity is null)
-        {
-            return false;
-        }
-
-        if (orderLine.OrderId != existingEntity.OrderId || orderLine.ProductId != existingEntity.ProductId)
-        {
-            var exists = (await _orderLineRepository.GetByOrderAndProductIdsAsync(orderLine.OrderId, orderLine.ProductId)) is not null;
-            if (exists)
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return await _orderLineRepository
+            .AreOrderAndProductIdsUniqueAsync(orderLine.OrderId, orderLine.ProductId, orderLine.Id);
     }
 }

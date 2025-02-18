@@ -18,11 +18,12 @@ public sealed class AddProductCategoryCommandValidator : AbstractValidator<AddPr
             .NotEmpty()
             .Matches(RegularExpressions.RegularString)
             .MinimumLength(3)
-            .MustAsync(async (name, _) =>
-            {
-                var result = await _productCategoryRepository.IsNameTakenAsync(name);
-                return result.Match(isTaken => !isTaken, error => false);
-            })
+            .MustAsync(IsNameUnique)
             .WithMessage("The product category with the same Name value is already present in the database");
+    }
+    
+    private async Task<bool> IsNameUnique(string name, CancellationToken token)
+    {
+        return await _productCategoryRepository.IsNameUniqueAsync(name);
     }
 }

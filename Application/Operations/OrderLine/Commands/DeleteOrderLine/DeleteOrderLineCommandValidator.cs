@@ -21,5 +21,5 @@ public sealed class DeleteOrderLineCommandValidator : AbstractValidator<DeleteOr
     }
 
     private async Task<bool> OrderLineToDeleteExists(long orderLineId, CancellationToken cancellationToken) =>
-        (await _orderLineRepository.GetByIdAsync(orderLineId)) is not null;
+        await _orderLineRepository.OrderLineExistsAsync(orderLineId);
 }

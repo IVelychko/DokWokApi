@@ -1,5 +1,4 @@
-﻿using Application.Mapping.Extensions;
-using Domain.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
 using Domain.DTOs.Queries.OrderLines;
 using Domain.DTOs.Responses.OrderLines;
@@ -13,7 +12,6 @@ public sealed class GetAllOrderLinesByPageQueryHandler(IOrderLineService orderLi
     public async Task<IEnumerable<OrderLineResponse>> Handle(GetAllOrderLinesByPageQuery request, CancellationToken cancellationToken)
     {
         PageInfo pageInfo = new() { Number = request.PageNumber, Size = request.PageSize };
-        var orderLines = await orderLineService.GetAllAsync(pageInfo);
-        return orderLines.Select(ol => ol.ToResponse());
+        return await orderLineService.GetAllAsync(pageInfo);
     }
 }

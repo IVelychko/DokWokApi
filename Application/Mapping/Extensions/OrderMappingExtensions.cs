@@ -1,12 +1,7 @@
-﻿using Application.Operations.Order;
-using Application.Operations.Order.Commands.AddDeliveryOrder;
-using Application.Operations.Order.Commands.AddTakeawayOrder;
-using Application.Operations.Order.Commands.UpdateOrder;
-using Domain.DTOs.Commands.Orders;
+﻿using Domain.DTOs.Commands.Orders;
 using Domain.DTOs.Requests.Orders;
 using Domain.DTOs.Responses.Orders;
 using Domain.Entities;
-using Domain.Models;
 
 namespace Application.Mapping.Extensions;
 

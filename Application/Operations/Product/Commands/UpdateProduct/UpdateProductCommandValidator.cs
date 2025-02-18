@@ -52,31 +52,20 @@ public sealed class UpdateProductCommandValidator : AbstractValidator<UpdateProd
             .MustAsync(CategoryExists)
             .WithMessage("There is no product category with the ID specified in the CategoryId property of the Product entity");
     }
-
+    
     private async Task<bool> ProductExists(long productId, CancellationToken cancellationToken)
     {
-        return (await _productRepository.GetByIdAsync(productId)) is not null;
+        return await _productRepository.ProductExistsAsync(productId);
     }
-
+    
     private async Task<bool> CategoryExists(long categoryId, CancellationToken cancellationToken)
     {
-        return (await _productCategoryRepository.GetByIdAsync(categoryId)) is not null;
+        return await _productCategoryRepository.CategoryExistsAsync(categoryId);
     }
 
-    private async Task<bool> IsNameUnique(UpdateProductCommand product, string productName, CancellationToken cancellationToken)
+    private async Task<bool> IsNameUnique(UpdateProductCommand product, string productName,
+        CancellationToken cancellationToken)
     {
-        var existingEntity = await _productRepository.GetByIdAsync(product.Id);
-        if (existingEntity is null)
-        {
-            return false;
-        }
-
-        if (productName != existingEntity.Name)
-        {
-            var result = await _productRepository.IsNameTakenAsync(productName);
-            return result.Match(isTaken => !isTaken, error => false);
-        }
-
-        return true;
+        return await _productRepository.IsNameUniqueAsync(productName, product.Id);
     }
 }

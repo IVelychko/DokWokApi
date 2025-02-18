@@ -1,6 +1,5 @@
 ﻿using Domain.Abstractions.Messaging;
 using Domain.DTOs.Responses.Orders;
-using Domain.Shared;
 
 namespace Domain.DTOs.Commands.Orders;
 
@@ -16,4 +15,4 @@ public sealed record UpdateOrderCommand(
     string Status,
     long? UserId,
     long? ShopId
-) : ICommand<Result<OrderResponse>>;
+) : ICommand<OrderResponse>;

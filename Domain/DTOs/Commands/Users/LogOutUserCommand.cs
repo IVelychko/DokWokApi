@@ -2,4 +2,4 @@
 
 namespace Domain.DTOs.Commands.Users;
 
-public sealed record LogOutUserCommand(string RefreshToken) : ICommand<bool>;
+public sealed record LogOutUserCommand(string RefreshToken) : ICommand;

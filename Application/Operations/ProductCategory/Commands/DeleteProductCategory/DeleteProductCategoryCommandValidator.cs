@@ -19,7 +19,7 @@ public sealed class DeleteProductCategoryCommandValidator : AbstractValidator<De
             .WithErrorCode("404")
             .WithMessage("There is no product category with this ID to delete in the database");
     }
-
+    
     private async Task<bool> ProductCategoryToDeleteExists(long productCategoryId, CancellationToken cancellationToken) =>
-        (await _productCategoryRepository.GetByIdAsync(productCategoryId)) is not null;
+        await _productCategoryRepository.CategoryExistsAsync(productCategoryId);
 }

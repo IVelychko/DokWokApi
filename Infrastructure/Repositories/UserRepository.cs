@@ -1,7 +1,6 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Entities;
-using Domain.Errors;
 using Domain.Models;
 using Domain.Shared;
 using Infrastructure.Extensions;
@@ -29,15 +28,15 @@ public class UserRepository : IUserRepository
 
     public async Task<bool> CheckUserPasswordAsync(long userId, string password)
     {
-        Ensure.ArgumentNotNull(password);
-        User? user = await GetUserByIdAsync(userId);
+        Ensure.ArgumentNotNullOrWhiteSpace(password);
+        User? user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
         return user is not null && _passwordHasher.Verify(password, user.PasswordHash);
     }
 
     public bool CheckUserPassword(User user, string password)
     {
         Ensure.ArgumentNotNull(user);
-        Ensure.ArgumentNotNull(password);
+        Ensure.ArgumentNotNullOrWhiteSpace(password);
         return _passwordHasher.Verify(password, user.PasswordHash);
     }
 
@@ -132,14 +131,32 @@ public class UserRepository : IUserRepository
             .Include(u => u.UserRole)
             .FirstOrDefaultAsync(u => u.Id == id);
     }
+    
+    public async Task<User?> GetUserByIdWithDetailsAsNoTrackingAsync(long id)
+    {
+        return await _context.Users
+            .AsNoTracking()
+            .Include(u => u.UserRole)
+            .FirstOrDefaultAsync(u => u.Id == id);
+    }
 
     public async Task<User?> GetUserByUserNameAsync(string userName)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(userName);
         return await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
+    }
+    
+    public async Task<User?> GetUserByUserNameWithDetailsAsNoTrackingAsync(string userName)
+    {
+        Ensure.ArgumentNotNullOrWhiteSpace(userName);
+        return await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UserName == userName);
     }
 
     public async Task<User?> GetUserByUserNameWithDetailsAsync(string userName)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(userName);
         return await _context.Users
             .Include(u => u.UserRole)
             .FirstOrDefaultAsync(u => u.UserName == userName);
@@ -147,22 +164,46 @@ public class UserRepository : IUserRepository
 
     public async Task<bool> IsEmailUniqueAsync(string email)
     {
-        Ensure.ArgumentNotNull(email);
-        bool isTaken = await _context.Users.AsNoTracking().AnyAsync(u => u.Email == email);
+        Ensure.ArgumentNotNullOrWhiteSpace(email);
+        bool isTaken = await _context.Users.AnyAsync(u => u.Email == email);
+        return !isTaken;
+    }
+    
+    public async Task<bool> IsEmailUniqueAsync(string email, long idToExclude)
+    {
+        Ensure.ArgumentNotNullOrWhiteSpace(email);
+        bool isTaken = await _context.Users
+            .AnyAsync(u => u.Email == email && u.Id != idToExclude);
         return !isTaken;
     }
 
     public async Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber)
     {
-        Ensure.ArgumentNotNull(phoneNumber);
-        bool isTaken = await _context.Users.AsNoTracking().AnyAsync(u => u.PhoneNumber == phoneNumber);
+        Ensure.ArgumentNotNullOrWhiteSpace(phoneNumber);
+        bool isTaken = await _context.Users.AnyAsync(u => u.PhoneNumber == phoneNumber);
+        return !isTaken;
+    }
+    
+    public async Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber, long idToExclude)
+    {
+        Ensure.ArgumentNotNullOrWhiteSpace(phoneNumber);
+        bool isTaken = await _context.Users
+            .AnyAsync(u => u.PhoneNumber == phoneNumber && u.Id != idToExclude);
         return !isTaken;
     }
 
     public async Task<bool> IsUserNameUniqueAsync(string userName)
     {
-        Ensure.ArgumentNotNull(userName);
-        bool isTaken = await _context.Users.AsNoTracking().AnyAsync(u => u.UserName == userName);
+        Ensure.ArgumentNotNullOrWhiteSpace(userName);
+        bool isTaken = await _context.Users.AnyAsync(u => u.UserName == userName);
+        return !isTaken;
+    }
+    
+    public async Task<bool> IsUserNameUniqueAsync(string userName, long idToExclude)
+    {
+        Ensure.ArgumentNotNullOrWhiteSpace(userName);
+        bool isTaken = await _context.Users
+            .AnyAsync(u => u.UserName == userName && u.Id != idToExclude);
         return !isTaken;
     }
 
@@ -170,5 +211,15 @@ public class UserRepository : IUserRepository
     {
         Ensure.ArgumentNotNull(entity);
         _context.Update(entity);
+    }
+    
+    public async Task<bool> UserExistsAsync(long id)
+    {
+        return await _context.Users.AnyAsync(x => x.Id == id);
+    }
+    
+    public async Task<bool> CustomerExistsAsync(long id)
+    {
+        return await _context.Users.AnyAsync(x => x.Id == id && x.UserRole!.Name == UserRoles.Customer);
     }
 }

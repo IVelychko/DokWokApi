@@ -8,6 +8,8 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken>
     Task<IList<RefreshToken>> GetAllWithDetailsAsync(PageInfo? pageInfo = null);
 
     Task<RefreshToken?> GetByTokenAsync(string token);
+    
+    Task<RefreshToken?> GetByTokenAsNoTrackingAsync(string token);
 
     Task<RefreshToken?> GetByJwtIdAsync(string jwtId);
 
@@ -20,4 +22,6 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken>
     Task<RefreshToken?> GetByJwtIdWithDetailsAsync(string jwtId);
 
     Task<RefreshToken?> GetByUserIdWithDetailsAsync(long userId);
+    
+    Task<bool> RefreshTokenExistsAsync(long id);
 }

@@ -1,15 +1,4 @@
 ﻿using Application.Mapping.Extensions;
-using Application.Operations.Order;
-using Application.Operations.Order.Commands.AddDeliveryOrder;
-using Application.Operations.Order.Commands.AddTakeawayOrder;
-using Application.Operations.Order.Commands.DeleteOrder;
-using Application.Operations.Order.Commands.UpdateOrder;
-using Application.Operations.Order.Queries.GetAllOrders;
-using Application.Operations.Order.Queries.GetAllOrdersByPage;
-using Application.Operations.Order.Queries.GetAllOrdersByUserId;
-using Application.Operations.Order.Queries.GetAllOrdersByUserIdAndPage;
-using Application.Operations.Order.Queries.GetOrderById;
-using DokWokApi.Extensions;
 using DokWokApi.Helpers;
 using Domain.DTOs.Commands.Orders;
 using Domain.DTOs.Queries.Orders;

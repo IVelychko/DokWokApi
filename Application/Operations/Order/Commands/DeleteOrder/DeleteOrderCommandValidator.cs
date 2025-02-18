@@ -21,5 +21,5 @@ public class DeleteOrderCommandValidator : AbstractValidator<DeleteOrderCommand>
     }
 
     private async Task<bool> OrderToDeleteExists(long orderId, CancellationToken cancellationToken) =>
-        (await _orderRepository.GetByIdAsync(orderId)) is not null;
+        await _orderRepository.OrderExistsAsync(orderId);
 }

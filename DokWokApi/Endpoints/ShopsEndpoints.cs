@@ -1,15 +1,4 @@
 ﻿using Application.Mapping.Extensions;
-using Application.Operations;
-using Application.Operations.Shop;
-using Application.Operations.Shop.Commands.AddShop;
-using Application.Operations.Shop.Commands.DeleteShop;
-using Application.Operations.Shop.Commands.UpdateShop;
-using Application.Operations.Shop.Queries.GetAllShops;
-using Application.Operations.Shop.Queries.GetAllShopsByPage;
-using Application.Operations.Shop.Queries.GetShopByAddress;
-using Application.Operations.Shop.Queries.GetShopById;
-using Application.Operations.Shop.Queries.IsShopAddressTaken;
-using DokWokApi.Extensions;
 using DokWokApi.Helpers;
 using Domain.DTOs.Commands.Shops;
 using Domain.DTOs.Queries.Shops;

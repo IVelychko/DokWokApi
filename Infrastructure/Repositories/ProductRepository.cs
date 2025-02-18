@@ -96,8 +96,17 @@ public class ProductRepository : IProductRepository
 
     public async Task<bool> IsNameUniqueAsync(string name)
     {
-        Ensure.ArgumentNotNull(name);
-        bool isTaken = await _context.Products.AsNoTracking().AnyAsync(c => c.Name == name);
+        Ensure.ArgumentNotNullOrWhiteSpace(name);
+        bool isTaken = await _context.Products
+            .AnyAsync(c => c.Name == name);
+        return !isTaken;
+    }
+    
+    public async Task<bool> IsNameUniqueAsync(string name, long idToExclude)
+    {
+        Ensure.ArgumentNotNullOrWhiteSpace(name);
+        bool isTaken = await _context.Products
+            .AnyAsync(c => c.Name == name && c.Id != idToExclude);
         return !isTaken;
     }
 
@@ -105,5 +114,12 @@ public class ProductRepository : IProductRepository
     {
         Ensure.ArgumentNotNull(entity);
         _context.Update(entity);
+    }
+    
+    public async Task<bool> ProductExistsAsync(long id)
+    {
+        var exists = await _context.Products
+            .AnyAsync(x => x.Id == id);
+        return exists;
     }
 }

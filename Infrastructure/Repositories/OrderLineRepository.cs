@@ -117,6 +117,27 @@ public class OrderLineRepository : IOrderLineRepository
             .FirstOrDefaultAsync(ol => ol.OrderId == orderId && ol.ProductId == productId);
     }
 
+    public async Task<bool> AreOrderAndProductIdsUniqueAsync(long orderId, long productId, long orderLineIdToExclude)
+    {
+        bool isTaken = await _context.OrderLines
+            .AnyAsync(ol => ol.OrderId == orderId && ol.ProductId == productId && ol.Id != orderLineIdToExclude);
+        return !isTaken;
+    }
+
+    public async Task<bool> OrderLineExistsAsync(long id)
+    {
+        var exists = await _context.OrderLines
+            .AnyAsync(x => x.Id == id);
+        return exists;
+    }
+    
+    public async Task<bool> OrderLineExistsAsync(long orderId, long productId)
+    {
+        var exists = await _context.OrderLines
+            .AnyAsync(x => x.OrderId == orderId && x.ProductId == productId);
+        return exists;
+    }
+
     public void Update(OrderLine entity)
     {
         Ensure.ArgumentNotNull(entity);

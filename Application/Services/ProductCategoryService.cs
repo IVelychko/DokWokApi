@@ -90,7 +90,7 @@ public class ProductCategoryService : IProductCategoryService
 
     public async Task<bool> IsNameUniqueAsync(string name)
     {
-        Ensure.ArgumentNotNull(name);
+        Ensure.ArgumentNotNullOrWhiteSpace(name);
         return await _productCategoryRepository.IsNameUniqueAsync(name);
     }
 }

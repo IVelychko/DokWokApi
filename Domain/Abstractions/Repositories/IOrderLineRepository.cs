@@ -16,4 +16,10 @@ public interface IOrderLineRepository : IRepository<OrderLine>
     Task<OrderLine?> GetByOrderAndProductIdsAsync(long orderId, long productId);
 
     Task<OrderLine?> GetByOrderAndProductIdsWithDetailsAsync(long orderId, long productId);
+    
+    Task<bool> AreOrderAndProductIdsUniqueAsync(long orderId, long productId, long orderLineIdToExclude);
+
+    Task<bool> OrderLineExistsAsync(long id);
+    
+    Task<bool> OrderLineExistsAsync(long orderId, long productId);
 }

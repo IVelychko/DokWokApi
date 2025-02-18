@@ -1,11 +1,7 @@
-﻿using Application.Operations.Product;
-using Application.Operations.Product.Commands.AddProduct;
-using Application.Operations.Product.Commands.UpdateProduct;
-using Domain.DTOs.Commands.Products;
+﻿using Domain.DTOs.Commands.Products;
 using Domain.DTOs.Requests.Products;
 using Domain.DTOs.Responses.Products;
 using Domain.Entities;
-using Domain.Models;
 
 namespace Application.Mapping.Extensions;
 

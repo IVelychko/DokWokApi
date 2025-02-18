@@ -1,11 +1,4 @@
-﻿using DokWokApi.BLL.Models.Product;
-using DokWokApi.BLL.Services;
-using DokWokApi.DAL;
-using DokWokApi.DAL.Entities;
-using DokWokApi.DAL.Interfaces;
-using DokWokApi.DAL.Repositories;
-using DokWokApiTests.EqualityComparers;
-using Microsoft.EntityFrameworkCore;
+﻿using DokWokApiTests.EqualityComparers;
 using Moq;
 
 namespace DokWokApiTests.BLL;

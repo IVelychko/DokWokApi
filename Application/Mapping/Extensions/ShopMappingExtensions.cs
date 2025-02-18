@@ -1,11 +1,7 @@
-﻿using Application.Operations.Shop;
-using Application.Operations.Shop.Commands.AddShop;
-using Application.Operations.Shop.Commands.UpdateShop;
-using Domain.DTOs.Commands.Shops;
+﻿using Domain.DTOs.Commands.Shops;
 using Domain.DTOs.Requests.Shops;
 using Domain.DTOs.Responses.Shops;
 using Domain.Entities;
-using Domain.Models;
 
 namespace Application.Mapping.Extensions;
 

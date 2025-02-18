@@ -1,7 +1,7 @@
 ﻿using Domain.Abstractions.Services;
 using Domain.Entities;
 using Domain.Exceptions;
-using Domain.Models.User;
+using Domain.Shared;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
@@ -22,6 +22,7 @@ public class JwtService : ISecurityTokenService<User, JwtSecurityToken>
 
     public JwtSecurityToken ValidateToken(string token, TokenValidationParameters tokenValidationParameters)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(token);
         var tokenHandler = new JwtSecurityTokenHandler();
         tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken validatedToken);
 
@@ -36,6 +37,7 @@ public class JwtService : ISecurityTokenService<User, JwtSecurityToken>
 
     public string CreateSerializedToken(User user, string role)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(role);
         var token = CreateToken(user, role);
 
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -45,6 +47,7 @@ public class JwtService : ISecurityTokenService<User, JwtSecurityToken>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "The secret is not visible")]
     public JwtSecurityToken CreateToken(User user, string role)
     {
+        Ensure.ArgumentNotNullOrWhiteSpace(role);
         var errorMessage = "Unable to get data from configuration";
         var tokenLifeTime = _configuration["Jwt:TokenLifeTime"]?.Split(':')
             ?? throw new ConfigurationException(errorMessage);

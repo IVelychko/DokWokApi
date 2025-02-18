@@ -28,7 +28,7 @@ public sealed class AddShopCommandValidator : AbstractValidator<AddShopCommand>
                     .DependentRules(() =>
                     {
                         RuleFor(x => x)
-                            .MustAsync(IsAddressTaken)
+                            .MustAsync(IsAddressUnique)
                             .WithName("shop")
                             .WithMessage("The shop with the same Street and Building values is already present in the database");
                     });
@@ -45,9 +45,8 @@ public sealed class AddShopCommandValidator : AbstractValidator<AddShopCommand>
             .MinimumLength(4);
     }
 
-    private async Task<bool> IsAddressTaken(AddShopCommand shop, CancellationToken cancellationToken)
+    private async Task<bool> IsAddressUnique(AddShopCommand shop, CancellationToken cancellationToken)
     {
-        var result = await _shopRepository.IsAddressTakenAsync(shop.Street, shop.Building);
-        return result.Match(isTaken => !isTaken, error => false);
+        return await _shopRepository.IsAddressUniqueAsync(shop.Street, shop.Building);
     }
 }

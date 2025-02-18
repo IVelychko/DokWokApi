@@ -34,7 +34,7 @@ public sealed class AddDeliveryOrderCommandValidator : AbstractValidator<AddDeli
         RuleForEach(x => x.OrderLines).SetValidator(new AddDeliveryOrderLineRequestValidator(productRepository))
             .When(x => x.OrderLines is not null && x.OrderLines.Count > 0);
     }
-
+    
     private async Task<bool> UserExists(long? userId, CancellationToken token) =>
-        (await _userRepository.GetUserByIdAsync(userId.GetValueOrDefault())) is not null;
+        await _userRepository.UserExistsAsync(userId.GetValueOrDefault());
 }

@@ -1,11 +1,7 @@
-﻿using Application.Operations.ProductCategory;
-using Application.Operations.ProductCategory.Commands.AddProductCategory;
-using Application.Operations.ProductCategory.Commands.UpdateProductCategory;
-using Domain.DTOs.Commands.ProductCategories;
+﻿using Domain.DTOs.Commands.ProductCategories;
 using Domain.DTOs.Requests.ProductCategories;
 using Domain.DTOs.Responses.ProductCategories;
 using Domain.Entities;
-using Domain.Models;
 
 namespace Application.Mapping.Extensions;
 

@@ -1,5 +1,4 @@
-﻿using Application.Mapping.Extensions;
-using Domain.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
 using Domain.DTOs.Queries.Products;
 using Domain.DTOs.Responses.Products;
@@ -11,7 +10,6 @@ public class GetAllProductsByCategoryIdQueryHandler(IProductService productServi
 {
     public async Task<IEnumerable<ProductResponse>> Handle(GetAllProductsByCategoryIdQuery request, CancellationToken cancellationToken)
     {
-        var products = await productService.GetAllByCategoryIdAsync(request.CategoryId);
-        return products.Select(p => p.ToResponse());
+        return await productService.GetAllByCategoryIdAsync(request.CategoryId);
     }
 }

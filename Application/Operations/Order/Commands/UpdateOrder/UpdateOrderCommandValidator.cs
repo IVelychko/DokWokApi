@@ -74,11 +74,11 @@ public class UpdateOrderCommandValidator : AbstractValidator<UpdateOrderCommand>
     }
 
     private async Task<bool> OrderToUpdateExists(long orderId, CancellationToken cancellationToken) =>
-        (await _orderRepository.GetByIdAsync(orderId)) is not null;
-
+        await _orderRepository.OrderExistsAsync(orderId);
+    
     private async Task<bool> UserExists(long? userId, CancellationToken cancellationToken) =>
-        (await _userRepository.GetUserByIdAsync(userId.GetValueOrDefault())) is not null;
+        await _userRepository.UserExistsAsync(userId.GetValueOrDefault());
 
     private async Task<bool> ShopExists(long? shopId, CancellationToken cancellationToken) =>
-        (await _shopRepository.GetByIdAsync(shopId.GetValueOrDefault())) is not null;
+        await _shopRepository.ShopExistsAsync(shopId.GetValueOrDefault());
 }

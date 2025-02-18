@@ -1,7 +1,6 @@
 ﻿using Domain.Abstractions.Messaging;
 using Domain.DTOs.Requests.Orders;
 using Domain.DTOs.Responses.Orders;
-using Domain.Shared;
 
 namespace Domain.DTOs.Commands.Orders;
 
@@ -13,4 +12,4 @@ public sealed record AddTakeawayOrderCommand(
     long? UserId,
     long ShopId,
     List<AddTakeawayOrderLineRequest> OrderLines
-) : ICommand<Result<OrderResponse>>;
+) : ICommand<OrderResponse>;

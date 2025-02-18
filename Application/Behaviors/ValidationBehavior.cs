@@ -33,17 +33,27 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         bool isNotFound = false;
         foreach (var validationResult in validationResults)
         {
-            var notFoundErrorCodeExists = validationResult.Errors.Exists(x => x.ErrorCode == "404");
+            var notFoundErrorCodeExists = validationResult.Errors
+                .Exists(x => x.ErrorCode == "404");
             if (notFoundErrorCodeExists)
             {
                 isNotFound = true;
                 break;
             }
         }
-
+        
         var errorsDictionary = validationResults
-            .SelectMany(x => x.ToDictionary())
-            .ToDictionary();
+            .SelectMany(x => x.Errors)
+            .Where(x => x != null)
+            .GroupBy(
+                x => x.PropertyName,
+                x => x.ErrorMessage,
+                (propertyName, errorMessages) => new
+                {
+                    Key = propertyName,
+                    Values = errorMessages.Distinct().ToArray()
+                })
+            .ToDictionary(x => x.Key, x => x.Values);
 
         if (errorsDictionary.Count > 0)
         {

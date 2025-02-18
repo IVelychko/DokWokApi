@@ -1,6 +1,5 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
-using Domain.Errors;
 using Domain.Models;
 using Domain.Shared;
 using Infrastructure.Extensions;
@@ -54,8 +53,17 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public async Task<bool> IsNameUniqueAsync(string name)
     {
-        Ensure.ArgumentNotNull(name);
-        bool isTaken = await _context.ProductCategories.AsNoTracking().AnyAsync(c => c.Name == name);
+        Ensure.ArgumentNotNullOrWhiteSpace(name);
+        bool isTaken = await _context.ProductCategories
+            .AnyAsync(c => c.Name == name);
+        return !isTaken;
+    }
+    
+    public async Task<bool> IsNameUniqueAsync(string name, long idToExclude)
+    {
+        Ensure.ArgumentNotNullOrWhiteSpace(name);
+        bool isTaken = await _context.ProductCategories
+            .AnyAsync(c => c.Name == name && c.Id != idToExclude);
         return !isTaken;
     }
 
@@ -63,5 +71,12 @@ public class ProductCategoryRepository : IProductCategoryRepository
     {
         Ensure.ArgumentNotNull(entity);
         _context.Update(entity);
+    }
+    
+    public async Task<bool> CategoryExistsAsync(long id)
+    {
+        var exists = await _context.ProductCategories
+            .AnyAsync(x => x.Id == id);
+        return exists;
     }
 }

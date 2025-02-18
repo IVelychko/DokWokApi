@@ -21,5 +21,5 @@ public sealed class DeleteShopCommandValidator : AbstractValidator<DeleteShopCom
     }
 
     private async Task<bool> ShopToDeleteExists(long shopId, CancellationToken cancellationToken) =>
-        (await _shopRepository.GetByIdAsync(shopId)) is not null;
+        await _shopRepository.ShopExistsAsync(shopId);
 }

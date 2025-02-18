@@ -22,5 +22,5 @@ public class AddTakeawayOrderLineRequestValidator : AbstractValidator<AddTakeawa
     }
 
     private async Task<bool> ProductExists(long productId, CancellationToken token) =>
-        (await _productRepository.GetByIdAsync(productId)) is not null;
+        await _productRepository.ProductExistsAsync(productId);
 }

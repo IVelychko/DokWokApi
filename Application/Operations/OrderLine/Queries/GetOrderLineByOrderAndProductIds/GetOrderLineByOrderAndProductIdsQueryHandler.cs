@@ -1,5 +1,4 @@
-﻿using Application.Mapping.Extensions;
-using Domain.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
 using Domain.DTOs.Queries.OrderLines;
 using Domain.DTOs.Responses.OrderLines;
@@ -11,7 +10,6 @@ public class GetOrderLineByOrderAndProductIdsQueryHandler(IOrderLineService orde
 {
     public async Task<OrderLineResponse?> Handle(GetOrderLineByOrderAndProductIdsQuery request, CancellationToken cancellationToken)
     {
-        var orderLine = await orderLineService.GetByOrderAndProductIdsAsync(request.OrderId, request.ProductId);
-        return orderLine?.ToResponse();
+        return await orderLineService.GetByOrderAndProductIdsAsync(request.OrderId, request.ProductId);
     }
 }

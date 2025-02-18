@@ -47,10 +47,9 @@ public sealed class AddProductCommandValidator : AbstractValidator<AddProductCom
 
     private async Task<bool> IsNameUnique(string name, CancellationToken token)
     {
-        var result = await _productRepository.IsNameTakenAsync(name);
-        return result.Match(isTaken => !isTaken, error => false);
+        return await _productRepository.IsNameUniqueAsync(name);
     }
 
     private async Task<bool> CategoryExists(long categoryId, CancellationToken token) =>
-        (await _productCategoryRepository.GetByIdAsync(categoryId)) is not null;
+        await _productCategoryRepository.CategoryExistsAsync(categoryId);
 }

@@ -1,18 +1,14 @@
-﻿using Application.Mapping.Extensions;
-using Domain.Abstractions.Messaging;
+﻿using Domain.Abstractions.Messaging;
 using Domain.Abstractions.Services;
 using Domain.DTOs.Commands.Shops;
 using Domain.DTOs.Responses.Shops;
-using Domain.Shared;
 
 namespace Application.Operations.Shop.Commands.UpdateShop;
 
-public class UpdateShopCommandHandler(IShopService shopService) : ICommandHandler<UpdateShopCommand, Result<ShopResponse>>
+public class UpdateShopCommandHandler(IShopService shopService) : ICommandHandler<UpdateShopCommand, ShopResponse>
 {
-    public async Task<Result<ShopResponse>> Handle(UpdateShopCommand request, CancellationToken cancellationToken)
+    public async Task<ShopResponse> Handle(UpdateShopCommand request, CancellationToken cancellationToken)
     {
-        var model = request.ToModel();
-        var result = await shopService.UpdateAsync(model);
-        return result.Match(s => s.ToResponse(), Result<ShopResponse>.Failure);
+        return await shopService.UpdateAsync(request);
     }
 }
