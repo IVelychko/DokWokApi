@@ -1,5 +1,6 @@
 ﻿using Application.Mapping.Extensions;
 using DokWokApi.Helpers;
+using Domain.Constants;
 using Domain.DTOs.Commands.Users;
 using Domain.DTOs.Queries.Users;
 using Domain.DTOs.Requests.Users;

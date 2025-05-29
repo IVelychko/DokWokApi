@@ -1,48 +1,27 @@
 ﻿using Domain.Entities;
-using Domain.Models;
-using Domain.Shared;
+using Domain.Specifications.Users;
 
 namespace Domain.Abstractions.Repositories;
 
 public interface IUserRepository
 {
-    Task<IList<User>> GetAllUsersBySpecificationAsync(Specification<User> specification);
+    Task<IList<User>> GetAllAsync();
 
-    Task<IList<User>> GetAllCustomersBySpecificationAsync(Specification<User> specification);
+    Task<IList<User>> GetAllBySpecificationAsync(UserSpecification specification);
 
-    Task<IList<User>> GetAllUsersAsync(PageInfo? pageInfo = null);
+    Task<IList<User>> GetAllByRoleIdAsync(long roleId);
 
-    Task<IList<User>> GetAllUsersWithDetailsAsync(PageInfo? pageInfo = null);
+    Task<User?> GetBySpecificationAsync(UserSpecification specification);
 
-    Task<IList<User>> GetAllCustomersAsync(PageInfo? pageInfo = null);
+    Task<User?> GetByIdAsync(long id);
 
-    Task<IList<User>> GetAllCustomersWithDetailsAsync(PageInfo? pageInfo = null);
-
-    Task<User?> GetUserByUserNameAsync(string userName);
-
-    Task<User?> GetUserByUserNameWithDetailsAsNoTrackingAsync(string userName);
-
-    Task<User?> GetUserByUserNameWithDetailsAsync(string userName);
-
-    Task<User?> GetUserByIdAsync(long id);
-
-    Task<User?> GetUserByIdWithDetailsAsync(long id);
-
-    Task<User?> GetUserByIdWithDetailsAsNoTrackingAsync(long id);
-
-    Task<User?> GetCustomerByIdAsync(long id);
-
-    Task<User?> GetCustomerByIdWithDetailsAsync(long id);
+    Task<User?> GetByUserNameAsync(string userName);
 
     Task AddAsync(User entity);
 
     void Update(User entity);
 
     void Delete(User entity);
-
-    Task<bool> CheckUserPasswordAsync(long userId, string password);
-
-    bool CheckUserPassword(User user, string password);
 
     Task<bool> IsUserNameUniqueAsync(string userName);
     
@@ -55,8 +34,8 @@ public interface IUserRepository
     Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber);
     
     Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber, long idToExclude);
-    
-    Task<bool> UserExistsAsync(long id);
 
-    Task<bool> CustomerExistsAsync(long id);
+    Task<bool> UserExistsAsync(long id);
+    
+    Task<bool> UserExistsAsync(long userId, long roleIdToExclude);
 }

@@ -1,9 +1,6 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
-using Domain.Models;
 using Domain.Shared;
-using Infrastructure.Extensions;
-using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -29,21 +26,9 @@ public class ProductCategoryRepository : IProductCategoryRepository
         _context.Remove(entity);
     }
 
-    public async Task<IList<ProductCategory>> GetAllBySpecificationAsync(Specification<ProductCategory> specification)
+    public async Task<IList<ProductCategory>> GetAllAsync()
     {
-        var query = SpecificationEvaluator.ApplySpecification(_context.ProductCategories, specification);
-        return await query.ToListAsync();
-    }
-
-    public async Task<IList<ProductCategory>> GetAllAsync(PageInfo? pageInfo = null)
-    {
-        IQueryable<ProductCategory> query = _context.ProductCategories;
-        if (pageInfo is not null)
-        {
-            query = query.ApplyPagination(pageInfo);
-        }
-
-        return await query.ToListAsync();
+        return await _context.ProductCategories.ToListAsync();
     }
 
     public async Task<ProductCategory?> GetByIdAsync(long id)
@@ -53,16 +38,16 @@ public class ProductCategoryRepository : IProductCategoryRepository
 
     public async Task<bool> IsNameUniqueAsync(string name)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(name);
-        bool isTaken = await _context.ProductCategories
+        Ensure.ArgumentNotNullOrWhiteSpace(name, nameof(name));
+        var isTaken = await _context.ProductCategories
             .AnyAsync(c => c.Name == name);
         return !isTaken;
     }
     
     public async Task<bool> IsNameUniqueAsync(string name, long idToExclude)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(name);
-        bool isTaken = await _context.ProductCategories
+        Ensure.ArgumentNotNullOrWhiteSpace(name, nameof(name));
+        var isTaken = await _context.ProductCategories
             .AnyAsync(c => c.Name == name && c.Id != idToExclude);
         return !isTaken;
     }

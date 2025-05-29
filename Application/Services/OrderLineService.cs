@@ -1,12 +1,14 @@
-﻿using Application.Mapping.Extensions;
+﻿using Application.Extensions;
+using Application.Mapping.Extensions;
 using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
-using Domain.DTOs.Commands.OrderLines;
+using Domain.Abstractions.Validation;
+using Domain.DTOs.Requests.OrderLines;
 using Domain.DTOs.Responses.OrderLines;
 using Domain.Entities;
-using Domain.Exceptions;
-using Domain.Models;
 using Domain.Shared;
+using Domain.Specifications.OrderLines;
+using Domain.Specifications.Products;
 
 namespace Application.Services;
 
@@ -15,141 +17,118 @@ public class OrderLineService : IOrderLineService
     private readonly IOrderLineRepository _orderLineRepository;
     private readonly IProductRepository _productRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ICacheService _cacheService;
+    private readonly IOrderLineServiceValidator _validator;
 
-    public OrderLineService(IOrderLineRepository orderLineRepository, IProductRepository productRepository, IUnitOfWork unitOfWork, ICacheService cacheService)
+    public OrderLineService(
+        IOrderLineRepository orderLineRepository,
+        IProductRepository productRepository,
+        IUnitOfWork unitOfWork,
+        IOrderLineServiceValidator validator)
     {
         _orderLineRepository = orderLineRepository;
         _productRepository = productRepository;
         _unitOfWork = unitOfWork;
-        _cacheService = cacheService;
+        _validator = validator;
     }
 
-    public async Task<OrderLineResponse> AddAsync(AddOrderLineCommand command)
+    public async Task<OrderLineResponse> AddAsync(AddOrderLineRequest request)
     {
-        Ensure.ArgumentNotNull(command);
-        OrderLine entity = command.ToEntity();
-        Product? product = await _productRepository.GetByIdAsync(entity.ProductId);
-        product = Ensure.EntityFound(product, "The related product was not found");
+        await ValidateAddOrderLineRequestAsync(request);
+        var entity = request.ToEntity();
+        var product = await GetRelatedProductByIdAsync(entity.ProductId);
         entity.TotalLinePrice = product.Price * entity.Quantity;
-        
         await _orderLineRepository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
-        OrderLine createdEntity = await _orderLineRepository.GetByIdWithDetailsAsync(entity.Id) 
-                                  ?? throw new DbException("There was a database error");
-
-        await _cacheService.RemoveAsync($"allOrderLinesByOrderId{createdEntity.OrderId}");
-        await _cacheService.RemoveAsync("allOrderLines");
-        await _cacheService.RemoveByPrefixAsync("paginatedAllOrderLines");
-
-        return createdEntity.ToResponse();
+        entity.Product = product;
+        return entity.ToResponse();
     }
 
     public async Task DeleteAsync(long id)
     {
-        OrderLine entityToDelete = await _orderLineRepository.GetByIdAsync(id) 
-                                   ?? throw new DbException("There was a database error");
-
+        await ValidateDeleteOrderLineRequestAsync(id);
+        var entityToDelete = await _orderLineRepository.GetByIdAsync(id);
+        entityToDelete = Ensure.EntityExists(entityToDelete, "The order line to delete was not found");
         _orderLineRepository.Delete(entityToDelete);
         await _unitOfWork.SaveChangesAsync();
-
-        await _cacheService.RemoveAsync($"allOrderLinesByOrderId{entityToDelete.OrderId}");
-        await _cacheService.RemoveAsync($"orderLineByOrderId{entityToDelete.OrderId}-ProductId{entityToDelete.ProductId}");
-        await _cacheService.RemoveAsync("allOrderLines");
-        await _cacheService.RemoveAsync($"orderLineById{entityToDelete.Id}");
-        await _cacheService.RemoveByPrefixAsync("paginatedAllOrderLines");
     }
 
-    public async Task<IEnumerable<OrderLineResponse>> GetAllAsync(PageInfo? pageInfo = null)
+    public async Task<IList<OrderLineResponse>> GetAllAsync()
     {
-        string key = pageInfo is null ? "allOrderLines" :
-            $"paginatedAllOrderLines-page{pageInfo.Number}-size{pageInfo.Size}";
-
-        Specification<OrderLine> specification = new() { PageInfo = pageInfo };
-        specification.IncludeExpressions.AddRange([
-            new(ol => ol.Order),
-            new(ol => ol.Product!.Category)
-            ]);
-
-        IList<OrderLine> entities = await Caching.GetCollectionFromCache(_cacheService,
-            key, specification, _orderLineRepository.GetAllBySpecificationAsync);
-
-        return entities.Select(p => p.ToResponse());
+        var entities = await _orderLineRepository
+            .GetAllBySpecificationAsync(OrderLineSpecification.IncludeAll);
+        return entities.Select(p => p.ToResponse()).ToList();
     }
 
-    public async Task<IEnumerable<OrderLineResponse>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
+    public async Task<IList<OrderLineResponse>> GetAllByOrderIdAsync(long orderId)
     {
-        string key = pageInfo is null ? $"allOrderLinesByOrderId{orderId}" :
-            $"paginatedAllOrderLinesByOrderId{orderId}-page{pageInfo.Number}-size{pageInfo.Size}";
-
-        Specification<OrderLine> specification = new()
+        OrderLineSpecification specification = new()
         {
-            Criteria = ol => ol.OrderId == orderId,
-            PageInfo = pageInfo
+            IncludeProduct = true,
+            IncludeCategory = true,
+            OrderId = orderId,
         };
-        specification.IncludeExpressions.AddRange([
-            new(ol => ol.Order),
-            new(ol => ol.Product!.Category)
-            ]);
-
-        IList<OrderLine> entities = await Caching.GetCollectionFromCache(_cacheService,
-            key, specification, _orderLineRepository.GetAllBySpecificationAsync);
-
-        return entities.Select(p => p.ToResponse());
+        var entities = await _orderLineRepository.GetAllBySpecificationAsync(specification);
+        return entities.Select(p => p.ToResponse()).ToList();
     }
 
-    public async Task<OrderLineResponse?> GetByIdAsync(long id)
+    public async Task<OrderLineResponse> GetByIdAsync(long id)
     {
-        string key = $"orderLineById{id}";
-        Specification<OrderLine> specification = new() { Criteria = ol => ol.Id == id };
-        specification.IncludeExpressions.AddRange([
-            new(ol => ol.Order),
-            new(ol => ol.Product!.Category)
-            ]);
-
-        var entity = await Caching.GetEntityFromCache(_cacheService,
-            key, specification, _orderLineRepository.GetAllBySpecificationAsync);
-
-        return entity?.ToResponse();
+        var entity = await _orderLineRepository.GetByIdAsync(id);
+        entity = Ensure.EntityExists(entity, "The order line was not found");
+        entity.Product = await GetRelatedProductByIdAsync(entity.ProductId);
+        return entity.ToResponse();
     }
 
-    public async Task<OrderLineResponse?> GetByOrderAndProductIdsAsync(long orderId, long productId)
+    public async Task<OrderLineResponse> GetByOrderAndProductIdsAsync(long orderId, long productId)
     {
-        string key = $"orderLineByOrderId{orderId}-ProductId{productId}";
-        Specification<OrderLine> specification = new()
-        {
-            Criteria = ol => ol.OrderId == orderId && ol.ProductId == productId
-        };
-        specification.IncludeExpressions.AddRange([
-            new(ol => ol.Order),
-            new(ol => ol.Product!.Category)
-            ]);
-
-        var entity = await Caching.GetEntityFromCache(_cacheService,
-            key, specification, _orderLineRepository.GetAllBySpecificationAsync);
-
-        return entity?.ToResponse();
+        var entity = await _orderLineRepository.GetByOrderAndProductIdsAsync(orderId, productId);
+        entity = Ensure.EntityExists(entity, "The order line was not found");
+        entity.Product = await GetRelatedProductByIdAsync(entity.ProductId);
+        return entity.ToResponse();
     }
 
-    public async Task<OrderLineResponse> UpdateAsync(UpdateOrderLineCommand command)
+    public async Task<OrderLineResponse> UpdateAsync(UpdateOrderLineRequest request)
     {
-        Ensure.ArgumentNotNull(command);
-        OrderLine entity = command.ToEntity();
-        Product? product = await _productRepository.GetByIdAsync(entity.ProductId);
-        product = Ensure.EntityFound(product, "The related product was not found");
+        await ValidateUpdateOrderLineRequestAsync(request);
+        var entity = request.ToEntity();
+        var product = await GetRelatedProductByIdAsync(entity.ProductId);
         entity.TotalLinePrice = product.Price * entity.Quantity;
-        
         _orderLineRepository.Update(entity);
         await _unitOfWork.SaveChangesAsync();
-        
-        OrderLine updatedEntity = await _orderLineRepository.GetByIdWithDetailsAsync(entity.Id) 
-                                  ?? throw new DbException("There was a database error");
-        await _cacheService.RemoveByPrefixAsync("allOrderLinesByOrderId");
-        await _cacheService.RemoveByPrefixAsync("orderLineByOrderId");
-        await _cacheService.RemoveAsync("allOrderLines");
-        await _cacheService.RemoveAsync($"orderLineById{entity.Id}");
-        await _cacheService.RemoveByPrefixAsync("paginatedAllOrderLines");
-        
-        return updatedEntity.ToResponse();
+        entity.Product = product;
+        return entity.ToResponse();
+    }
+    
+    private async Task ValidateAddOrderLineRequestAsync(AddOrderLineRequest request)
+    {
+        Ensure.ArgumentNotNull(request);
+        var validationResult = await _validator.ValidateAddOrderLineAsync(request);
+        validationResult.ThrowIfValidationFailed();
+    }
+    
+    private async Task ValidateDeleteOrderLineRequestAsync(long id)
+    {
+        DeleteOrderLineRequest request = new(id);
+        var validationResult = await _validator.ValidateDeleteOrderLineAsync(request);
+        validationResult.ThrowIfValidationFailed();
+    }
+    
+    private async Task ValidateUpdateOrderLineRequestAsync(UpdateOrderLineRequest request)
+    {
+        Ensure.ArgumentNotNull(request);
+        var validationResult = await _validator.ValidateUpdateOrderLineAsync(request);
+        validationResult.ThrowIfValidationFailed();
+    }
+    
+    private async Task<Product> GetRelatedProductByIdAsync(long id)
+    {
+        ProductSpecification specification = new()
+        {
+            IncludeCategory = true,
+            Id = id
+        };
+        var product = await _productRepository.GetBySpecificationAsync(specification);
+        product = Ensure.EntityExists(product, "The related product was not found");
+        return product;
     }
 }

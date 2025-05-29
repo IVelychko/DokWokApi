@@ -1,9 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
-using Domain.Models;
 using Domain.Shared;
-using Infrastructure.Extensions;
-using Infrastructure.Specification;
+using Domain.Specifications.Products;
+using Infrastructure.Specifications.Products;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -29,83 +28,49 @@ public class ProductRepository : IProductRepository
         _context.Remove(entity);
     }
 
-    public async Task<IList<Product>> GetAllBySpecificationAsync(Specification<Product> specification)
+    public async Task<IList<Product>> GetAllBySpecificationAsync(ProductSpecification specification)
     {
-        var query = SpecificationEvaluator.ApplySpecification(_context.Products, specification);
+        Ensure.ArgumentNotNull(specification);
+        var query = ProductSpecificationEvaluator.ApplySpecification(_context.Products, specification);
         return await query.ToListAsync();
     }
 
-    public async Task<IList<Product>> GetAllAsync(PageInfo? pageInfo = null)
+    public async Task<IList<Product>> GetAllAsync()
     {
-        IQueryable<Product> query = _context.Products;
-        if (pageInfo is not null)
-        {
-            query = query.ApplyPagination(pageInfo);
-        }
-
-        return await query.ToListAsync();
+        return await _context.Products.ToListAsync();
     }
 
-    public async Task<IList<Product>> GetAllByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
+    public async Task<IList<Product>> GetAllByCategoryIdAsync(long categoryId)
     {
-        IQueryable<Product> query = _context.Products.Where(p => p.CategoryId == categoryId);
-        if (pageInfo is not null)
-        {
-            query = query.ApplyPagination(pageInfo);
-        }
-
-        return await query.ToListAsync();
-    }
-
-    public async Task<IList<Product>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
-    {
-        IQueryable<Product> query = _context.Products.Include(p => p.Category);
-        if (pageInfo is not null)
-        {
-            query = query.ApplyPagination(pageInfo);
-        }
-
-        return await query.ToListAsync();
-    }
-
-    public async Task<IList<Product>> GetAllWithDetailsByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
-    {
-        IQueryable<Product> query = _context.Products
-            .Include(p => p.Category)
-            .Where(p => p.CategoryId == categoryId);
-
-        if (pageInfo is not null)
-        {
-            query = query.ApplyPagination(pageInfo);
-        }
-
-        return await query.ToListAsync();
+        return await _context.Products
+            .Where(p => p.CategoryId == categoryId)
+            .ToListAsync();
     }
 
     public async Task<Product?> GetByIdAsync(long id)
     {
         return await _context.FindAsync<Product>(id);
     }
-
-    public async Task<Product?> GetByIdWithDetailsAsync(long id)
+    
+    public async Task<Product?> GetBySpecificationAsync(ProductSpecification specification)
     {
-        return await _context.Products
-            .Include(p => p.Category)
-            .FirstOrDefaultAsync(p => p.Id == id);
+        Ensure.ArgumentNotNull(specification);
+        var query = ProductSpecificationEvaluator.ApplySpecification(_context.Products, specification);
+        return await query.FirstOrDefaultAsync();
     }
 
     public async Task<bool> IsNameUniqueAsync(string name)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(name);
-        bool isTaken = await _context.Products
+        Ensure.ArgumentNotNullOrWhiteSpace(name, nameof(name));
+        var isTaken = await _context.Products
             .AnyAsync(c => c.Name == name);
         return !isTaken;
     }
     
     public async Task<bool> IsNameUniqueAsync(string name, long idToExclude)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(name);
-        bool isTaken = await _context.Products
+        Ensure.ArgumentNotNullOrWhiteSpace(name, nameof(name));
+        var isTaken = await _context.Products
             .AnyAsync(c => c.Name == name && c.Id != idToExclude);
         return !isTaken;
     }

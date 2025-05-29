@@ -1,119 +1,122 @@
-﻿using Application.Mapping.Extensions;
+﻿using Application.Extensions;
+using Application.Mapping.Extensions;
 using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
-using Domain.DTOs.Commands.Products;
+using Domain.Abstractions.Validation;
+using Domain.DTOs.Requests.Products;
 using Domain.DTOs.Responses.Products;
 using Domain.Entities;
-using Domain.Exceptions;
-using Domain.Models;
 using Domain.Shared;
+using Domain.Specifications.Products;
 
 namespace Application.Services;
 
 public class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
+    private readonly IProductCategoryRepository _productCategoryRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ICacheService _cacheService;
+    private readonly IProductServiceValidator _validator;
 
-    public ProductService(IProductRepository productRepository, ICacheService cacheService, IUnitOfWork unitOfWork)
+    public ProductService(
+        IProductRepository productRepository,
+        IProductCategoryRepository productCategoryRepository,
+        IUnitOfWork unitOfWork,
+        IProductServiceValidator validator)
     {
         _productRepository = productRepository;
-        _cacheService = cacheService;
+        _productCategoryRepository = productCategoryRepository;
         _unitOfWork = unitOfWork;
+        _validator = validator;
     }
 
-    public async Task<ProductResponse> AddAsync(AddProductCommand command)
+    public async Task<ProductResponse> AddAsync(AddProductRequest request)
     {
-        Ensure.ArgumentNotNull(command);
-        Product entity = command.ToEntity();
+        await ValidateAddProductRequestAsync(request);
+        var entity = request.ToEntity();
         await _productRepository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
-        Product createdEntity = await _productRepository.GetByIdWithDetailsAsync(entity.Id) 
-                                ?? throw new DbException("There was a database error");
-
-        await _cacheService.RemoveAsync("allProducts");
-        await _cacheService.RemoveAsync($"allProductsByCategoryId{createdEntity.CategoryId}");
-        await _cacheService.RemoveByPrefixAsync("paginatedAllProducts");
-
-        return createdEntity.ToResponse();
+        var category = await GetCategoryByIdAsync(entity.CategoryId);
+        entity.Category = category;
+        return entity.ToResponse();
     }
 
     public async Task DeleteAsync(long id)
     {
-        Product? entityToDelete = await _productRepository.GetByIdAsync(id);
-        entityToDelete = Ensure.EntityFound(entityToDelete, "The product was not found");
+        await ValidateDeleteProductRequestAsync(id);
+        var entityToDelete = await _productRepository.GetByIdAsync(id);
+        entityToDelete = Ensure.EntityExists(entityToDelete, "The product was not found");
         _productRepository.Delete(entityToDelete);
         await _unitOfWork.SaveChangesAsync();
-
-        await _cacheService.RemoveAsync("allProducts");
-        await _cacheService.RemoveAsync($"allProductsByCategoryId{entityToDelete.CategoryId}");
-        await _cacheService.RemoveAsync($"productById{id}");
-        await _cacheService.RemoveByPrefixAsync("paginatedAllProducts");
     }
 
-    public async Task<IEnumerable<ProductResponse>> GetAllAsync(PageInfo? pageInfo = null)
+    public async Task<IList<ProductResponse>> GetAllAsync()
     {
-        string key = pageInfo is null ? "allProducts" :
-            $"paginatedAllProducts-page{pageInfo.Number}-size{pageInfo.Size}";
-
-        Specification<Product> specification = new() { PageInfo = pageInfo };
-        specification.IncludeExpressions.Add(new(p => p.Category));
-        var entities = await Caching.GetCollectionFromCache(_cacheService,
-            key, specification, _productRepository.GetAllBySpecificationAsync);
-
-        return entities.Select(p => p.ToResponse());
+        var entities = await _productRepository.GetAllBySpecificationAsync(ProductSpecification.IncludeAll);
+        return entities.Select(p => p.ToResponse()).ToList();
     }
 
-    public async Task<IEnumerable<ProductResponse>> GetAllByCategoryIdAsync(long categoryId, PageInfo? pageInfo = null)
+    public async Task<IList<ProductResponse>> GetAllByCategoryIdAsync(long categoryId)
     {
-        string key = pageInfo is null ? $"allProductsByCategoryId{categoryId}" :
-            $"paginatedAllProductsByCategoryId{categoryId}-page{pageInfo.Number}-size{pageInfo.Size}";
-
-        Specification<Product> specification = new()
+        ProductSpecification specification = new()
         {
-            Criteria = p => p.CategoryId == categoryId,
-            PageInfo = pageInfo
+            IncludeCategory = true,
+            CategoryId = categoryId
         };
-        specification.IncludeExpressions.Add(new(p => p.Category));
-        var entities = await Caching.GetCollectionFromCache(_cacheService,
-            key, specification, _productRepository.GetAllBySpecificationAsync);
-
-        return entities.Select(p => p.ToResponse());
+        var entities = await _productRepository.GetAllBySpecificationAsync(specification);
+        return entities.Select(p => p.ToResponse()).ToList();
     }
 
-    public async Task<ProductResponse?> GetByIdAsync(long id)
+    public async Task<ProductResponse> GetByIdAsync(long id)
     {
-        string key = $"productById{id}";
-        Specification<Product> specification = new() { Criteria = p => p.Id == id };
-        specification.IncludeExpressions.Add(new(p => p.Category));
-
-        var entity = await Caching.GetEntityFromCache(_cacheService,
-            key, specification, _productRepository.GetAllBySpecificationAsync);
-
-        return entity?.ToResponse();
+        var entity = await _productRepository.GetByIdAsync(id);
+        entity = Ensure.EntityExists(entity, "The product was not found");
+        var category = await GetCategoryByIdAsync(entity.CategoryId);
+        entity.Category = category;
+        return entity.ToResponse();
     }
 
-    public async Task<ProductResponse> UpdateAsync(UpdateProductCommand command)
+    public async Task<ProductResponse> UpdateAsync(UpdateProductRequest request)
     {
-        Ensure.ArgumentNotNull(command);
-        Product entity = command.ToEntity();
+        await ValidateUpdateProductRequestAsync(request);
+        var entity = request.ToEntity();
         _productRepository.Update(entity);
         await _unitOfWork.SaveChangesAsync();
-        
-        Product updatedEntity = await _productRepository.GetByIdWithDetailsAsync(entity.Id) 
-                                ?? throw new DbException("There was a database error");
-        await _cacheService.RemoveByPrefixAsync("allProductsByCategoryId");
-        await _cacheService.RemoveAsync("allProducts");
-        await _cacheService.RemoveAsync($"productById{entity.Id}");
-        await _cacheService.RemoveByPrefixAsync("paginatedAllProducts");
-
-        return updatedEntity.ToResponse();
+        var category = await GetCategoryByIdAsync(entity.CategoryId);
+        entity.Category = category;
+        return entity.ToResponse();
     }
 
     public async Task<bool> IsNameUniqueAsync(string name)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(name);
+        Ensure.ArgumentNotNullOrWhiteSpace(name, nameof(name));
         return await _productRepository.IsNameUniqueAsync(name);
+    }
+    
+    private async Task ValidateDeleteProductRequestAsync(long id)
+    {
+        DeleteProductRequest request = new(id);
+        var validationResult = await _validator.ValidateDeleteProductAsync(request);
+        validationResult.ThrowIfValidationFailed();
+    }
+    
+    private async Task ValidateUpdateProductRequestAsync(UpdateProductRequest request)
+    {
+        Ensure.ArgumentNotNull(request);
+        var validationResult = await _validator.ValidateUpdateProductAsync(request);
+        validationResult.ThrowIfValidationFailed();
+    }
+    
+    private async Task ValidateAddProductRequestAsync(AddProductRequest request)
+    {
+        Ensure.ArgumentNotNull(request);
+        var validationResult = await _validator.ValidateAddProductAsync(request);
+        validationResult.ThrowIfValidationFailed();
+    }
+    
+    private async Task<ProductCategory> GetCategoryByIdAsync(long id)
+    {
+        var category = await _productCategoryRepository.GetByIdAsync(id);
+        return Ensure.EntityExists(category, "The related category was not found");
     }
 }

@@ -14,7 +14,7 @@ public sealed class PasswordHasher : IPasswordHasher
 
     public string Hash(string password)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(password);
+        Ensure.ArgumentNotNullOrWhiteSpace(password, nameof(password));
         byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
         byte[] hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, Algorithm, HashSize);
 
@@ -23,8 +23,8 @@ public sealed class PasswordHasher : IPasswordHasher
 
     public bool Verify(string password, string passwordHash)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(password);
-        Ensure.ArgumentNotNullOrWhiteSpace(passwordHash);
+        Ensure.ArgumentNotNullOrWhiteSpace(password, nameof(password));
+        Ensure.ArgumentNotNullOrWhiteSpace(passwordHash, nameof(passwordHash));
         string[] parts = passwordHash.Split('-');
         byte[] hash = Convert.FromHexString(parts[0]);
         byte[] salt = Convert.FromHexString(parts[1]);

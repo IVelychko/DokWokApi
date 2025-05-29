@@ -1,6 +1,6 @@
 ﻿using Domain.Abstractions.Services;
+using Domain.Constants;
 using Domain.Entities;
-using Domain.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure;

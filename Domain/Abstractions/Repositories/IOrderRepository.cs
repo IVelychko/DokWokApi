@@ -1,17 +1,15 @@
 ﻿using Domain.Entities;
-using Domain.Models;
+using Domain.Specifications.Orders;
 
 namespace Domain.Abstractions.Repositories;
 
 public interface IOrderRepository : IRepository<Order>
 {
-    Task<IList<Order>> GetAllWithDetailsAsync(PageInfo? pageInfo = null);
+    Task<IList<Order>> GetAllBySpecificationAsync(OrderSpecification specification);
+    
+    Task<IList<Order>> GetAllByUserIdAsync(long userId);
 
-    Task<IList<Order>> GetAllByUserIdAsync(long userId, PageInfo? pageInfo = null);
-
-    Task<IList<Order>> GetAllWithDetailsByUserIdAsync(long userId, PageInfo? pageInfo = null);
-
-    Task<Order?> GetByIdWithDetailsAsync(long id);
+    Task<Order?> GetBySpecificationAsync(OrderSpecification specification);
     
     Task<bool> OrderExistsAsync(long id);
 }

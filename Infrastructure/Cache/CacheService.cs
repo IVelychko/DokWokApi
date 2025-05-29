@@ -17,7 +17,7 @@ public class CacheService : ICacheService
 
     public async Task<TValue?> GetAsync<TValue>(string key) where TValue : class
     {
-        string? serializedValue = await _distributedCache.GetStringAsync(key);
+        var serializedValue = await _distributedCache.GetStringAsync(key);
         return serializedValue is not null ? JsonConvert.DeserializeObject<TValue>(serializedValue) : null;
     }
 
@@ -29,7 +29,7 @@ public class CacheService : ICacheService
 
     public async Task RemoveByPrefixAsync(string prefixKey)
     {
-        IEnumerable<Task> tasks = CacheKeys.Keys
+        var tasks = CacheKeys.Keys
             .Where(x => x.StartsWith(prefixKey))
             .Select(RemoveAsync);
 

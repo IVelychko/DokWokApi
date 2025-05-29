@@ -1,12 +1,17 @@
-﻿using Domain.Entities;
-using FluentValidation.Results;
-using System.IdentityModel.Tokens.Jwt;
+﻿using FluentValidation.Results;
+using Domain.DTOs.Requests.Users;
 
 namespace Domain.Abstractions.Validation;
 
 public interface IUserServiceValidator
 {
-    ValidationResult ValidateExpiredJwt(JwtSecurityToken jwt, bool isAlgorithmValid);
-
-    ValidationResult ValidateRefreshToken(RefreshToken model, string jwtId);
+    Task<ValidationResult> ValidateAddUserAsync(AddUserRequest request);
+    
+    Task<ValidationResult> ValidateDeleteUserAsync(DeleteUserRequest request);
+    
+    Task<ValidationResult> ValidateUpdatePasswordAsync(UpdatePasswordRequest request);
+    
+    Task<ValidationResult> ValidateUpdatePasswordAsAdminAsync(UpdatePasswordAsAdminRequest request);
+    
+    Task<ValidationResult> ValidateUpdateUserAsync(UpdateUserRequest request);
 }

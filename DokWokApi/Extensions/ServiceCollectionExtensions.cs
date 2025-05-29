@@ -5,10 +5,10 @@ using Domain;
 using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Abstractions.Validation;
+using Domain.Constants;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Shared;
-using Domain.Validation;
 using FluentValidation;
 using Infrastructure;
 using Infrastructure.Cache;
@@ -16,6 +16,7 @@ using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
+using Application.Validators.Users;
 
 namespace DokWokApi.Extensions;
 

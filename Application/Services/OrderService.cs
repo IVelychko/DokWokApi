@@ -1,13 +1,13 @@
 ﻿using Application.Mapping.Extensions;
 using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
-using Domain.DTOs.Commands.Orders;
 using Domain.DTOs.Responses.Orders;
 using Domain.Entities;
-using Domain.Exceptions;
-using Domain.Models;
 using Domain.Shared;
-using System.Linq.Expressions;
+using Application.Extensions;
+using Domain.Abstractions.Validation;
+using Domain.DTOs.Requests.Orders;
+using Domain.Specifications.Orders;
 
 namespace Application.Services;
 
@@ -16,163 +16,134 @@ public class OrderService : IOrderService
     private readonly IOrderRepository _orderRepository;
     private readonly IProductRepository _productRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ICacheService _cacheService;
+    private readonly IOrderServiceValidator _validator;
 
-    public OrderService(IOrderRepository orderRepository, IProductRepository productRepository, IUnitOfWork unitOfWork, ICacheService cacheService)
+    public OrderService(
+        IOrderRepository orderRepository,
+        IProductRepository productRepository,
+        IUnitOfWork unitOfWork,
+        IOrderServiceValidator validator)
     {
         _orderRepository = orderRepository;
         _productRepository = productRepository;
         _unitOfWork = unitOfWork;
-        _cacheService = cacheService;
+        _validator = validator;
     }
 
-    public async Task<OrderResponse> AddAsync(AddDeliveryOrderCommand command)
+    public async Task<OrderResponse> AddAsync(AddDeliveryOrderRequest request)
     {
-        Ensure.ArgumentNotNull(command);
-        OrderResponse response = await AddAsync(command.ToEntity());
+        await ValidateAddDeliveryOrderRequestAsync(request);
+        var response = await AddAsync(request.ToEntity());
         return response;
     }
     
-    public async Task<OrderResponse> AddAsync(AddTakeawayOrderCommand command)
+    public async Task<OrderResponse> AddAsync(AddTakeawayOrderRequest request)
     {
-        Ensure.ArgumentNotNull(command);
-        OrderResponse response = await AddAsync(command.ToEntity());
+        await ValidateAddTakeawayOrderRequestAsync(request);
+        var response = await AddAsync(request.ToEntity());
         return response;
     }
 
     public async Task DeleteAsync(long id)
     {
-        Order? entityToDelete = await _orderRepository.GetByIdAsync(id);
-        entityToDelete = Ensure.EntityFound(entityToDelete, "The order was not found");
+        await ValidateDeleteOrderRequestAsync(id);
+        var entityToDelete = await _orderRepository.GetByIdAsync(id);
+        entityToDelete = Ensure.EntityExists(entityToDelete, "The order was not found");
         _orderRepository.Delete(entityToDelete);
         await _unitOfWork.SaveChangesAsync();
-
-        await _cacheService.RemoveAsync("allOrders");
-        await _cacheService.RemoveByPrefixAsync("paginatedAllOrders");
-        await _cacheService.RemoveAsync($"orderById{id}");
-        if (entityToDelete.UserId.HasValue)
-        {
-            await _cacheService.RemoveAsync($"allOrdersByUserId{entityToDelete.UserId.Value}");
-        }
     }
 
-    public async Task<IEnumerable<OrderResponse>> GetAllAsync(PageInfo? pageInfo = null)
+    public async Task<IList<OrderResponse>> GetAllAsync()
     {
-        string key = pageInfo is null ? "allOrders" :
-            $"paginatedAllOrders-page{pageInfo.Number}-size{pageInfo.Size}";
-
-        Specification<Order> specification = new() { PageInfo = pageInfo };
-        IncludeExpression<Order> includeOrderLine = new(o => o.OrderLines);
-        Expression<Func<object?, object?>> thenIncludeProduct = ol => (ol as OrderLine)!.Product;
-        Expression<Func<object?, object?>> thenIncludeProductCategory = p => (p as Product)!.Category;
-        includeOrderLine.ThenIncludes.AddRange([thenIncludeProduct, thenIncludeProductCategory]);
-        specification.IncludeExpressions.AddRange([
-            new(o => o.User),
-            new(o => o.Shop),
-            includeOrderLine
-            ]);
-        IList<Order> entities = await Caching.GetCollectionFromCache(_cacheService,
-            key, specification, _orderRepository.GetAllBySpecificationAsync);
-
-        return entities.Select(p => p.ToResponse());
+        var entities = await _orderRepository
+            .GetAllBySpecificationAsync(OrderSpecification.IncludeAll);
+        return entities.Select(p => p.ToResponse()).ToList();
     }
 
-    public async Task<IEnumerable<OrderResponse>> GetAllByUserIdAsync(long userId, PageInfo? pageInfo = null)
+    public async Task<IList<OrderResponse>> GetAllByUserIdAsync(long userId)
     {
-        string key = pageInfo is null ? $"allOrdersByUserId{userId}" :
-            $"paginatedAllOrdersByUserId{userId}-page{pageInfo.Number}-size{pageInfo.Size}";
-
-        Specification<Order> specification = new()
+        OrderSpecification specification = new()
         {
-            Criteria = o => o.UserId == userId,
-            PageInfo = pageInfo
+            UserId = userId,
+            IncludeOrderLines = true,
+            IncludeProduct = true,
+            IncludeCategory = true
         };
-        IncludeExpression<Order> includeOrderLine = new(o => o.OrderLines);
-        Expression<Func<object?, object?>> thenIncludeProduct = ol => (ol as OrderLine)!.Product;
-        Expression<Func<object?, object?>> thenIncludeProductCategory = p => (p as Product)!.Category;
-        includeOrderLine.ThenIncludes.AddRange([thenIncludeProduct, thenIncludeProductCategory]);
-        specification.IncludeExpressions.AddRange([
-            new(o => o.User),
-            new(o => o.Shop),
-            includeOrderLine
-            ]);
-
-        var entities = await Caching.GetCollectionFromCache(_cacheService,
-            key, specification, _orderRepository.GetAllBySpecificationAsync);
-
-        return entities.Select(p => p.ToResponse());
+        var entities = await _orderRepository.GetAllBySpecificationAsync(specification);
+        return entities.Select(p => p.ToResponse()).ToList();
     }
 
-    public async Task<OrderResponse?> GetByIdAsync(long id)
+    public async Task<OrderResponse> GetByIdAsync(long id)
     {
-        string key = $"orderById{id}";
-        Specification<Order> specification = new() { Criteria = o => o.Id == id };
-        IncludeExpression<Order> includeOrderLine = new(o => o.OrderLines);
-        Expression<Func<object?, object?>> thenIncludeProduct = ol => (ol as OrderLine)!.Product;
-        Expression<Func<object?, object?>> thenIncludeProductCategory = p => (p as Product)!.Category;
-        includeOrderLine.ThenIncludes.AddRange([thenIncludeProduct, thenIncludeProductCategory]);
-        specification.IncludeExpressions.AddRange([
-            new(o => o.User),
-            new(o => o.Shop),
-            includeOrderLine
-            ]);
-
-        Order? entity = await Caching.GetEntityFromCache(_cacheService,
-            key, specification, _orderRepository.GetAllBySpecificationAsync);
-
-        return entity?.ToResponse();
+        OrderSpecification specification = new()
+        {
+            Id = id,
+            IncludeOrderLines = true,
+            IncludeProduct = true,
+            IncludeCategory = true
+        };
+        var entity = await _orderRepository.GetBySpecificationAsync(specification);
+        entity = Ensure.EntityExists(entity, "The order was not found");
+        return entity.ToResponse();
     }
 
-    public async Task<OrderResponse> UpdateAsync(UpdateOrderCommand command)
+    public async Task<OrderResponse> UpdateAsync(UpdateOrderRequest request)
     {
-        Ensure.ArgumentNotNull(command);
-        Order entity = command.ToEntity();
+        await ValidateUpdateOrderRequestAsync(request);
+        var entity = request.ToEntity();
         _orderRepository.Update(entity);
         await _unitOfWork.SaveChangesAsync();
-        
-        Order updatedEntity = await _orderRepository.GetByIdWithDetailsAsync(entity.Id) 
-                              ?? throw new DbException("There was a database error");
-        await _cacheService.RemoveAsync("allOrders");
-        await _cacheService.RemoveAsync($"orderById{entity.Id}");
-        await _cacheService.RemoveByPrefixAsync("paginatedAllOrders");
-        await _cacheService.RemoveByPrefixAsync("allOrdersByUserId");
-        
+        var updatedEntity = await GetOrderByIdWithDetailsAsync(
+            entity.Id, "The updated order was not found");
         return updatedEntity.ToResponse();
     }
     
     private async Task<OrderResponse> AddAsync(Order entity)
     {
-        Ensure.ArgumentNotNull(entity);
-        if (entity.OrderLines.Count > 0)
-        {
-            await SetTotalLinePricesAsync(entity.OrderLines);
-        }
-
+        await SetTotalLinePricesAsync(entity.OrderLines);
         entity.CreationDate = DateTime.UtcNow;
         entity.Status = OrderStatuses.BeingProcessed;
         SetTotalOrderPrice(entity);
-        
         await _orderRepository.AddAsync(entity);
         await _unitOfWork.SaveChangesAsync();
-        Order createdEntity = await _orderRepository.GetByIdWithDetailsAsync(entity.Id) 
-                              ?? throw new DbException("There was a database error");
-
-        await _cacheService.RemoveAsync("allOrders");
-        await _cacheService.RemoveByPrefixAsync("paginatedAllOrders");
-        if (createdEntity.UserId.HasValue)
-        {
-            await _cacheService.RemoveAsync($"allOrdersByUserId{createdEntity.UserId.Value}");
-        }
-
+        var createdEntity = await GetOrderByIdWithDetailsAsync(
+            entity.Id, "The created order was not found");
         return createdEntity.ToResponse();
     }
-
-    private async Task SetTotalLinePricesAsync(IEnumerable<OrderLine> orderLines)
+    
+    private async Task ValidateAddDeliveryOrderRequestAsync(AddDeliveryOrderRequest request)
     {
-        foreach (OrderLine line in orderLines)
+        Ensure.ArgumentNotNull(request);
+        var validationResult = await _validator.ValidateAddDeliveryOrderAsync(request);
+        validationResult.ThrowIfValidationFailed();
+    }
+    
+    private async Task ValidateAddTakeawayOrderRequestAsync(AddTakeawayOrderRequest request)
+    {
+        Ensure.ArgumentNotNull(request);
+        var validationResult = await _validator.ValidateAddTakeawayOrderAsync(request);
+        validationResult.ThrowIfValidationFailed();
+    }
+    
+    private async Task ValidateDeleteOrderRequestAsync(long id)
+    {
+        DeleteOrderRequest request = new(id);
+        var validationResult = await _validator.ValidateDeleteOrderAsync(request);
+        validationResult.ThrowIfValidationFailed();
+    }
+    
+    private async Task ValidateUpdateOrderRequestAsync(UpdateOrderRequest request)
+    {
+        Ensure.ArgumentNotNull(request);
+        var validationResult = await _validator.ValidateUpdateOrderAsync(request);
+        validationResult.ThrowIfValidationFailed();
+    }
+
+    private async Task SetTotalLinePricesAsync(ICollection<OrderLine> orderLines)
+    {
+        foreach (var line in orderLines)
         {
-            Product? product = await _productRepository.GetByIdAsync(line.ProductId);
-            product = Ensure.EntityFound(product, "The related product was not found");
+            var product = await GetRelatedProductByIdAsync(line.ProductId);
             if (line.TotalLinePrice == 0)
             {
                 line.TotalLinePrice = product.Price * line.Quantity;
@@ -186,5 +157,25 @@ public class OrderService : IOrderService
         {
             entity.TotalOrderPrice = entity.OrderLines.Sum(ol => ol.TotalLinePrice);
         }
+    }
+    
+    private async Task<Product> GetRelatedProductByIdAsync(long id)
+    {
+        var product = await _productRepository.GetByIdAsync(id);
+        product = Ensure.EntityExists(product, "The related product was not found");
+        return product;
+    }
+    
+    private async Task<Order> GetOrderByIdWithDetailsAsync(long id, string errorMessage)
+    {
+        OrderSpecification specification = new()
+        {
+            Id = id,
+            IncludeOrderLines = true,
+            IncludeProduct = true,
+            IncludeCategory = true
+        };
+        var createdEntity = await _orderRepository.GetBySpecificationAsync(specification);
+        return Ensure.EntityExists(createdEntity, errorMessage);
     }
 }

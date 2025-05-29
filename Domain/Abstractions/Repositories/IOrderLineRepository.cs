@@ -1,21 +1,17 @@
 ﻿using Domain.Entities;
-using Domain.Models;
+using Domain.Specifications.OrderLines;
 
 namespace Domain.Abstractions.Repositories;
 
 public interface IOrderLineRepository : IRepository<OrderLine>
 {
-    Task<IList<OrderLine>> GetAllWithDetailsAsync(PageInfo? pageInfo = null);
+    Task<IList<OrderLine>> GetAllBySpecificationAsync(OrderLineSpecification specification);
+    
+    Task<IList<OrderLine>> GetAllByOrderIdAsync(long orderId);
 
-    Task<IList<OrderLine>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null);
-
-    Task<IList<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId, PageInfo? pageInfo = null);
-
-    Task<OrderLine?> GetByIdWithDetailsAsync(long id);
+    Task<OrderLine?> GetBySpecificationAsync(OrderLineSpecification specification);
 
     Task<OrderLine?> GetByOrderAndProductIdsAsync(long orderId, long productId);
-
-    Task<OrderLine?> GetByOrderAndProductIdsWithDetailsAsync(long orderId, long productId);
     
     Task<bool> AreOrderAndProductIdsUniqueAsync(long orderId, long productId, long orderLineIdToExclude);
 

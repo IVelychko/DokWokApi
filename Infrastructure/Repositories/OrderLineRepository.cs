@@ -1,9 +1,8 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
-using Domain.Models;
 using Domain.Shared;
-using Infrastructure.Extensions;
-using Infrastructure.Specification;
+using Domain.Specifications.OrderLines;
+using Infrastructure.Specifications.OrderLines;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -29,77 +28,37 @@ public class OrderLineRepository : IOrderLineRepository
         _context.Remove(entity);
     }
 
-    public async Task<IList<OrderLine>> GetAllBySpecificationAsync(Specification<OrderLine> specification)
+    public async Task<IList<OrderLine>> GetAllAsync()
     {
-        var query = SpecificationEvaluator.ApplySpecification(_context.OrderLines, specification);
+        return await _context.OrderLines.ToListAsync();
+    }
+    
+    public async Task<IList<OrderLine>> GetAllBySpecificationAsync(OrderLineSpecification specification)
+    {
+        Ensure.ArgumentNotNull(specification);
+        var query = OrderLineSpecificationEvaluator
+            .ApplySpecification(_context.OrderLines, specification);
         return await query.ToListAsync();
     }
 
-    public async Task<IList<OrderLine>> GetAllAsync(PageInfo? pageInfo = null)
+    public async Task<IList<OrderLine>> GetAllByOrderIdAsync(long orderId)
     {
-        IQueryable<OrderLine> query = _context.OrderLines;
-        if (pageInfo is not null)
-        {
-            query = query.ApplyPagination(pageInfo);
-        }
-
-        return await query.ToListAsync();
-    }
-
-    public async Task<IList<OrderLine>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
-    {
-        IQueryable<OrderLine> query = _context.OrderLines.Where(ol => ol.OrderId == orderId);
-        if (pageInfo is not null)
-        {
-            query = query.ApplyPagination(pageInfo);
-        }
-
-        return await query.ToListAsync();
-    }
-
-    public async Task<IList<OrderLine>> GetAllWithDetailsAsync(PageInfo? pageInfo = null)
-    {
-        IQueryable<OrderLine> query = _context.OrderLines
-            .Include(ol => ol.Order)
-            .Include(ol => ol.Product)
-                .ThenInclude(p => p!.Category);
-
-        if (pageInfo is not null)
-        {
-            query = query.ApplyPagination(pageInfo);
-        }
-
-        return await query.ToListAsync();
-    }
-
-    public async Task<IList<OrderLine>> GetAllWithDetailsByOrderIdAsync(long orderId, PageInfo? pageInfo = null)
-    {
-        IQueryable<OrderLine> query = _context.OrderLines
-            .Include(ol => ol.Order)
-            .Include(ol => ol.Product)
-                .ThenInclude(p => p!.Category)
-            .Where(ol => ol.OrderId == orderId);
-
-        if (pageInfo is not null)
-        {
-            query = query.ApplyPagination(pageInfo);
-        }
-
-        return await query.ToListAsync();
+        return await _context.OrderLines
+            .Where(ol => ol.OrderId == orderId)
+            .ToListAsync();
     }
 
     public async Task<OrderLine?> GetByIdAsync(long id)
     {
         return await _context.FindAsync<OrderLine>(id);
     }
-
-    public async Task<OrderLine?> GetByIdWithDetailsAsync(long id)
+    
+    public async Task<OrderLine?> GetBySpecificationAsync(OrderLineSpecification specification)
     {
-        return await _context.OrderLines
-            .Include(ol => ol.Order)
-            .Include(ol => ol.Product)
-                .ThenInclude(p => p!.Category)
-            .FirstOrDefaultAsync(ol => ol.Id == id);
+        Ensure.ArgumentNotNull(specification);
+        var query = OrderLineSpecificationEvaluator
+            .ApplySpecification(_context.OrderLines, specification);
+        return await query.FirstOrDefaultAsync();
     }
 
     public async Task<OrderLine?> GetByOrderAndProductIdsAsync(long orderId, long productId)
@@ -108,18 +67,9 @@ public class OrderLineRepository : IOrderLineRepository
             .FirstOrDefaultAsync(ol => ol.OrderId == orderId && ol.ProductId == productId);
     }
 
-    public async Task<OrderLine?> GetByOrderAndProductIdsWithDetailsAsync(long orderId, long productId)
-    {
-        return await _context.OrderLines
-            .Include(ol => ol.Order)
-            .Include(ol => ol.Product)
-                .ThenInclude(p => p!.Category)
-            .FirstOrDefaultAsync(ol => ol.OrderId == orderId && ol.ProductId == productId);
-    }
-
     public async Task<bool> AreOrderAndProductIdsUniqueAsync(long orderId, long productId, long orderLineIdToExclude)
     {
-        bool isTaken = await _context.OrderLines
+        var isTaken = await _context.OrderLines
             .AnyAsync(ol => ol.OrderId == orderId && ol.ProductId == productId && ol.Id != orderLineIdToExclude);
         return !isTaken;
     }

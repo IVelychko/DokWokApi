@@ -1,22 +1,21 @@
-﻿using Domain.DTOs.Commands.OrderLines;
+﻿using Domain.DTOs.Requests.OrderLines;
 using Domain.DTOs.Responses.OrderLines;
-using Domain.Models;
 
 namespace Domain.Abstractions.Services;
 
 public interface IOrderLineService
 {
-    Task<IEnumerable<OrderLineResponse>> GetAllAsync(PageInfo? pageInfo = null);
+    Task<IList<OrderLineResponse>> GetAllAsync();
 
-    Task<OrderLineResponse?> GetByIdAsync(long id);
+    Task<OrderLineResponse> GetByIdAsync(long id);
 
-    Task<OrderLineResponse> AddAsync(AddOrderLineCommand command);
+    Task<OrderLineResponse> AddAsync(AddOrderLineRequest request);
 
-    Task<OrderLineResponse> UpdateAsync(UpdateOrderLineCommand command);
+    Task<OrderLineResponse> UpdateAsync(UpdateOrderLineRequest request);
 
     Task DeleteAsync(long id);
     
-    Task<IEnumerable<OrderLineResponse>> GetAllByOrderIdAsync(long orderId, PageInfo? pageInfo = null);
+    Task<IList<OrderLineResponse>> GetAllByOrderIdAsync(long orderId);
 
-    Task<OrderLineResponse?> GetByOrderAndProductIdsAsync(long orderId, long productId);
+    Task<OrderLineResponse> GetByOrderAndProductIdsAsync(long orderId, long productId);
 }

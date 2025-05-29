@@ -1,18 +1,17 @@
-﻿using Domain.DTOs.Commands.ProductCategories;
+﻿using Domain.DTOs.Requests.ProductCategories;
 using Domain.DTOs.Responses.ProductCategories;
-using Domain.Models;
 
 namespace Domain.Abstractions.Services;
 
 public interface IProductCategoryService
 {
-    Task<IEnumerable<ProductCategoryResponse>> GetAllAsync(PageInfo? pageInfo = null);
+    Task<IList<ProductCategoryResponse>> GetAllAsync();
 
-    Task<ProductCategoryResponse?> GetByIdAsync(long id);
+    Task<ProductCategoryResponse> GetByIdAsync(long id);
 
-    Task<ProductCategoryResponse> AddAsync(AddProductCategoryCommand command);
+    Task<ProductCategoryResponse> AddAsync(AddProductCategoryRequest request);
 
-    Task<ProductCategoryResponse> UpdateAsync(UpdateProductCategoryCommand command);
+    Task<ProductCategoryResponse> UpdateAsync(UpdateProductCategoryRequest request);
 
     Task DeleteAsync(long id);
     

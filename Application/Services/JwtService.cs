@@ -22,9 +22,9 @@ public class JwtService : ISecurityTokenService<User, JwtSecurityToken>
 
     public JwtSecurityToken ValidateToken(string token, TokenValidationParameters tokenValidationParameters)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(token);
+        Ensure.ArgumentNotNullOrWhiteSpace(token, nameof(token));
         var tokenHandler = new JwtSecurityTokenHandler();
-        tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken validatedToken);
+        tokenHandler.ValidateToken(token, tokenValidationParameters, out var validatedToken);
 
         var jwtToken = (JwtSecurityToken)validatedToken;
         return jwtToken;
@@ -37,7 +37,7 @@ public class JwtService : ISecurityTokenService<User, JwtSecurityToken>
 
     public string CreateSerializedToken(User user, string role)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(role);
+        Ensure.ArgumentNotNullOrWhiteSpace(role, nameof(role));
         var token = CreateToken(user, role);
 
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -47,14 +47,14 @@ public class JwtService : ISecurityTokenService<User, JwtSecurityToken>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "The secret is not visible")]
     public JwtSecurityToken CreateToken(User user, string role)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(role);
+        Ensure.ArgumentNotNullOrWhiteSpace(role, nameof(role));
         var errorMessage = "Unable to get data from configuration";
         var tokenLifeTime = _configuration["Jwt:TokenLifeTime"]?.Split(':')
             ?? throw new ConfigurationException(errorMessage);
         var hours = int.Parse(tokenLifeTime[0]);
         var minutes = int.Parse(tokenLifeTime[1]);
         var seconds = int.Parse(tokenLifeTime[2]);
-        DateTime expiration = DateTime.UtcNow
+        var expiration = DateTime.UtcNow
             .AddHours(hours)
             .AddMinutes(minutes)
             .AddSeconds(seconds);

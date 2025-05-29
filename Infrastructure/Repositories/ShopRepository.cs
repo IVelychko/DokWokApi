@@ -1,9 +1,6 @@
 ﻿using Domain.Abstractions.Repositories;
 using Domain.Entities;
-using Domain.Models;
 using Domain.Shared;
-using Infrastructure.Extensions;
-using Infrastructure.Specification;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
@@ -28,22 +25,10 @@ public class ShopRepository : IShopRepository
         Ensure.ArgumentNotNull(entity);
         _context.Remove(entity);
     }
-
-    public async Task<IList<Shop>> GetAllBySpecificationAsync(Specification<Shop> specification)
+    
+    public async Task<IList<Shop>> GetAllAsync()
     {
-        IQueryable<Shop> query = SpecificationEvaluator.ApplySpecification(_context.Shops, specification);
-        return await query.ToListAsync();
-    }
-
-    public async Task<IList<Shop>> GetAllAsync(PageInfo? pageInfo = null)
-    {
-        IQueryable<Shop> query = _context.Shops;
-        if (pageInfo is not null)
-        {
-            query = query.ApplyPagination(pageInfo);
-        }
-
-        return await query.ToListAsync();
+        return await _context.Shops.ToListAsync();
     }
 
     public async Task<Shop?> GetByIdAsync(long id)
@@ -53,8 +38,8 @@ public class ShopRepository : IShopRepository
 
     public async Task<Shop?> GetByAddressAsync(string street, string building)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(street);
-        Ensure.ArgumentNotNullOrWhiteSpace(building);
+        Ensure.ArgumentNotNullOrWhiteSpace(street, nameof(street));
+        Ensure.ArgumentNotNullOrWhiteSpace(building, nameof(building));
         return await _context.Shops.FirstOrDefaultAsync(s => s.Street == street && s.Building == building);
     }
 
@@ -66,18 +51,18 @@ public class ShopRepository : IShopRepository
 
     public async Task<bool> IsAddressUniqueAsync(string street, string building)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(street);
-        Ensure.ArgumentNotNullOrWhiteSpace(building);
-        bool isTaken = await _context.Shops
+        Ensure.ArgumentNotNullOrWhiteSpace(street, nameof(street));
+        Ensure.ArgumentNotNullOrWhiteSpace(building, nameof(building));
+        var isTaken = await _context.Shops
             .AnyAsync(s => s.Street == street && s.Building == building);
         return !isTaken;
     }
     
     public async Task<bool> IsAddressUniqueAsync(string street, string building, long idToExclude)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(street);
-        Ensure.ArgumentNotNullOrWhiteSpace(building);
-        bool isTaken = await _context.Shops
+        Ensure.ArgumentNotNullOrWhiteSpace(street, nameof(street));
+        Ensure.ArgumentNotNullOrWhiteSpace(building, nameof(building));
+        var isTaken = await _context.Shops
             .AnyAsync(s => s.Street == street && s.Building == building && s.Id != idToExclude);
         return !isTaken;
     }

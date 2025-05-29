@@ -1,40 +1,33 @@
-﻿using Domain.DTOs.Commands.Users;
+﻿using Domain.DTOs.Requests.Users;
 using Domain.DTOs.Responses.Users;
-using Domain.Models;
 
 namespace Domain.Abstractions.Services;
 
 public interface IUserService
 {
-    Task<IEnumerable<UserResponse>> GetAllUsersAsync(PageInfo? pageInfo = null);
+    Task<IList<UserResponse>> GetAllUsersAsync();
 
-    Task<IEnumerable<UserResponse>> GetAllCustomersAsync(PageInfo? pageInfo = null);
+    Task<IList<UserResponse>> GetAllCustomersAsync();
 
-    Task<UserResponse?> GetUserByUserNameAsync(string userName);
+    Task<UserResponse> GetUserByUserNameAsync(string userName);
 
-    Task<UserResponse?> GetUserByIdAsync(long id);
+    Task<UserResponse> GetUserByIdAsync(long id);
 
-    Task<UserResponse?> GetCustomerByIdAsync(long id);
+    Task<UserResponse> GetCustomerByIdAsync(long id);
 
-    Task<UserResponse> AddAsync(AddUserCommand command);
+    Task<UserResponse> AddAsync(AddUserRequest request);
 
-    Task<UserResponse> UpdateAsync(UpdateUserCommand command);
+    Task<UserResponse> UpdateAsync(UpdateUserRequest request);
 
-    Task UpdateCustomerPasswordAsync(long userId, string newPassword);
+    Task UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword);
+
+    Task UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword);
 
     Task DeleteAsync(long id);
-
-    Task<AuthorizedUserResponse> LoginAsync(string userName);
-
-    Task<AuthorizedUserResponse> RegisterAsync(RegisterUserCommand command);
-
-    Task LogOutAsync(string refreshToken);
 
     Task<bool> IsUserNameUniqueAsync(string userName);
 
     Task<bool> IsEmailUniqueAsync(string email);
 
     Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber);
-
-    Task<AuthorizedUserResponse> RefreshTokenAsync(string securityToken, string refreshToken);
 }
