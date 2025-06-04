@@ -4,6 +4,7 @@ using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Abstractions.Validation;
 using Domain.DTOs.Requests.ProductCategories;
+using Domain.DTOs.Responses;
 using Domain.DTOs.Responses.ProductCategories;
 using Domain.Shared;
 
@@ -65,10 +66,11 @@ public class ProductCategoryService : IProductCategoryService
         return entity.ToResponse();
     }
 
-    public async Task<bool> IsNameUniqueAsync(string name)
+    public async Task<IsTakenResponse> IsNameTakenAsync(string name)
     {
         Ensure.ArgumentNotNullOrWhiteSpace(name, nameof(name));
-        return await _productCategoryRepository.IsNameUniqueAsync(name);
+        var isUnique = await _productCategoryRepository.IsNameUniqueAsync(name);
+        return new IsTakenResponse(!isUnique);
     }
     
     private async Task ValidateUpdateCategoryRequestAsync(UpdateProductCategoryRequest request)

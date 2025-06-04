@@ -4,6 +4,7 @@ using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Abstractions.Validation;
 using Domain.DTOs.Requests.Shops;
+using Domain.DTOs.Responses;
 using Domain.DTOs.Responses.Shops;
 using Domain.Shared;
 
@@ -65,11 +66,12 @@ public class ShopService : IShopService
         return entity.ToResponse();
     }
 
-    public async Task<bool> IsAddressUniqueAsync(string street, string building)
+    public async Task<IsTakenResponse> IsAddressTakenAsync(string street, string building)
     {
         Ensure.ArgumentNotNullOrWhiteSpace(street, nameof(street));
         Ensure.ArgumentNotNullOrWhiteSpace(building, nameof(building));
-        return await _shopRepository.IsAddressUniqueAsync(street, building);
+        var isUnique = await _shopRepository.IsAddressUniqueAsync(street, building);
+        return new IsTakenResponse(!isUnique);
     }
 
     public async Task<ShopResponse> UpdateAsync(UpdateShopRequest request)

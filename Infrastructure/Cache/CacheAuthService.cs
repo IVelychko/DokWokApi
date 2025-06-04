@@ -20,7 +20,7 @@ public class CacheAuthService : IAuthService
     {
         Ensure.ArgumentNotNull(request);
         var response = await _authService.RegisterAsync(request);
-        await _cacheService.RemoveAsync("allUsers");
+        await _cacheService.RemoveByPrefixAsync("allUsers");
         await _cacheService.RemoveAsync("allCustomers");
         return response;
     }
@@ -38,17 +38,10 @@ public class CacheAuthService : IAuthService
         await _authService.LogOutAsync(refreshToken);
     }
     
-    public async Task<AuthorizedUserResponse> LoginCustomerAsync(LoginCustomerRequest request)
+    public async Task<AuthorizedUserResponse> LoginUserAsync(LoginUserRequest request, bool isAdmin)
     {
         Ensure.ArgumentNotNull(request);
-        var response = await _authService.LoginCustomerAsync(request);
-        return response;
-    }
-
-    public async Task<AuthorizedUserResponse> LoginAdminAsync(LoginAdminRequest request)
-    {
-        Ensure.ArgumentNotNull(request);
-        var response = await _authService.LoginAdminAsync(request);
+        var response = await _authService.LoginUserAsync(request, isAdmin);
         return response;
     }
 }

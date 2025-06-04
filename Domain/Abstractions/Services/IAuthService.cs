@@ -5,9 +5,7 @@ namespace Domain.Abstractions.Services;
 
 public interface IAuthService
 {
-    Task<AuthorizedUserResponse> LoginCustomerAsync(LoginCustomerRequest request);
-
-    Task<AuthorizedUserResponse> LoginAdminAsync(LoginAdminRequest request);
+    Task<AuthorizedUserResponse> LoginUserAsync(LoginUserRequest request, bool isAdmin);
 
     Task<AuthorizedUserResponse> RegisterAsync(RegisterUserRequest request);
 

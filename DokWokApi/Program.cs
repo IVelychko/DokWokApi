@@ -1,16 +1,13 @@
-using Application.Behaviors;
+using DokWokApi.Constants;
 using DokWokApi.Extensions;
-using DokWokApi.Services;
-using Domain.Abstractions.Services;
+using DokWokApi.Helpers;
+using DokWokApi.Middlewares;
 using Domain.Shared;
-using Infrastructure;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
-
-const string policyName = "ReactProjectCorsPolicy";
+builder.Configuration.AddEnvironmentVariables();
+const string policyName = CorsPolicyNames.ReactProject;
 
 builder.Services.AddCorsConfiguration(policyName, builder.Configuration);
 
@@ -19,12 +16,7 @@ builder.Host.UseSerilog((context, config) =>
     config.ReadFrom.Configuration(context.Configuration);
 });
 
-builder.Services.AddMediatR(opts =>
-{
-    opts.RegisterServicesFromAssembly(Application.ApplicationAssemblyReference.Assembly);
-    opts.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationWithResponseBehavior<,>));
-    opts.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-});
+builder.Services.AddControllers();
 
 builder.Services.AddStackExchangeRedisCache(opts =>
 {
@@ -32,39 +24,33 @@ builder.Services.AddStackExchangeRedisCache(opts =>
     opts.Configuration = connection;
 });
 
-builder.Services.AddDbContext<StoreDbContext>(opts =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("FoodStoreConnection");
-    opts.UseNpgsql(connectionString);
-});
-
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddSingleton<TokenValidationParametersAccessor>();
-
-builder.Services.AddValidators();
+builder.Services.AddDbContext(builder.Configuration);
 builder.Services.AddCustomRepositories();
+builder.Services.AddValidators();
+builder.Services.AddJwtConfiguration();
+builder.Services.AddSingleton<TokenValidationParametersAccessor>();
 builder.Services.AddCustomServices();
+builder.Services.AddCacheDecorators();
 
 builder.Services.AddSwaggerSetup();
 
-builder.Services.AddJwtBearerAuthentication(builder.Configuration);
-builder.Services.AddAuthorizationServicesAndPolicies();
+builder.Services.AddMiddlewareServices();
 
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddJwtBearerAuthentication(builder.Configuration);
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-app.UseExceptionHandler(x => { });
-
 app.UseCors(policyName);
+
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 app.UseSerilogRequestLogging();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.AddAllEndpoints();
 
 if (app.Environment.IsDevelopment())
 {
@@ -75,9 +61,9 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-var context = app.Services.CreateScope().ServiceProvider.GetRequiredService<StoreDbContext>();
-var passwordHasher = app.Services.GetRequiredService<IPasswordHasher>();
-await SeedData.SeedDatabaseAsync(context, passwordHasher);
+app.MapControllers();
+
+await DatabaseHelper.SeedDatabaseAsync(app);
 
 await app.RunAsync();
 

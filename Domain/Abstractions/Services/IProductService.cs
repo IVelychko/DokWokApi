@@ -1,4 +1,5 @@
 ﻿using Domain.DTOs.Requests.Products;
+using Domain.DTOs.Responses;
 using Domain.DTOs.Responses.Products;
 
 namespace Domain.Abstractions.Services;
@@ -17,5 +18,5 @@ public interface IProductService
     
     Task<IList<ProductResponse>> GetAllByCategoryIdAsync(long categoryId);
 
-    Task<bool> IsNameUniqueAsync(string name);
+    Task<IsTakenResponse> IsNameTakenAsync(string name);
 }

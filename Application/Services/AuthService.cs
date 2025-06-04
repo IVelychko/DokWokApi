@@ -44,27 +44,13 @@ public class AuthService : IAuthService
         _tokenValidationParametersAccessor = tokenValidationParametersAccessor;
         _validator = validator;
     }
-    
-    public async Task<AuthorizedUserResponse> LoginCustomerAsync(LoginCustomerRequest request)
+
+    public async Task<AuthorizedUserResponse> LoginUserAsync(LoginUserRequest request, bool isAdmin)
     {
-        await ValidateLoginCustomerRequestAsync(request);
-        var user = await GetUserWithCustomerRoleByUserNameAsync(request.UserName);
-        var role = await GetUserRoleByIdAsync(user.UserRoleId);
-        var token = _securityTokenService.CreateToken(user, role.Name);
-        var refreshToken = await AddRefreshTokenAsync(user.Id, token);
-        user.UserRole = role;
-        return CreateAuthorizedUserResponse(user, token, refreshToken);
-    }
-    
-    public async Task<AuthorizedUserResponse> LoginAdminAsync(LoginAdminRequest request)
-    {
-        await ValidateLoginAdminRequestAsync(request);
-        var user = await GetUserByUserNameInternalAsync(request.UserName);
-        var role = await GetUserRoleByIdAsync(user.UserRoleId);
-        var token = _securityTokenService.CreateToken(user, role.Name);
-        var refreshToken = await AddRefreshTokenAsync(user.Id, token);
-        user.UserRole = role;
-        return CreateAuthorizedUserResponse(user, token, refreshToken);
+        Ensure.ArgumentNotNull(request);
+        return isAdmin ?
+            await LoginAdminAsync(new LoginAdminRequest(request.UserName, request.Password)) :
+            await LoginCustomerAsync(new LoginCustomerRequest(request.UserName, request.Password));
     }
     
     public async Task<AuthorizedUserResponse> RegisterAsync(RegisterUserRequest request)
@@ -98,6 +84,28 @@ public class AuthService : IAuthService
         await ValidateLogOutUserRequestAsync(refreshToken);
         await MarkRefreshTokenAsUsedAsync(refreshToken);
         await _unitOfWork.SaveChangesAsync();
+    }
+    
+    private async Task<AuthorizedUserResponse> LoginCustomerAsync(LoginCustomerRequest request)
+    {
+        await ValidateLoginCustomerRequestAsync(request);
+        var user = await GetUserWithCustomerRoleByUserNameAsync(request.UserName);
+        var role = await GetUserRoleByIdAsync(user.UserRoleId);
+        var token = _securityTokenService.CreateToken(user, role.Name);
+        var refreshToken = await AddRefreshTokenAsync(user.Id, token);
+        user.UserRole = role;
+        return CreateAuthorizedUserResponse(user, token, refreshToken);
+    }
+    
+    private async Task<AuthorizedUserResponse> LoginAdminAsync(LoginAdminRequest request)
+    {
+        await ValidateLoginAdminRequestAsync(request);
+        var user = await GetUserByUserNameInternalAsync(request.UserName);
+        var role = await GetUserRoleByIdAsync(user.UserRoleId);
+        var token = _securityTokenService.CreateToken(user, role.Name);
+        var refreshToken = await AddRefreshTokenAsync(user.Id, token);
+        user.UserRole = role;
+        return CreateAuthorizedUserResponse(user, token, refreshToken);
     }
 
     private async Task MarkRefreshTokenAsUsedAsync(string refreshToken)

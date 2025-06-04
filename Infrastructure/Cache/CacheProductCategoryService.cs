@@ -1,5 +1,6 @@
 using Domain.Abstractions.Services;
 using Domain.DTOs.Requests.ProductCategories;
+using Domain.DTOs.Responses;
 using Domain.DTOs.Responses.ProductCategories;
 using Domain.Shared;
 
@@ -68,9 +69,9 @@ public class CacheProductCategoryService : IProductCategoryService
         return response;
     }
 
-    public async Task<bool> IsNameUniqueAsync(string name)
+    public async Task<IsTakenResponse> IsNameTakenAsync(string name)
     {
         Ensure.ArgumentNotNullOrWhiteSpace(name, nameof(name));
-        return await _productCategoryService.IsNameUniqueAsync(name);
+        return await _productCategoryService.IsNameTakenAsync(name);
     }
 }

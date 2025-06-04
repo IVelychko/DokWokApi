@@ -1,7 +1,7 @@
 ﻿using Domain.Abstractions.Services;
 using Microsoft.Extensions.Caching.Distributed;
-using Newtonsoft.Json;
 using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace Infrastructure.Cache;
 
@@ -18,7 +18,8 @@ public class CacheService : ICacheService
     public async Task<TValue?> GetAsync<TValue>(string key) where TValue : class
     {
         var serializedValue = await _distributedCache.GetStringAsync(key);
-        return serializedValue is not null ? JsonConvert.DeserializeObject<TValue>(serializedValue) : null;
+        // return serializedValue is not null ? JsonConvert.DeserializeObject<TValue>(serializedValue) : null;
+        return serializedValue is not null ? JsonSerializer.Deserialize<TValue>(serializedValue) : null;
     }
 
     public async Task RemoveAsync(string key)
@@ -36,19 +37,12 @@ public class CacheService : ICacheService
         await Task.WhenAll(tasks);
     }
 
-    public async Task SetAsync<TValue>(string key, TValue value, JsonSerializerSettings? jsonSerializerSettings = null) where TValue : class
+    public async Task SetAsync<TValue>(string key, TValue value) where TValue : class
     {
-        string serializedValue;
         DistributedCacheEntryOptions cacheOptions = new();
         cacheOptions.SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
-        if (jsonSerializerSettings is not null)
-        {
-            serializedValue = JsonConvert.SerializeObject(value, jsonSerializerSettings);
-        }
-        else
-        {
-            serializedValue = JsonConvert.SerializeObject(value);
-        }
+        // var serializedValue = JsonConvert.SerializeObject(value);
+        var serializedValue = JsonSerializer.Serialize(value);
 
         await _distributedCache.SetStringAsync(key, serializedValue, cacheOptions);
         CacheKeys.TryAdd(key, false);

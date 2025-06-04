@@ -1,4 +1,5 @@
 ﻿using Domain.DTOs.Requests.ProductCategories;
+using Domain.DTOs.Responses;
 using Domain.DTOs.Responses.ProductCategories;
 
 namespace Domain.Abstractions.Services;
@@ -15,5 +16,5 @@ public interface IProductCategoryService
 
     Task DeleteAsync(long id);
     
-    Task<bool> IsNameUniqueAsync(string name);
+    Task<IsTakenResponse> IsNameTakenAsync(string name);
 }

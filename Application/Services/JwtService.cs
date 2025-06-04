@@ -1,23 +1,22 @@
 ﻿using Domain.Abstractions.Services;
 using Domain.Entities;
-using Domain.Exceptions;
 using Domain.Shared;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Domain.DTOs.Models.Jwt;
 
 namespace Application.Services;
 
 public class JwtService : ISecurityTokenService<User, JwtSecurityToken>
 {
-    private readonly IConfiguration _configuration;
+    private readonly JwtConfiguration _jwtConfiguration;
 
-    public JwtService(IConfiguration configuration)
+    public JwtService(JwtConfiguration jwtConfiguration)
     {
-        _configuration = configuration;
+        _jwtConfiguration = jwtConfiguration;
     }
 
     public JwtSecurityToken ValidateToken(string token, TokenValidationParameters tokenValidationParameters)
@@ -25,9 +24,7 @@ public class JwtService : ISecurityTokenService<User, JwtSecurityToken>
         Ensure.ArgumentNotNullOrWhiteSpace(token, nameof(token));
         var tokenHandler = new JwtSecurityTokenHandler();
         tokenHandler.ValidateToken(token, tokenValidationParameters, out var validatedToken);
-
-        var jwtToken = (JwtSecurityToken)validatedToken;
-        return jwtToken;
+        return (JwtSecurityToken)validatedToken;
     }
 
     public bool IsTokenSecurityAlgorithmValid(JwtSecurityToken securityToken)
@@ -39,50 +36,55 @@ public class JwtService : ISecurityTokenService<User, JwtSecurityToken>
     {
         Ensure.ArgumentNotNullOrWhiteSpace(role, nameof(role));
         var token = CreateToken(user, role);
-
-        var tokenHandler = new JwtSecurityTokenHandler();
+        JwtSecurityTokenHandler tokenHandler = new();
         return tokenHandler.WriteToken(token);
     }
-
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "The secret is not visible")]
+    
     public JwtSecurityToken CreateToken(User user, string role)
     {
         Ensure.ArgumentNotNullOrWhiteSpace(role, nameof(role));
-        var errorMessage = "Unable to get data from configuration";
-        var tokenLifeTime = _configuration["Jwt:TokenLifeTime"]?.Split(':')
-            ?? throw new ConfigurationException(errorMessage);
+        var claims = GetClaims(user, role);
+        SecurityTokenDescriptor tokenDescriptor = new()
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = GetExpirationTime(),
+            Issuer = _jwtConfiguration.Issuer,
+            Audience = _jwtConfiguration.Audience,
+            SigningCredentials = GetSigningCredentials(),
+        };
+        JwtSecurityTokenHandler tokenHandler = new();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return (JwtSecurityToken)token;
+    }
+    
+    private DateTime GetExpirationTime()
+    {
+        var tokenLifeTime = _jwtConfiguration.Lifetime.Split(':');
         var hours = int.Parse(tokenLifeTime[0]);
         var minutes = int.Parse(tokenLifeTime[1]);
         var seconds = int.Parse(tokenLifeTime[2]);
-        var expiration = DateTime.UtcNow
+        return DateTime.UtcNow
             .AddHours(hours)
             .AddMinutes(minutes)
             .AddSeconds(seconds);
-
-        var key = _configuration["Jwt:Key"] ?? throw new ConfigurationException(errorMessage);
-        var encodedKey = Encoding.UTF8.GetBytes(key);
+    }
+    
+    private SigningCredentials GetSigningCredentials()
+    {
+        var encodedKey = Encoding.UTF8.GetBytes(_jwtConfiguration.Key);
         SymmetricSecurityKey securityKey = new(encodedKey);
-        SigningCredentials tokenSigningCredentials = new(securityKey, SecurityAlgorithms.HmacSha256);
-
-        var subject = _configuration["Jwt:Subject"] ?? throw new ConfigurationException(errorMessage);
+        return new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+    }
+    
+    private Claim[] GetClaims(User user, string role)
+    {
         Claim[] claims = [
-            new(JwtRegisteredClaimNames.Sub, subject),
+            new(JwtRegisteredClaimNames.Sub, _jwtConfiguration.Subject),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(DateTime.UtcNow).ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64),
             new("id", user.Id.ToString()),
             new(ClaimTypes.Role, role)
         ];
-
-        var issuer = _configuration["Jwt:Issuer"] ?? throw new ConfigurationException(errorMessage);
-        var audience = _configuration["Jwt:Audience"] ?? throw new ConfigurationException(errorMessage);
-        JwtSecurityToken token = new(
-            issuer,
-            audience,
-            claims,
-            expires: expiration,
-            signingCredentials: tokenSigningCredentials
-        );
-
-        return token;
+        return claims;
     }
 }

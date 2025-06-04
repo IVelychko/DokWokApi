@@ -1,4 +1,5 @@
 ﻿using Domain.DTOs.Requests.Shops;
+using Domain.DTOs.Responses;
 using Domain.DTOs.Responses.Shops;
 
 namespace Domain.Abstractions.Services;
@@ -17,5 +18,5 @@ public interface IShopService
     
     Task<ShopResponse> GetByAddressAsync(string street, string building);
 
-    Task<bool> IsAddressUniqueAsync(string street, string building);
+    Task<IsTakenResponse> IsAddressTakenAsync(string street, string building);
 }

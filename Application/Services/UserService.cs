@@ -8,6 +8,7 @@ using Domain.Entities;
 using Domain.Shared;
 using Application.Extensions;
 using Domain.DTOs.Requests.Users;
+using Domain.DTOs.Responses;
 using Domain.Specifications.Users;
 
 namespace Application.Services;
@@ -56,6 +57,19 @@ public class UserService : IUserService
         return entities.Select(p => p.ToResponse()).ToList();
     }
 
+    public async Task<IList<UserResponse>> GetAllUsersByRoleNameAsync(string roleName)
+    {
+        Ensure.ArgumentNotNullOrWhiteSpace(roleName, nameof(roleName));
+        var userRole = await GetUserRoleByNameAsync(roleName);
+        UserSpecification specification = new()
+        {
+            IncludeRole = true,
+            RoleId = userRole.Id,
+        };
+        var entities = await _userRepository.GetAllBySpecificationAsync(specification);
+        return entities.Select(p => p.ToResponse()).ToList();
+    }
+
     public async Task<IList<UserResponse>> GetAllCustomersAsync()
     {
         var customerRole = await GetUserRoleByNameAsync(UserRoles.Customer);
@@ -80,6 +94,21 @@ public class UserService : IUserService
     {
         var entity = await GetUserByIdInternalAsync(id);
         entity.UserRole = await GetUserRoleByIdAsync(entity.UserRoleId);
+        return entity.ToResponse();
+    }
+    
+    public async Task<UserResponse> GetUserByRoleNameAndUserIdAsync(string roleName, long userId)
+    {
+        Ensure.ArgumentNotNullOrWhiteSpace(roleName, nameof(roleName));
+        var userRole = await GetUserRoleByNameAsync(roleName);
+        UserSpecification specification = new()
+        {
+            Id = userId,
+            IncludeRole = true,
+            RoleId = userRole.Id
+        };
+        var entity = await _userRepository.GetBySpecificationAsync(specification);
+        entity = Ensure.EntityExists(entity, "The user was not found");
         return entity.ToResponse();
     }
 
@@ -107,34 +136,37 @@ public class UserService : IUserService
         return entityToUpdate.ToResponse();
     }
 
-    public async Task UpdateCustomerPasswordAsync(long userId, string oldPassword, string newPassword)
+    public async Task UpdateCustomerPasswordAsync(UpdatePasswordRequest request)
     {
-        await ValidateUpdateCustomerPasswordRequestAsync(userId, oldPassword, newPassword);
-        await UpdatePasswordAsync(userId, newPassword);
+        await ValidateUpdateCustomerPasswordRequestAsync(request);
+        await UpdatePasswordAsync(request.UserId, request.NewPassword);
     }
     
-    public async Task UpdateCustomerPasswordAsAdminAsync(long userId, string newPassword)
+    public async Task UpdateCustomerPasswordAsAdminAsync(UpdatePasswordAsAdminRequest request)
     {
-        await ValidateUpdateCustomerPasswordAsAdminRequestAsync(userId, newPassword);
-        await UpdatePasswordAsync(userId, newPassword);
+        await ValidateUpdateCustomerPasswordAsAdminRequestAsync(request);
+        await UpdatePasswordAsync(request.UserId, request.NewPassword);
     }
 
-    public async Task<bool> IsUserNameUniqueAsync(string userName)
+    public async Task<IsTakenResponse> IsUserNameTakenAsync(string userName)
     {
         Ensure.ArgumentNotNullOrWhiteSpace(userName, nameof(userName));
-        return await _userRepository.IsUserNameUniqueAsync(userName);
+        var isUnique = await _userRepository.IsUserNameUniqueAsync(userName);
+        return new IsTakenResponse(!isUnique);
     }
 
-    public async Task<bool> IsEmailUniqueAsync(string email)
+    public async Task<IsTakenResponse> IsEmailTakenAsync(string email)
     {
         Ensure.ArgumentNotNullOrWhiteSpace(email, nameof(email));
-        return await _userRepository.IsEmailUniqueAsync(email);
+        var isUnique = await _userRepository.IsEmailUniqueAsync(email);
+        return new IsTakenResponse(!isUnique);
     }
 
-    public async Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber)
+    public async Task<IsTakenResponse> IsPhoneNumberTakenAsync(string phoneNumber)
     {
         Ensure.ArgumentNotNullOrWhiteSpace(phoneNumber, nameof(phoneNumber));
-        return await _userRepository.IsPhoneNumberUniqueAsync(phoneNumber);
+        var isUnique = await _userRepository.IsPhoneNumberUniqueAsync(phoneNumber);
+        return new IsTakenResponse(!isUnique);
     }
     
     private async Task<User> AddAsync(User user, string password)
@@ -178,19 +210,16 @@ public class UserService : IUserService
         validationResult.ThrowIfValidationFailed();
     }
     
-    private async Task ValidateUpdateCustomerPasswordRequestAsync(long userId, string oldPassword, string newPassword)
+    private async Task ValidateUpdateCustomerPasswordRequestAsync(UpdatePasswordRequest request)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(oldPassword, nameof(oldPassword));
-        Ensure.ArgumentNotNullOrWhiteSpace(newPassword, nameof(newPassword));
-        UpdatePasswordRequest request = new(userId, oldPassword, newPassword);
+        Ensure.ArgumentNotNull(request);
         var validationResult = await _validator.ValidateUpdatePasswordAsync(request);
         validationResult.ThrowIfValidationFailed();
     }
     
-    private async Task ValidateUpdateCustomerPasswordAsAdminRequestAsync(long userId, string newPassword)
+    private async Task ValidateUpdateCustomerPasswordAsAdminRequestAsync(UpdatePasswordAsAdminRequest request)
     {
-        Ensure.ArgumentNotNullOrWhiteSpace(newPassword, nameof(newPassword));
-        UpdatePasswordAsAdminRequest request = new(userId, newPassword);
+        Ensure.ArgumentNotNull(request);
         var validationResult = await _validator.ValidateUpdatePasswordAsAdminAsync(request);
         validationResult.ThrowIfValidationFailed();
     }

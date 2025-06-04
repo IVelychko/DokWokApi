@@ -1,14 +1,10 @@
 ﻿using Application;
 using Application.Services;
-using DokWokApi.Helpers;
-using Domain;
 using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Abstractions.Validation;
-using Domain.Constants;
 using Domain.Entities;
 using Domain.Exceptions;
-using Domain.Shared;
 using FluentValidation;
 using Infrastructure;
 using Infrastructure.Cache;
@@ -16,22 +12,41 @@ using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using Application.Validators.Auth;
+using Application.Validators.OrderLines;
+using Application.Validators.Orders;
+using Application.Validators.ProductCategories;
+using Application.Validators.Products;
+using Application.Validators.Shops;
 using Application.Validators.Users;
+using DokWokApi.Middlewares;
+using Domain.DTOs.Models.Jwt;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace DokWokApi.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    private const string ErrorMessage = "Unable to get data from configuration";
+    private const string CorsConfigErrorMessage = "Unable to get data from configuration";
+    private const string AudienceNotFound = "Unable to get audience from configuration";
+    private const string IssuerNotFound = "Unable to get issuer from configuration";
+    private const string SubjectNotFound = "Unable to get subject from configuration";
+    private const string KeyNotFound = "Unable to get key from configuration";
+    private const string LifetimeNotFound = "Unable to get lifetime from configuration";
 
     public static IServiceCollection AddCorsConfiguration(this IServiceCollection services, string policyName, ConfigurationManager configuration)
     {
+        var reactHttpProjectUrl = configuration["AllowedCorsUrls:ReactHttpProject"] ??
+                                  throw new ConfigurationException(CorsConfigErrorMessage);
+        var reactHttpsProjectUrl = configuration["AllowedCorsUrls:ReactHttpsProject"] ??
+                                   throw new ConfigurationException(CorsConfigErrorMessage);
         services.AddCors(opts =>
         {
             opts.AddPolicy(policyName, policy =>
             {
-                policy.WithOrigins(configuration["AllowedCorsUrls:ReactHttpProject"] ?? throw new ConfigurationException(ErrorMessage),
-                    configuration["AllowedCorsUrls:ReactHttpsProject"] ?? throw new ConfigurationException(ErrorMessage))
+                policy.WithOrigins(reactHttpProjectUrl, reactHttpsProjectUrl)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
@@ -41,17 +56,17 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddValidators(this IServiceCollection services)
+    public static IServiceCollection AddDbContext(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddValidatorsFromAssemblies([DomainAssemblyReference.Assembly,
-            ApplicationAssemblyReference.Assembly,
-            InfrastructureAssemblyReference.Assembly]);
-
-        services.AddScoped<IUserServiceValidator, UserServiceValidator>();
+        var connectionString = configuration.GetConnectionString("FoodStoreConnection");
+        services.AddDbContext<StoreDbContext>(opts =>
+        {
+            opts.UseNpgsql(connectionString);
+        });
 
         return services;
     }
-
+    
     public static IServiceCollection AddCustomRepositories(this IServiceCollection services)
     {
         services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
@@ -67,25 +82,100 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    public static IServiceCollection AddValidators(this IServiceCollection services)
+    {
+        ValidatorOptions.Global.LanguageManager.Enabled = false;
+        services.AddValidatorsFromAssembly(ApplicationAssemblyReference.Assembly);
+        services.AddScoped<IUserServiceValidator, UserServiceValidator>();
+        services.AddScoped<IAuthServiceValidator, AuthServiceValidator>();
+        services.AddScoped<IOrderServiceValidator, OrderServiceValidator>();
+        services.AddScoped<IOrderLineServiceValidator, OrderLineServiceValidator>();
+        services.AddScoped<IProductCategoryServiceValidator, ProductCategoryServiceValidator>();
+        services.AddScoped<IProductServiceValidator, ProductServiceValidator>();
+        services.AddScoped<IShopServiceValidator, ShopServiceValidator>();
+
+        return services;
+    }
+    
+    public static IServiceCollection AddJwtConfiguration(this IServiceCollection services)
+    {
+        services.AddSingleton<JwtConfiguration>(sp =>
+        {
+            var configuration = sp.GetRequiredService<IConfiguration>();
+            var audience = configuration["DOKWOK_JWT_AUDIENCE"]
+                           ?? throw new ConfigurationException(AudienceNotFound);
+            var issuer = configuration["DOKWOK_JWT_ISSUER"]
+                         ?? throw new ConfigurationException(IssuerNotFound);
+            var subject = configuration["DOKWOK_JWT_SUBJECT"]
+                          ?? throw new ConfigurationException(SubjectNotFound);
+            var key = configuration["DOKWOK_JWT_SECRET_KEY"]
+                      ?? throw new ConfigurationException(KeyNotFound);
+            var lifetime = configuration["DOKWOK_JWT_TOKENLIFETIME"]
+                           ?? throw new ConfigurationException(LifetimeNotFound);
+            JwtConfiguration jwtConfig = new()
+            {
+                Audience = audience,
+                Issuer = issuer,
+                Subject = subject,
+                Key = key,
+                Lifetime = lifetime,
+            };
+            return jwtConfig;
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddCustomServices(this IServiceCollection services)
     {
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<ICacheService, CacheService>();
         services.AddScoped<IProductCategoryService, ProductCategoryService>();
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IOrderLineService, OrderLineService>();
         services.AddScoped<IShopService, ShopService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ISecurityTokenService<User, JwtSecurityToken>, JwtService>();
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
-        services.AddSingleton<ICacheService, CacheService>();
 
+        return services;
+    }
+
+    public static IServiceCollection AddCacheDecorators(this IServiceCollection services)
+    {
+        services.Decorate<IProductCategoryService, CacheProductCategoryService>();
+        services.Decorate<IProductService, CacheProductService>();
+        services.Decorate<IOrderService, CacheOrderService>();
+        services.Decorate<IOrderLineService, CacheOrderLineService>();
+        services.Decorate<IShopService, CacheShopService>();
+        services.Decorate<IUserService, CacheUserService>();
+        services.Decorate<IAuthService, CacheAuthService>();
+        
         return services;
     }
 
     public static IServiceCollection AddJwtBearerAuthentication(this IServiceCollection services, ConfigurationManager configuration)
     {
-        var tokenValidationParametersAccessor = new TokenValidationParametersAccessor(configuration);
-        var tokenValidationParameters = tokenValidationParametersAccessor.Regular;
+        var audience = configuration["DOKWOK_JWT_AUDIENCE"]
+                       ?? throw new ConfigurationException(AudienceNotFound);
+        var issuer = configuration["DOKWOK_JWT_ISSUER"]
+                     ?? throw new ConfigurationException(IssuerNotFound);
+        var key = configuration["DOKWOK_JWT_SECRET_KEY"]
+                  ?? throw new ConfigurationException(KeyNotFound);
+        var encodedKey = Encoding.UTF8.GetBytes(key);
+        SymmetricSecurityKey symmetricSecurityKey = new(encodedKey);
+        TokenValidationParameters tokenValidationParameters = new()
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = issuer,
+            ValidAudience = audience,
+            IssuerSigningKey = symmetricSecurityKey,
+            ClockSkew = TimeSpan.Zero,
+        };
 
         services.AddAuthentication(opts =>
         {
@@ -96,16 +186,6 @@ public static class ServiceCollectionExtensions
         {
             opts.TokenValidationParameters = tokenValidationParameters;
         });
-
-        return services;
-    }
-
-    public static IServiceCollection AddAuthorizationServicesAndPolicies(this IServiceCollection services)
-    {
-        services.AddAuthorizationBuilder()
-            .AddPolicy(AuthorizationPolicyNames.Admin, opts => opts.RequireRole(UserRoles.Admin))
-            .AddPolicy(AuthorizationPolicyNames.Customer, opts => opts.RequireRole(UserRoles.Customer))
-            .AddPolicy(AuthorizationPolicyNames.AdminAndCustomer, opts => opts.RequireRole(UserRoles.Admin, UserRoles.Customer));
 
         return services;
     }
@@ -146,6 +226,12 @@ public static class ServiceCollectionExtensions
             });
         });
 
+        return services;
+    }
+    
+    public static IServiceCollection AddMiddlewareServices(this IServiceCollection services)
+    {
+        services.AddTransient<GlobalExceptionHandlerMiddleware>();
         return services;
     }
 }

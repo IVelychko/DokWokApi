@@ -4,6 +4,7 @@ using Domain.Abstractions.Repositories;
 using Domain.Abstractions.Services;
 using Domain.Abstractions.Validation;
 using Domain.DTOs.Requests.Products;
+using Domain.DTOs.Responses;
 using Domain.DTOs.Responses.Products;
 using Domain.Entities;
 using Domain.Shared;
@@ -87,10 +88,11 @@ public class ProductService : IProductService
         return entity.ToResponse();
     }
 
-    public async Task<bool> IsNameUniqueAsync(string name)
+    public async Task<IsTakenResponse> IsNameTakenAsync(string name)
     {
         Ensure.ArgumentNotNullOrWhiteSpace(name, nameof(name));
-        return await _productRepository.IsNameUniqueAsync(name);
+        var isUnique = await _productRepository.IsNameUniqueAsync(name);
+        return new IsTakenResponse(!isUnique);
     }
     
     private async Task ValidateDeleteProductRequestAsync(long id)

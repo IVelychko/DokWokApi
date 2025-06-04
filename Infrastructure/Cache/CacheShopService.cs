@@ -1,5 +1,6 @@
 using Domain.Abstractions.Services;
 using Domain.DTOs.Requests.Shops;
+using Domain.DTOs.Responses;
 using Domain.DTOs.Responses.Shops;
 using Domain.Shared;
 
@@ -75,11 +76,11 @@ public class CacheShopService : IShopService
         return response;
     }
     
-    public async Task<bool> IsAddressUniqueAsync(string street, string building)
+    public async Task<IsTakenResponse> IsAddressTakenAsync(string street, string building)
     {
         Ensure.ArgumentNotNullOrWhiteSpace(street, nameof(street));
         Ensure.ArgumentNotNullOrWhiteSpace(building, nameof(building));
-        return await _shopService.IsAddressUniqueAsync(street, building);
+        return await _shopService.IsAddressTakenAsync(street, building);
     }
 
     public async Task<ShopResponse> UpdateAsync(UpdateShopRequest request)

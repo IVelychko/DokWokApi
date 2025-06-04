@@ -1,5 +1,6 @@
 using Domain.Abstractions.Services;
 using Domain.DTOs.Requests.Products;
+using Domain.DTOs.Responses;
 using Domain.DTOs.Responses.Products;
 using Domain.Shared;
 
@@ -82,9 +83,9 @@ public class CacheProductService : IProductService
         return response;
     }
     
-    public async Task<bool> IsNameUniqueAsync(string name)
+    public async Task<IsTakenResponse> IsNameTakenAsync(string name)
     {
         Ensure.ArgumentNotNullOrWhiteSpace(name, nameof(name));
-        return await _productService.IsNameUniqueAsync(name);
+        return await _productService.IsNameTakenAsync(name);
     }
 }
