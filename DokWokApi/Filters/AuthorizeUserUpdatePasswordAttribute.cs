@@ -13,6 +13,10 @@ namespace DokWokApi.Filters;
 public class AuthorizeUserUpdatePasswordAttribute : Attribute, IAsyncAuthorizationFilter
 {
     private const string UnauthorizedMessage = "The user is not authenticated";
+    private readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
     
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
@@ -41,7 +45,7 @@ public class AuthorizeUserUpdatePasswordAttribute : Attribute, IAsyncAuthorizati
         UpdatePasswordRequest? updatePasswordRequest;
         try
         {
-            updatePasswordRequest = JsonSerializer.Deserialize<UpdatePasswordRequest>(requestBody);
+            updatePasswordRequest = JsonSerializer.Deserialize<UpdatePasswordRequest>(requestBody, _jsonOptions);
         }
         catch
         {
@@ -62,7 +66,7 @@ public class AuthorizeUserUpdatePasswordAttribute : Attribute, IAsyncAuthorizati
     private static async Task<string?> ReadRequestBody(HttpRequest request)
     {
         request.EnableBuffering();
-        using var streamReader = new StreamReader(request.Body);
+        var streamReader = new StreamReader(request.Body);
         var body = await streamReader.ReadToEndAsync();
         request.Body.Seek(0, SeekOrigin.Begin);
         return body;
