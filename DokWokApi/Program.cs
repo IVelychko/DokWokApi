@@ -45,9 +45,9 @@ var app = builder.Build();
 
 app.UseCors(policyName);
 
-app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
-
 app.UseSerilogRequestLogging();
+
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
