@@ -62,6 +62,7 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<StoreDbContext>(opts =>
         {
             opts.UseNpgsql(connectionString);
+            opts.UseSnakeCaseNamingConvention();
         });
 
         return services;
