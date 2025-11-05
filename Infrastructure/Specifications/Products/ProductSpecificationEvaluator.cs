@@ -37,6 +37,7 @@ public static class ProductSpecificationEvaluator
 
         var itemsToSkip = (pageInfo.PageNumber - 1) * pageInfo.PageSize;
         return query
+            .OrderBy(x => x.Id)
             .Skip(itemsToSkip)
             .Take(pageInfo.PageSize);
     }
